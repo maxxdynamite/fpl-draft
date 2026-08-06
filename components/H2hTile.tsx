@@ -4,6 +4,12 @@ import { useState } from "react";
 import type { H2hMatchup } from "@/lib/h2h";
 import { formatPl } from "@/lib/format";
 
+function plColor(pl: number) {
+  if (pl > 0) return "text-[#00ff85]";
+  if (pl < 0) return "text-[#e90052]";
+  return "text-zinc-400";
+}
+
 function SideHeader({
   managerName,
   teamName,
@@ -25,29 +31,39 @@ function SideHeader({
   );
 }
 
+function ChevronIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      className={`transition-transform duration-300 ease-in-out ${expanded ? "rotate-180" : "rotate-0"}`}
+    >
+      <path
+        d="M2.5 4.5L6 8L9.5 4.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
   const [expanded, setExpanded] = useState(false);
   const { teamA, teamB, history } = matchup;
 
-  const aAhead = teamA.wins > teamB.wins;
-  const bAhead = teamB.wins > teamA.wins;
-
   return (
     <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full text-left p-4 sm:p-5"
-      >
+      <div className="p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <SideHeader
             managerName={teamA.managerName}
             teamName={teamA.teamName}
             align="left"
           />
-          <span className="shrink-0 text-[10px] font-bold text-zinc-300 dark:text-zinc-700">
-            VS
-          </span>
           <SideHeader
             managerName={teamB.managerName}
             teamName={teamB.teamName}
@@ -55,103 +71,90 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           />
         </div>
 
-        <div className="flex items-center justify-between gap-3 mt-4">
-          <span
-            className={`text-3xl font-extrabold tabular-nums ${aAhead ? "" : "text-zinc-400 dark:text-zinc-600"}`}
-          >
-            {teamA.wins}
-          </span>
-
-          <div className="text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-              H2H wins
-            </p>
-            {teamA.latestGameweek && (
-              <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 tabular-nums">
-                GW{teamA.latestGameweek}: {teamA.latestScore} - {teamB.latestScore}
+        <div className="text-center mt-4">
+          {teamA.latestGameweek ? (
+            <>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                GW{teamA.latestGameweek}
               </p>
-            )}
-          </div>
-
-          <span
-            className={`text-3xl font-extrabold tabular-nums ${bAhead ? "" : "text-zinc-400 dark:text-zinc-600"}`}
-          >
-            {teamB.wins}
-          </span>
+              <p className="text-4xl font-extrabold tabular-nums mt-1 tracking-tight">
+                {teamA.latestScore} – {teamB.latestScore}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-zinc-400 dark:text-zinc-500 py-2">
+              No gameweeks yet
+            </p>
+          )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 mt-2">
-          <span
-            className={`text-xs font-semibold ${
-              teamA.pl > 0
-                ? "text-emerald-600 dark:text-emerald-400"
-                : teamA.pl < 0
-                  ? "text-rose-600 dark:text-rose-400"
-                  : "text-zinc-400"
-            }`}
-          >
+        <div className="flex items-center justify-between gap-3 mt-4">
+          <span className={`text-xs font-semibold ${plColor(teamA.pl)}`}>
             {formatPl(teamA.pl)}
           </span>
-          <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-            {expanded ? "Hide" : "Show"} history
-          </span>
-          <span
-            className={`text-xs font-semibold ${
-              teamB.pl > 0
-                ? "text-emerald-600 dark:text-emerald-400"
-                : teamB.pl < 0
-                  ? "text-rose-600 dark:text-rose-400"
-                  : "text-zinc-400"
-            }`}
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="flex items-center gap-1 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
           >
+            All Gameweeks
+            <ChevronIcon expanded={expanded} />
+          </button>
+          <span className={`text-xs font-semibold ${plColor(teamB.pl)}`}>
             {formatPl(teamB.pl)}
           </span>
         </div>
-      </button>
+      </div>
 
-      {expanded && (
-        <div className="border-t border-black/[0.04] dark:border-white/[0.06] px-4 sm:px-5 py-3">
-          {history.length === 0 ? (
-            <p className="text-xs text-zinc-400 dark:text-zinc-500 py-2 text-center">
-              No gameweeks played yet.
-            </p>
-          ) : (
-            <ul>
-              {history.map((row) => (
-                <li
-                  key={row.gameweek}
-                  className="grid grid-cols-[36px_1fr_16px_1fr] items-center py-1.5 text-sm"
-                >
-                  <span className="text-zinc-400 dark:text-zinc-500 text-xs font-medium">
-                    GW{row.gameweek}
-                  </span>
-                  <span
-                    className={`tabular-nums font-semibold text-right pr-2 ${
-                      row.aScore > row.bScore
-                        ? "text-zinc-900 dark:text-white"
-                        : "text-zinc-400 dark:text-zinc-600"
-                    }`}
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+          expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="border-t border-black/[0.04] dark:border-white/[0.06] px-4 sm:px-5 py-3">
+            {history.length === 0 ? (
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 py-2 text-center">
+                No gameweeks played yet.
+              </p>
+            ) : (
+              <ul>
+                {history.map((row) => (
+                  <li
+                    key={row.gameweek}
+                    className="grid grid-cols-[36px_1fr_16px_1fr] items-center py-1.5 text-sm"
                   >
-                    {row.aScore}
-                  </span>
-                  <span className="text-zinc-300 dark:text-zinc-700 text-xs text-center">
-                    –
-                  </span>
-                  <span
-                    className={`tabular-nums font-semibold pl-2 ${
-                      row.bScore > row.aScore
-                        ? "text-zinc-900 dark:text-white"
-                        : "text-zinc-400 dark:text-zinc-600"
-                    }`}
-                  >
-                    {row.bScore}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+                    <span className="text-zinc-400 dark:text-zinc-500 text-xs font-medium">
+                      GW{row.gameweek}
+                    </span>
+                    <span
+                      className={`tabular-nums font-semibold text-right pr-2 ${
+                        row.aScore > row.bScore
+                          ? "text-zinc-900 dark:text-white"
+                          : "text-zinc-400 dark:text-zinc-600"
+                      }`}
+                    >
+                      {row.aScore}
+                    </span>
+                    <span className="text-zinc-300 dark:text-zinc-700 text-xs text-center">
+                      –
+                    </span>
+                    <span
+                      className={`tabular-nums font-semibold pl-2 ${
+                        row.bScore > row.aScore
+                          ? "text-zinc-900 dark:text-white"
+                          : "text-zinc-400 dark:text-zinc-600"
+                      }`}
+                    >
+                      {row.bScore}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
