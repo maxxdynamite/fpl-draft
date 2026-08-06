@@ -19,7 +19,7 @@ export function TopNav() {
           className="font-extrabold text-lg tracking-tight"
         >
           Bad Blokes{" "}
-          <span className="text-violet-600 dark:text-violet-400">
+          <span className="bg-gradient-to-r from-[#00ff85] to-[#04f5ff] bg-clip-text text-transparent">
             Weekly
           </span>
         </Link>

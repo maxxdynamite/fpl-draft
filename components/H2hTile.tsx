@@ -92,7 +92,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           >
             {formatPl(teamA.pl)}
           </span>
-          <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400">
+          <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
             {expanded ? "Hide" : "Show"} history
           </span>
           <span
