@@ -17,13 +17,19 @@ function Side({
   return (
     <div className={align === "right" ? "text-right" : "text-left"}>
       <p
-        className={`font-medium ${leading ? "" : "text-zinc-500 dark:text-zinc-400"}`}
+        className={`font-semibold text-sm truncate ${
+          leading
+            ? "text-zinc-900 dark:text-white"
+            : "text-zinc-400 dark:text-zinc-500"
+        }`}
       >
         {teamName}
       </p>
-      <p className="text-2xl font-bold tabular-nums mt-1">{wins}</p>
+      <p className="text-3xl font-extrabold tabular-nums mt-1.5 tracking-tight">
+        {wins}
+      </p>
       <p
-        className={`text-xs font-medium mt-0.5 ${
+        className={`text-xs font-semibold mt-1 ${
           pl > 0
             ? "text-emerald-600 dark:text-emerald-400"
             : pl < 0
@@ -48,7 +54,7 @@ export default async function H2hPage() {
         return (
           <div
             key={`${pair.teamA.entryId}-${pair.teamB.entryId}`}
-            className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 flex items-center justify-between gap-3"
+            className="rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-5 flex items-center justify-between gap-4"
           >
             <Side
               teamName={pair.teamA.teamName}
@@ -57,8 +63,8 @@ export default async function H2hPage() {
               leading={aLeading}
               align="left"
             />
-            <span className="text-zinc-300 dark:text-zinc-700 text-sm font-medium shrink-0">
-              vs
+            <span className="shrink-0 h-8 w-8 rounded-full bg-black/[0.04] dark:bg-white/[0.06] shadow-[var(--shadow-pressed)] flex items-center justify-center text-[11px] font-bold text-zinc-400 dark:text-zinc-500">
+              VS
             </span>
             <Side
               teamName={pair.teamB.teamName}

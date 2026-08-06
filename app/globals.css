@@ -1,26 +1,33 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f7f8;
+  --foreground: #16161a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-manrope);
+
+  /* Soft, layered "elevation" shadows — a subtle bevel-and-lift feel
+     without going full neumorphism. Reused across cards, nav pills. */
+  --shadow-soft: 0 1px 1px rgba(16, 16, 20, 0.03), 0 8px 20px -6px rgba(16, 16, 20, 0.08);
+  --shadow-soft-lg: 0 2px 2px rgba(16, 16, 20, 0.04), 0 16px 36px -8px rgba(16, 16, 20, 0.12);
+  --shadow-pressed: inset 0 1px 2px rgba(16, 16, 20, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0b0b0d;
+    --foreground: #f2f2f4;
+    --shadow-soft: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 20px -6px rgba(0, 0, 0, 0.5);
+    --shadow-soft-lg: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+    --shadow-pressed: inset 0 1px 3px rgba(0, 0, 0, 0.4);
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }

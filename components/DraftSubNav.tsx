@@ -13,17 +13,17 @@ export function DraftSubNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-2 mb-8 border-b border-zinc-200 dark:border-zinc-800">
+    <nav className="inline-flex items-center gap-1 p-1 mb-8 rounded-full bg-black/[0.04] dark:bg-white/[0.06] shadow-[var(--shadow-pressed)]">
       {links.map((link) => {
         const active = pathname === link.href;
         return (
           <Link
             key={link.href}
             href={link.href}
-            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
               active
-                ? "border-zinc-900 text-zinc-900 dark:border-white dark:text-white"
-                : "border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-[var(--shadow-soft)]"
+                : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
             }`}
           >
             {link.label}
