@@ -5,8 +5,8 @@ import type { H2hMatchup } from "@/lib/h2h";
 import { formatPl } from "@/lib/format";
 
 function plColor(pl: number) {
-  if (pl > 0) return "text-[#00ff85]";
-  if (pl < 0) return "text-[#e90052]";
+  if (pl > 0) return "text-emerald-600 dark:text-emerald-400";
+  if (pl < 0) return "text-rose-600 dark:text-rose-400";
   return "text-zinc-400";
 }
 
@@ -71,21 +71,23 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           />
         </div>
 
-        <div className="text-center mt-4">
-          {teamA.latestGameweek ? (
-            <>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                GW{teamA.latestGameweek}
-              </p>
-              <p className="text-4xl font-extrabold tabular-nums mt-1 tracking-tight">
-                {teamA.latestScore} – {teamB.latestScore}
-              </p>
-            </>
-          ) : (
-            <p className="text-sm text-zinc-400 dark:text-zinc-500 py-2">
-              No gameweeks yet
+        <div className="flex items-center justify-between gap-3 mt-4">
+          <span className="text-4xl font-extrabold tabular-nums tracking-tight">
+            {teamA.wins}
+          </span>
+          <div className="text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+              H2H score
             </p>
-          )}
+            {teamA.latestGameweek && (
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 tabular-nums">
+                GW{teamA.latestGameweek}: {teamA.latestScore} – {teamB.latestScore}
+              </p>
+            )}
+          </div>
+          <span className="text-4xl font-extrabold tabular-nums tracking-tight">
+            {teamB.wins}
+          </span>
         </div>
 
         <div className="flex items-center justify-between gap-3 mt-4">
