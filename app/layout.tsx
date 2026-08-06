@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { TopNav } from "@/components/TopNav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bad Blokes Draft",
-  description: "Season standings for the Bad Blokes FPL Draft league",
+  title: "Bad Blokes Weekly",
+  description: "Draft and Blackjack results for the Bad Blokes league",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+        <TopNav />
         {children}
       </body>
     </html>
