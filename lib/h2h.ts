@@ -1,23 +1,67 @@
 import { getManagers } from "./managers";
 import { getStandings } from "./standings";
+import { getGwScores } from "./gwScores";
 
-export type H2hPair = {
-  teamA: { entryId: number; teamName: string; wins: number; pl: number };
-  teamB: { entryId: number; teamName: string; wins: number; pl: number };
+export type H2hSide = {
+  entryId: number;
+  teamName: string;
+  managerName: string;
+  wins: number;
+  pl: number;
+  latestGameweek: number | null;
+  latestScore: number | null;
+};
+
+export type GwHistoryRow = {
+  gameweek: number;
+  aScore: number;
+  bScore: number;
+};
+
+export type H2hMatchup = {
+  teamA: H2hSide;
+  teamB: H2hSide;
+  history: GwHistoryRow[];
 };
 
 // Pairs each manager with their season-long rival, using each rival
-// relationship once (lower entry_id first) rather than twice.
-export async function getH2hPairs(): Promise<H2hPair[]> {
-  const [managers, standings] = await Promise.all([
+// relationship once (lower entry_id first) rather than twice, and attaches
+// the full gameweek-by-gameweek score history between the two of them.
+export async function getH2hMatchups(): Promise<H2hMatchup[]> {
+  const [managers, standings, gwScores] = await Promise.all([
     getManagers(),
     getStandings(),
+    getGwScores(),
   ]);
 
   const standingsByEntry = new Map(standings.map((s) => [s.entryId, s]));
   const managersByEntry = new Map(managers.map((m) => [m.entryId, m]));
 
-  const pairs: H2hPair[] = [];
+  const scoresByEntry = new Map<number, typeof gwScores>();
+  for (const row of gwScores) {
+    const list = scoresByEntry.get(row.entryId) ?? [];
+    list.push(row);
+    scoresByEntry.set(row.entryId, list);
+  }
+
+  function buildSide(entryId: number): H2hSide {
+    const manager = managersByEntry.get(entryId);
+    const standing = standingsByEntry.get(entryId);
+    const rows = scoresByEntry.get(entryId) ?? [];
+    const latest = rows[rows.length - 1];
+
+    return {
+      entryId,
+      teamName: manager?.teamName ?? "Unknown",
+      managerName: manager?.managerName ?? "Unknown",
+      wins: standing?.h2hWins ?? 0,
+      pl: standing?.pl ?? 0,
+      latestGameweek: latest?.gameweek ?? null,
+      latestScore: latest?.eventTotal ?? null,
+    };
+  }
+
+  const matchups: H2hMatchup[] = [];
   const seen = new Set<number>();
 
   for (const manager of managers) {
@@ -28,24 +72,19 @@ export async function getH2hPairs(): Promise<H2hPair[]> {
     seen.add(manager.entryId);
     seen.add(rival.entryId);
 
-    const a = standingsByEntry.get(manager.entryId);
-    const b = standingsByEntry.get(rival.entryId);
+    const aRows = scoresByEntry.get(manager.entryId) ?? [];
+    const history: GwHistoryRow[] = aRows.map((row) => ({
+      gameweek: row.gameweek,
+      aScore: row.eventTotal,
+      bScore: row.rivalEventTotal,
+    }));
 
-    pairs.push({
-      teamA: {
-        entryId: manager.entryId,
-        teamName: manager.teamName,
-        wins: a?.h2hWins ?? 0,
-        pl: a?.pl ?? 0,
-      },
-      teamB: {
-        entryId: rival.entryId,
-        teamName: rival.teamName,
-        wins: b?.h2hWins ?? 0,
-        pl: b?.pl ?? 0,
-      },
+    matchups.push({
+      teamA: buildSide(manager.entryId),
+      teamB: buildSide(rival.entryId),
+      history,
     });
   }
 
-  return pairs;
+  return matchups;
 }
