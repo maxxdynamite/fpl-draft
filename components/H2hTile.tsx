@@ -75,16 +75,16 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           <span className="text-4xl font-extrabold tabular-nums tracking-tight">
             {teamA.wins}
           </span>
-          <div className="text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-              H2H score
-            </p>
-            {teamA.latestGameweek && (
-              <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 tabular-nums">
-                GW{teamA.latestGameweek}: {teamA.latestScore} – {teamB.latestScore}
+          {teamA.latestGameweek && (
+            <div className="text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                GW{teamA.latestGameweek}
               </p>
-            )}
-          </div>
+              <p className="text-lg font-bold tabular-nums mt-1 text-zinc-700 dark:text-zinc-300">
+                {teamA.latestScore} – {teamB.latestScore}
+              </p>
+            </div>
+          )}
           <span className="text-4xl font-extrabold tabular-nums tracking-tight">
             {teamB.wins}
           </span>
