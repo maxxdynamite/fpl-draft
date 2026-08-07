@@ -4,7 +4,9 @@ import { getGwScores } from "./gwScores";
 export type WeeklyAwards = {
   gameweek: number;
   motwTeam: string;
+  motwPoints: number;
   sotwTeam: string;
+  sotwPoints: number;
 };
 
 // Manager of the Week / Spanner of the Week for whichever gameweek has the
@@ -32,6 +34,8 @@ export async function getWeeklyAwards(): Promise<WeeklyAwards | null> {
   return {
     gameweek: latestGameweek,
     motwTeam: teamsByEntry.get(motwRow.entryId) ?? "Unknown",
+    motwPoints: motwRow.eventTotal,
     sotwTeam: teamsByEntry.get(sotwRow.entryId) ?? "Unknown",
+    sotwPoints: sotwRow.eventTotal,
   };
 }

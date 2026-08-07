@@ -2,41 +2,39 @@ import { getWeeklyAwards } from "@/lib/weeklyAwards";
 
 function TrophyIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M7 4h10v4a5 5 0 0 1-10 0V4Z"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M7 5H4a1 1 0 0 0-1 1v1a4 4 0 0 0 4 4M17 5h3a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 13v3m-3 4h6m-5 0c0-2 1-2.5 2-4 1 1.5 2 2 2 4"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#00ff85"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2" />
+      <path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2" />
+      <path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3" />
+      <path d="M4 22h16" />
+      <path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z" />
+      <path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3" />
     </svg>
   );
 }
 
 function SpannerIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M14.7 6.3a4 4 0 0 0-5.4 4.9L4 16.5V20h3.5l5.3-5.3a4 4 0 0 0 4.9-5.4l-2.6 2.6-2.1-2.1 2.6-2.6Z"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#ff2d78"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z" />
     </svg>
   );
 }
@@ -46,17 +44,23 @@ export async function WeeklyAwardTablets() {
   if (!awards) return null;
 
   return (
-    <div className="flex flex-col gap-2 mb-4">
-      <div className="flex items-center gap-2 rounded-full bg-[#00ff85] px-3 py-1.5">
+    <div className="rounded-[18px] bg-black shadow-[var(--shadow-soft)] ring-1 ring-white/[0.06] overflow-hidden mb-4">
+      <div className="flex items-center gap-2.5 px-3.5 py-2.5">
         <TrophyIcon />
-        <span className="text-xs font-bold text-white truncate">
-          MOTW: {awards.motwTeam}
+        <span className="flex-1 min-w-0 truncate text-white text-[12.5px] font-bold">
+          {awards.motwTeam}
+        </span>
+        <span className="text-[15px] font-extrabold tabular-nums text-[#00ff85]">
+          {awards.motwPoints}
         </span>
       </div>
-      <div className="flex items-center gap-2 rounded-full bg-[#e90052] px-3 py-1.5">
+      <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-t border-white/[0.08]">
         <SpannerIcon />
-        <span className="text-xs font-bold text-white truncate">
-          SOTW: {awards.sotwTeam}
+        <span className="flex-1 min-w-0 truncate text-white text-[12.5px] font-bold">
+          {awards.sotwTeam}
+        </span>
+        <span className="text-[15px] font-extrabold tabular-nums text-[#ff2d78]">
+          {awards.sotwPoints}
         </span>
       </div>
     </div>

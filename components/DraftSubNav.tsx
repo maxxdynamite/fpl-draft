@@ -12,7 +12,7 @@ export function DraftSubNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="inline-flex items-center gap-1 p-1 mb-8 rounded-full bg-black/[0.04] dark:bg-white/[0.06] shadow-[var(--shadow-pressed)]">
+    <nav className="inline-flex items-center gap-1 p-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] shadow-[var(--shadow-pressed)]">
       {links.map((link) => {
         const active = pathname === link.href;
         return (
