@@ -7,12 +7,17 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
   return (
     <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
       <div className="flex items-center gap-4 mb-5">
-        {gameweek !== null && (
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
-            Gameweek {gameweek}
-          </h1>
-        )}
         <DraftSubNav />
+        {gameweek !== null && (
+          <div className="flex items-baseline gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+              Gameweek {gameweek.number}
+            </h1>
+            <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">
+              {gameweek.finished ? "Complete" : "In Progress"}
+            </span>
+          </div>
+        )}
       </div>
       {children}
     </main>
