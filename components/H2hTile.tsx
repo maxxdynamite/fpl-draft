@@ -91,27 +91,32 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
             {teamA.wins}
           </span>
           {teamA.latestGameweek && (
-            <p className="text-lg font-bold tabular-nums">
-              <span
-                className={
-                  (teamA.latestScore ?? 0) > (teamB.latestScore ?? 0)
-                    ? "text-zinc-900 dark:text-white"
-                    : "text-zinc-400 dark:text-zinc-600"
-                }
-              >
-                {teamA.latestScore}
-              </span>
-              <span className="text-zinc-300 dark:text-zinc-700"> – </span>
-              <span
-                className={
-                  (teamB.latestScore ?? 0) > (teamA.latestScore ?? 0)
-                    ? "text-zinc-900 dark:text-white"
-                    : "text-zinc-400 dark:text-zinc-600"
-                }
-              >
-                {teamB.latestScore}
-              </span>
-            </p>
+            <div className="text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                GW Points
+              </p>
+              <p className="text-lg font-bold tabular-nums mt-1">
+                <span
+                  className={
+                    (teamA.latestScore ?? 0) > (teamB.latestScore ?? 0)
+                      ? "text-zinc-900 dark:text-white"
+                      : "text-zinc-400 dark:text-zinc-600"
+                  }
+                >
+                  {teamA.latestScore}
+                </span>
+                <span className="text-zinc-300 dark:text-zinc-700"> – </span>
+                <span
+                  className={
+                    (teamB.latestScore ?? 0) > (teamA.latestScore ?? 0)
+                      ? "text-zinc-900 dark:text-white"
+                      : "text-zinc-400 dark:text-zinc-600"
+                  }
+                >
+                  {teamB.latestScore}
+                </span>
+              </p>
+            </div>
           )}
           <span className="text-4xl font-extrabold tabular-nums tracking-tight">
             {teamB.wins}
