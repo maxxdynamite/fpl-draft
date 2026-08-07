@@ -33,11 +33,13 @@ function SideHeader({
       <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate mt-0.5">
         {teamName}
       </p>
-      {streak >= STREAK_THRESHOLD && (
-        <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-[#04f5ff] text-black text-[9px] font-extrabold uppercase tracking-wide shadow-[0_0_10px_2px_rgba(4,245,255,0.55)]">
-          {streak} Week Streak
-        </span>
-      )}
+      <span
+        className={`inline-block mt-1.5 px-2 py-0.5 rounded-full bg-[#04f5ff] text-black text-[9px] font-extrabold uppercase tracking-wide shadow-[0_0_10px_2px_rgba(4,245,255,0.55)] ${
+          streak >= STREAK_THRESHOLD ? "" : "invisible"
+        }`}
+      >
+        {streak} Week Streak
+      </span>
     </div>
   );
 }
@@ -69,7 +71,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
   return (
     <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden">
       <div className="p-4 sm:p-5">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
           <SideHeader
             managerName={teamA.managerName}
             teamName={teamA.teamName}
