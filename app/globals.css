@@ -41,11 +41,13 @@ body {
 @keyframes hue-cycle {
   to { filter: blur(5px) hue-rotate(360deg); }
 }
-/* Sweep highlight hidden off both edges, then a pause before it loops —
-   an instant snap-back reads fine while the highlight itself is off-screen. */
+/* Sweep highlight hidden off both edges, then a long pause before it
+   loops — the highlight fully exits view on both sides so the reset
+   is invisible, and the pauses are long enough to actually register. */
 @keyframes shimmer-sweep {
-  0%, 20% { background-position: -150% 0; }
-  70%, 100% { background-position: 250% 0; }
+  0%, 15% { background-position: -150% 0; }
+  55% { background-position: 250% 0; }
+  100% { background-position: 250% 0; }
 }
 
 .streak-t2 {
@@ -79,7 +81,7 @@ body {
   background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.55) 50%, transparent 58%);
   background-size: 250% 100%;
   background-position: -150% 0;
-  animation: shimmer-sweep 2.4s ease-in-out infinite;
+  animation: shimmer-sweep 5s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

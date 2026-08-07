@@ -63,7 +63,7 @@ function StreakBadge({ streak }: { streak: number }) {
 
   return (
     <span
-      className={`relative isolate inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide ${tierClasses} ${
+      className={`relative isolate inline-flex items-center gap-1 mt-3 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide ${tierClasses} ${
         show ? "" : "invisible"
       }`}
     >
