@@ -112,7 +112,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           </span>
           {teamA.latestGameweek && (
             <div className="text-center">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                 GW Points
               </p>
               <p className="text-lg font-bold tabular-nums mt-0.5">
@@ -120,17 +120,17 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                   className={
                     (teamA.latestScore ?? 0) > (teamB.latestScore ?? 0)
                       ? "text-zinc-900 dark:text-white"
-                      : "text-zinc-400 dark:text-zinc-600"
+                      : "text-zinc-300 dark:text-zinc-700"
                   }
                 >
                   {teamA.latestScore}
                 </span>
-                <span className="text-zinc-300 dark:text-zinc-700"> – </span>
+                <span className="text-zinc-400 dark:text-zinc-600"> – </span>
                 <span
                   className={
                     (teamB.latestScore ?? 0) > (teamA.latestScore ?? 0)
                       ? "text-zinc-900 dark:text-white"
-                      : "text-zinc-400 dark:text-zinc-600"
+                      : "text-zinc-300 dark:text-zinc-700"
                   }
                 >
                   {teamB.latestScore}
@@ -150,7 +150,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="flex items-center gap-1 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
+            className="flex items-center gap-1 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
           >
             All Gameweeks
             <ChevronIcon expanded={expanded} />
