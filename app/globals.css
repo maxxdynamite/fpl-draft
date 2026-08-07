@@ -31,3 +31,58 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* H2H streak badge tiers — 5+ pulses amber, 10+ gets a hue-cycling
+   rainbow halo + shimmer sweep. See components/H2hTile.tsx. */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px 1px rgba(255, 91, 4, 0.45); }
+  50% { box-shadow: 0 0 18px 5px rgba(255, 91, 4, 0.9); }
+}
+@keyframes hue-cycle {
+  to { filter: blur(5px) hue-rotate(360deg); }
+}
+@keyframes shimmer-sweep {
+  to { background-position: 250% 0; }
+}
+
+.streak-t2 {
+  animation: pulse-glow 1.8s ease-in-out infinite;
+}
+
+.streak-t3::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  z-index: -2;
+  background: conic-gradient(from 0deg, #ff2d78, #ffc23d, #00ff85, #04f5ff, #ff2d78);
+  filter: blur(5px);
+  opacity: 0.9;
+  animation: hue-cycle 3s linear infinite;
+}
+.streak-t3::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: -1;
+  background: #050505;
+}
+
+.streak-t3-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.55) 50%, transparent 58%);
+  background-size: 250% 100%;
+  background-position: -150% 0;
+  animation: shimmer-sweep 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streak-t2,
+  .streak-t3::before,
+  .streak-t3-shimmer::after {
+    animation: none;
+  }
+}

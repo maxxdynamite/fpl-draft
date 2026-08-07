@@ -14,6 +14,69 @@ function plColor(pl: number) {
 // 1 for now so the badge is actually visible with only GW1 to work with.
 const STREAK_THRESHOLD = 1;
 
+function FlameIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" />
+    </svg>
+  );
+}
+
+function CrownIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
+      <path d="M5 21h14" />
+    </svg>
+  );
+}
+
+// Tier 1 (3+ weeks): solid cyan, text only.
+// Tier 2 (5+ weeks): amber gradient, flame icon, pulsing glow.
+// Tier 3 (10+ weeks): black "legendary" badge, rainbow halo + shimmer sweep, crown icon.
+function StreakBadge({ streak }: { streak: number }) {
+  const show = streak >= STREAK_THRESHOLD;
+  const tier = streak >= 10 ? 3 : streak >= 5 ? 2 : 1;
+
+  const tierClasses =
+    tier === 3
+      ? "bg-[#050505] text-white streak-t3"
+      : tier === 2
+        ? "bg-gradient-to-br from-[#ffc23d] to-[#ff5b04] text-[#1a0900] shadow-[0_0_10px_2px_rgba(255,91,4,0.5)] streak-t2"
+        : "bg-[#04f5ff] text-black shadow-[0_0_10px_2px_rgba(4,245,255,0.55)]";
+
+  return (
+    <span
+      className={`relative inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide ${tierClasses} ${
+        show ? "" : "invisible"
+      }`}
+    >
+      {tier === 3 && (
+        <span className="absolute inset-0 rounded-full overflow-hidden pointer-events-none streak-t3-shimmer" />
+      )}
+      {tier === 2 && <FlameIcon className="w-3 h-3 shrink-0" />}
+      {tier === 3 && <CrownIcon className="w-3 h-3 shrink-0" />}
+      {streak} Week Streak
+    </span>
+  );
+}
+
 function SideHeader({
   managerName,
   teamName,
@@ -33,13 +96,7 @@ function SideHeader({
       <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate mt-0.5">
         {teamName}
       </p>
-      <span
-        className={`inline-block mt-1.5 px-2 py-0.5 rounded-full bg-[#04f5ff] text-black text-[9px] font-extrabold uppercase tracking-wide shadow-[0_0_10px_2px_rgba(4,245,255,0.55)] ${
-          streak >= STREAK_THRESHOLD ? "" : "invisible"
-        }`}
-      >
-        {streak} Week Streak
-      </span>
+      <StreakBadge streak={streak} />
     </div>
   );
 }
