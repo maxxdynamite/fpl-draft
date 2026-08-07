@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { H2hMatchup } from "@/lib/h2h";
 import { formatPl } from "@/lib/format";
 
+const TOTAL_GAMEWEEKS = 38;
+
 function plColor(pl: number) {
   if (pl > 0) return "text-emerald-600 dark:text-emerald-400";
   if (pl < 0) return "text-rose-600 dark:text-rose-400";
@@ -64,17 +66,11 @@ function SideHeader({
   );
 }
 
-function ChevronIcon({ expanded }: { expanded: boolean }) {
+function ChevronUpIcon() {
   return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 12 12"
-      fill="none"
-      className={`transition-transform duration-300 ease-in-out ${expanded ? "rotate-180" : "rotate-0"}`}
-    >
+    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
       <path
-        d="M2.5 4.5L6 8L9.5 4.5"
+        d="M2.5 7.5L6 4L9.5 7.5"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
@@ -84,12 +80,27 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
   );
 }
 
+function CloseIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 14 14" fill="none">
+      <path
+        d="M1 1l12 12M13 1L1 13"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
-  const [expanded, setExpanded] = useState(false);
+  const [showAllGameweeks, setShowAllGameweeks] = useState(false);
   const { teamA, teamB, history } = matchup;
 
+  const historyByGw = new Map(history.map((row) => [row.gameweek, row]));
+
   return (
-    <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden">
+    <div className="relative rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden">
       <div className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <SideHeader
@@ -147,11 +158,12 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           </span>
           <button
             type="button"
-            onClick={() => setExpanded((v) => !v)}
+            onClick={() => setShowAllGameweeks(true)}
             className="flex items-center gap-1 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
           >
+            <ChevronUpIcon />
             All Gameweeks
-            <ChevronIcon expanded={expanded} />
+            <ChevronUpIcon />
           </button>
           <span className={`text-xs font-semibold ${plColor(teamB.pl)}`}>
             {formatPl(teamB.pl)}
@@ -160,53 +172,90 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
       </div>
 
       <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-          expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        className={`absolute inset-0 rounded-2xl bg-gradient-to-br from-[#00ff85] to-[#04f5ff] flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          showAllGameweeks ? "translate-y-0" : "translate-y-full"
         }`}
       >
-        <div className="overflow-hidden">
-          <div className="border-t border-black/[0.04] dark:border-white/[0.06] px-4 sm:px-5 py-3">
-            {history.length === 0 ? (
-              <p className="text-xs text-zinc-400 dark:text-zinc-500 py-2 text-center">
-                No gameweeks played yet.
-              </p>
-            ) : (
-              <ul>
-                {history.map((row) => (
-                  <li
-                    key={row.gameweek}
-                    className="grid grid-cols-[36px_1fr_16px_1fr] items-center py-1.5 text-sm"
-                  >
-                    <span className="text-zinc-400 dark:text-zinc-500 text-xs font-medium">
-                      GW{row.gameweek}
-                    </span>
-                    <span
-                      className={`tabular-nums font-semibold text-right pr-2 ${
-                        row.aScore > row.bScore
-                          ? "text-zinc-900 dark:text-white"
-                          : "text-zinc-400 dark:text-zinc-600"
-                      }`}
-                    >
-                      {row.aScore}
-                    </span>
-                    <span className="text-zinc-300 dark:text-zinc-700 text-xs text-center">
-                      –
-                    </span>
-                    <span
-                      className={`tabular-nums font-semibold pl-2 ${
-                        row.bScore > row.aScore
-                          ? "text-zinc-900 dark:text-white"
-                          : "text-zinc-400 dark:text-zinc-600"
-                      }`}
-                    >
-                      {row.bScore}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+        <div className="flex items-center justify-between px-3.5 py-3 shrink-0">
+          <p className="text-[12.5px] font-extrabold text-[#04211a] truncate">
+            {teamA.teamName}
+            <span className="opacity-55 font-bold mx-1">vs</span>
+            {teamB.teamName}
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowAllGameweeks(false)}
+            aria-label="Close all gameweeks"
+            className="shrink-0 w-6 h-6 rounded-full bg-[#04211a]/10 hover:bg-[#04211a]/20 text-[#04211a] flex items-center justify-center transition-colors"
+          >
+            <CloseIcon />
+          </button>
         </div>
+
+        <div className="relative flex-1 min-h-0">
+          <div className="absolute left-0 top-0 bottom-0 w-7 flex flex-col justify-center gap-6 pl-3.5 z-10 pointer-events-none">
+            <span className="w-4 h-4 rounded-full bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center">
+              A
+            </span>
+            <span className="w-4 h-4 rounded-full bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center">
+              B
+            </span>
+          </div>
+
+          <div className="h-full overflow-x-auto overflow-y-hidden pl-9 pr-3 pb-2 [scroll-snap-type:x_proximity]">
+            <div className="flex gap-px w-max">
+              {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
+                (gw) => {
+                  const row = historyByGw.get(gw);
+                  const aWin = row ? row.aScore > row.bScore : null;
+                  return (
+                    <div
+                      key={gw}
+                      className="flex-none w-[26px] flex flex-col items-center [scroll-snap-align:start]"
+                    >
+                      <span className="text-[7px] font-extrabold text-[#04211a]/60 uppercase mb-1.5">
+                        GW{gw}
+                      </span>
+                      {row ? (
+                        <>
+                          <span
+                            className={`text-[11px] font-extrabold tabular-nums leading-[1.85] text-[#04211a] ${
+                              aWin ? "" : "opacity-45"
+                            }`}
+                          >
+                            {row.aScore}
+                          </span>
+                          <span
+                            className={`text-[11px] font-extrabold tabular-nums leading-[1.85] text-[#04211a] ${
+                              !aWin ? "" : "opacity-45"
+                            }`}
+                          >
+                            {row.bScore}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-[11px] font-semibold tabular-nums leading-[1.85] text-[#04211a]/35">
+                            –
+                          </span>
+                          <span className="text-[11px] font-semibold tabular-nums leading-[1.85] text-[#04211a]/35">
+                            –
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  );
+                },
+              )}
+            </div>
+          </div>
+
+          <div className="absolute right-0 top-0 bottom-0 w-5 bg-gradient-to-l from-[#04f5ff] to-transparent opacity-90 pointer-events-none" />
+        </div>
+
+        <p className="text-center text-[9px] font-bold text-[#04211a]/55 pt-0.5 pb-2.5 shrink-0">
+          ← GW11–38 →
+        </p>
       </div>
     </div>
   );
