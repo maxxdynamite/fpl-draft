@@ -6,6 +6,13 @@ import { formatPl } from "@/lib/format";
 
 const TOTAL_GAMEWEEKS = 38;
 
+function initials(managerName: string): string {
+  const parts = managerName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 function plColor(pl: number) {
   if (pl > 0) return "text-emerald-600 dark:text-emerald-400";
   if (pl < 0) return "text-rose-600 dark:text-rose-400";
@@ -193,17 +200,19 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
         </div>
 
         <div className="relative flex-1 min-h-0">
-          <div className="absolute left-0 top-0 bottom-0 w-7 flex flex-col justify-center gap-6 pl-3.5 z-10 pointer-events-none">
-            <span className="w-4 h-4 rounded-full bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center">
-              A
+          <div className="absolute left-0 top-0 bottom-0 w-7 z-10 flex flex-col items-center bg-gradient-to-br from-[#00ff85] to-[#04f5ff] pl-3 pointer-events-none">
+            <span className="h-[13px] mb-1.5" aria-hidden="true" />
+            <span className="h-4 w-5 rounded-[5px] bg-[#04211a] text-[#00ff85] text-[7px] font-extrabold flex items-center justify-center">
+              {initials(teamA.managerName)}
             </span>
-            <span className="w-4 h-4 rounded-full bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center">
-              B
+            <span className="h-4 w-5 rounded-[5px] bg-[#04211a] text-[#00ff85] text-[7px] font-extrabold flex items-center justify-center">
+              {initials(teamB.managerName)}
             </span>
           </div>
 
-          <div className="h-full overflow-x-auto overflow-y-hidden pl-9 pr-3 pb-2 [scroll-snap-type:x_proximity]">
-            <div className="flex gap-px w-max">
+          <div className="h-full overflow-x-auto overflow-y-hidden pr-3 pb-2 [scroll-snap-type:x_proximity] [scroll-padding-left:36px]">
+            <div className="flex items-start gap-px w-max">
+              <div className="flex-none w-9" aria-hidden="true" />
               {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
                 (gw) => {
                   const row = historyByGw.get(gw);
@@ -213,36 +222,23 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                       key={gw}
                       className="flex-none w-[26px] flex flex-col items-center [scroll-snap-align:start]"
                     >
-                      <span className="text-[7px] font-extrabold text-[#04211a]/60 uppercase mb-1.5">
+                      <span className="h-[13px] mb-1.5 text-[7px] font-extrabold text-[#04211a]/60 uppercase leading-[13px]">
                         GW{gw}
                       </span>
-                      {row ? (
-                        <>
-                          <span
-                            className={`text-[11px] font-extrabold tabular-nums leading-[1.85] text-[#04211a] ${
-                              aWin ? "" : "opacity-45"
-                            }`}
-                          >
-                            {row.aScore}
-                          </span>
-                          <span
-                            className={`text-[11px] font-extrabold tabular-nums leading-[1.85] text-[#04211a] ${
-                              !aWin ? "" : "opacity-45"
-                            }`}
-                          >
-                            {row.bScore}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-[11px] font-semibold tabular-nums leading-[1.85] text-[#04211a]/35">
-                            –
-                          </span>
-                          <span className="text-[11px] font-semibold tabular-nums leading-[1.85] text-[#04211a]/35">
-                            –
-                          </span>
-                        </>
-                      )}
+                      <span
+                        className={`h-4 flex items-center justify-center text-[11px] font-extrabold tabular-nums text-[#04211a] ${
+                          row ? (aWin ? "" : "opacity-45") : "opacity-35 font-semibold"
+                        }`}
+                      >
+                        {row ? row.aScore : "–"}
+                      </span>
+                      <span
+                        className={`h-4 flex items-center justify-center text-[11px] font-extrabold tabular-nums text-[#04211a] ${
+                          row ? (!aWin ? "" : "opacity-45") : "opacity-35 font-semibold"
+                        }`}
+                      >
+                        {row ? row.bScore : "–"}
+                      </span>
                     </div>
                   );
                 },
