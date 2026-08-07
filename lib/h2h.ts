@@ -10,6 +10,7 @@ export type H2hSide = {
   pl: number;
   latestGameweek: number | null;
   latestScore: number | null;
+  streak: number;
 };
 
 export type GwHistoryRow = {
@@ -17,6 +18,19 @@ export type GwHistoryRow = {
   aScore: number;
   bScore: number;
 };
+
+// Consecutive gameweeks (most recent first) this side has beaten their
+// rival head-to-head, stopping at the first loss, tie, or start of history.
+function computeStreak(history: GwHistoryRow[], side: "a" | "b"): number {
+  let streak = 0;
+  for (let i = history.length - 1; i >= 0; i--) {
+    const row = history[i];
+    const won = side === "a" ? row.aScore > row.bScore : row.bScore > row.aScore;
+    if (!won) break;
+    streak++;
+  }
+  return streak;
+}
 
 export type H2hMatchup = {
   teamA: H2hSide;
@@ -44,7 +58,7 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
     scoresByEntry.set(row.entryId, list);
   }
 
-  function buildSide(entryId: number): H2hSide {
+  function buildSide(entryId: number, streak: number): H2hSide {
     const manager = managersByEntry.get(entryId);
     const standing = standingsByEntry.get(entryId);
     const rows = scoresByEntry.get(entryId) ?? [];
@@ -58,6 +72,7 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
       pl: standing?.pl ?? 0,
       latestGameweek: latest?.gameweek ?? null,
       latestScore: latest?.eventTotal ?? null,
+      streak,
     };
   }
 
@@ -80,8 +95,8 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
     }));
 
     matchups.push({
-      teamA: buildSide(manager.entryId),
-      teamB: buildSide(rival.entryId),
+      teamA: buildSide(manager.entryId, computeStreak(history, "a")),
+      teamB: buildSide(rival.entryId, computeStreak(history, "b")),
       history,
     });
   }

@@ -10,14 +10,20 @@ function plColor(pl: number) {
   return "text-zinc-400";
 }
 
+// TODO: raise back to 3 once more gameweeks of H2H data exist — lowered to
+// 1 for now so the badge is actually visible with only GW1 to work with.
+const STREAK_THRESHOLD = 1;
+
 function SideHeader({
   managerName,
   teamName,
   align,
+  streak,
 }: {
   managerName: string;
   teamName: string;
   align: "left" | "right";
+  streak: number;
 }) {
   return (
     <div className={align === "right" ? "text-right" : "text-left"}>
@@ -27,6 +33,11 @@ function SideHeader({
       <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate mt-0.5">
         {teamName}
       </p>
+      {streak >= STREAK_THRESHOLD && (
+        <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-[#04f5ff] text-black text-[9px] font-extrabold uppercase tracking-wide shadow-[0_0_10px_2px_rgba(4,245,255,0.55)]">
+          {streak} Week Streak
+        </span>
+      )}
     </div>
   );
 }
@@ -63,11 +74,13 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
             managerName={teamA.managerName}
             teamName={teamA.teamName}
             align="left"
+            streak={teamA.streak}
           />
           <SideHeader
             managerName={teamB.managerName}
             teamName={teamB.teamName}
             align="right"
+            streak={teamB.streak}
           />
         </div>
 
@@ -76,8 +89,26 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
             {teamA.wins}
           </span>
           {teamA.latestGameweek && (
-            <p className="text-lg font-bold tabular-nums text-zinc-700 dark:text-zinc-300">
-              {teamA.latestScore} – {teamB.latestScore}
+            <p className="text-lg font-bold tabular-nums">
+              <span
+                className={
+                  (teamA.latestScore ?? 0) > (teamB.latestScore ?? 0)
+                    ? "text-zinc-900 dark:text-white"
+                    : "text-zinc-400 dark:text-zinc-600"
+                }
+              >
+                {teamA.latestScore}
+              </span>
+              <span className="text-zinc-300 dark:text-zinc-700"> – </span>
+              <span
+                className={
+                  (teamB.latestScore ?? 0) > (teamA.latestScore ?? 0)
+                    ? "text-zinc-900 dark:text-white"
+                    : "text-zinc-400 dark:text-zinc-600"
+                }
+              >
+                {teamB.latestScore}
+              </span>
             </p>
           )}
           <span className="text-4xl font-extrabold tabular-nums tracking-tight">
