@@ -6,13 +6,13 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
 
   return (
     <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-      <div className="flex items-center justify-between gap-3 mb-8">
-        <DraftSubNav />
+      <div className="flex items-center gap-4 mb-8">
         {gameweek !== null && (
-          <span className="text-sm font-bold text-zinc-500 dark:text-zinc-400">
+          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
             Gameweek {gameweek}
-          </span>
+          </h1>
         )}
+        <DraftSubNav />
       </div>
       {children}
     </main>

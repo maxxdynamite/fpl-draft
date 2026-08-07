@@ -1,13 +1,14 @@
 import { getWeeklyAwards } from "@/lib/weeklyAwards";
 
-function TrophyIcon() {
+function TrophyIcon({ className }: { className?: string }) {
   return (
     <svg
+      className={className}
       width="22"
       height="22"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#00ff85"
+      stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -22,14 +23,15 @@ function TrophyIcon() {
   );
 }
 
-function SpannerIcon() {
+function SpannerIcon({ className }: { className?: string }) {
   return (
     <svg
+      className={className}
       width="22"
       height="22"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#ff2d78"
+      stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -39,27 +41,30 @@ function SpannerIcon() {
   );
 }
 
+const motwColor = "text-[#00b368] dark:text-[#00ff85]";
+const sotwColor = "text-[#e90052] dark:text-[#ff2d78]";
+
 export async function WeeklyAwardTablets() {
   const awards = await getWeeklyAwards();
   if (!awards) return null;
 
   return (
-    <div className="rounded-[18px] bg-black shadow-[var(--shadow-soft)] ring-1 ring-white/[0.06] overflow-hidden mb-4">
+    <div className="rounded-xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden mb-4">
       <div className="flex items-center gap-2.5 px-3.5 py-2.5">
-        <TrophyIcon />
-        <span className="flex-1 min-w-0 truncate text-white text-[12.5px] font-bold">
+        <TrophyIcon className={motwColor} />
+        <span className="flex-1 min-w-0 truncate text-zinc-900 dark:text-white text-[12.5px] font-bold">
           {awards.motwTeam}
         </span>
-        <span className="text-[15px] font-extrabold tabular-nums text-[#00ff85]">
+        <span className={`text-[15px] font-extrabold tabular-nums ${motwColor}`}>
           {awards.motwPoints}
         </span>
       </div>
-      <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-t border-white/[0.08]">
-        <SpannerIcon />
-        <span className="flex-1 min-w-0 truncate text-white text-[12.5px] font-bold">
+      <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-t border-black/[0.04] dark:border-white/[0.06]">
+        <SpannerIcon className={sotwColor} />
+        <span className="flex-1 min-w-0 truncate text-zinc-900 dark:text-white text-[12.5px] font-bold">
           {awards.sotwTeam}
         </span>
-        <span className="text-[15px] font-extrabold tabular-nums text-[#ff2d78]">
+        <span className={`text-[15px] font-extrabold tabular-nums ${sotwColor}`}>
           {awards.sotwPoints}
         </span>
       </div>
