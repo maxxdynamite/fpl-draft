@@ -41,13 +41,16 @@ body {
 @keyframes hue-cycle {
   to { filter: blur(5px) hue-rotate(360deg); }
 }
-/* Sweep highlight hidden off both edges, then a long pause before it
-   loops — the highlight fully exits view on both sides so the reset
-   is invisible, and the pauses are long enough to actually register. */
+/* Position sweeps continuously across the whole cycle while opacity is
+   the actual visibility control: fades in from the loop's start, holds
+   fully visible through the sweep, fades out toward the end — so the
+   reset at 100%->0% is always invisible regardless of where the sweep
+   happens to be. */
 @keyframes shimmer-sweep {
-  0%, 15% { background-position: -150% 0; }
-  55% { background-position: 250% 0; }
-  100% { background-position: 250% 0; }
+  0% { background-position: -150% 0; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { background-position: 250% 0; opacity: 0; }
 }
 
 .streak-t2 {
