@@ -10,9 +10,7 @@ function plColor(pl: number) {
   return "text-zinc-400";
 }
 
-// TODO: raise back to 3 once more gameweeks of H2H data exist — lowered to
-// 1 for now so the badge is actually visible with only GW1 to work with.
-const STREAK_THRESHOLD = 1;
+const STREAK_THRESHOLD = 3;
 
 // Tier 1 (3+ weeks): solid cyan.
 // Tier 2 (5+ weeks): amber gradient, pulsing glow.
