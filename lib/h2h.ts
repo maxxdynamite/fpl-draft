@@ -101,14 +101,5 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
     });
   }
 
-  // TEMP DEMO ONLY — real data only has 1 week of streaks so far, so tiers
-  // 2 (5+) and 3 (7+) can't occur naturally yet. Bumping two examples so
-  // all three streak-badge tiers are visible on the preview. Remove once
-  // real 5+/7+ week streaks exist.
-  const demoTier2 = matchups.find((m) => m.teamA.entryId === 59034);
-  if (demoTier2) demoTier2.teamA.streak = 5;
-  const demoTier3 = matchups.find((m) => m.teamA.entryId === 59042);
-  if (demoTier3) demoTier3.teamA.streak = 7;
-
   return matchups;
 }

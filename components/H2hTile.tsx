@@ -106,7 +106,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           />
         </div>
 
-        <div className="flex items-center justify-between gap-3 mt-4">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mt-4">
           <span className="text-4xl font-extrabold tabular-nums tracking-tight">
             {teamA.wins}
           </span>
@@ -138,7 +138,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
               </p>
             </div>
           )}
-          <span className="text-4xl font-extrabold tabular-nums tracking-tight">
+          <span className="text-4xl font-extrabold tabular-nums tracking-tight text-right">
             {teamB.wins}
           </span>
         </div>
