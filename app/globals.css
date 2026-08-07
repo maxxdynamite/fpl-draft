@@ -32,7 +32,7 @@ body {
   color: var(--foreground);
 }
 
-/* H2H streak badge tiers — 5+ pulses amber, 10+ gets a hue-cycling
+/* H2H streak badge tiers — 5+ pulses amber, 7+ gets a hue-cycling
    rainbow halo + shimmer sweep. See components/H2hTile.tsx. */
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 8px 1px rgba(255, 91, 4, 0.45); }
@@ -41,8 +41,11 @@ body {
 @keyframes hue-cycle {
   to { filter: blur(5px) hue-rotate(360deg); }
 }
+/* Sweep highlight hidden off both edges, then a pause before it loops —
+   an instant snap-back reads fine while the highlight itself is off-screen. */
 @keyframes shimmer-sweep {
-  to { background-position: 250% 0; }
+  0%, 20% { background-position: -150% 0; }
+  70%, 100% { background-position: 250% 0; }
 }
 
 .streak-t2 {

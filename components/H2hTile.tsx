@@ -49,10 +49,10 @@ function CrownIcon({ className }: { className?: string }) {
 
 // Tier 1 (3+ weeks): solid cyan, text only.
 // Tier 2 (5+ weeks): amber gradient, flame icon, pulsing glow.
-// Tier 3 (10+ weeks): black "legendary" badge, rainbow halo + shimmer sweep, crown icon.
+// Tier 3 (7+ weeks): black "legendary" badge, rainbow halo + shimmer sweep, crown icon.
 function StreakBadge({ streak }: { streak: number }) {
   const show = streak >= STREAK_THRESHOLD;
-  const tier = streak >= 10 ? 3 : streak >= 5 ? 2 : 1;
+  const tier = streak >= 7 ? 3 : streak >= 5 ? 2 : 1;
 
   const tierClasses =
     tier === 3
@@ -63,7 +63,7 @@ function StreakBadge({ streak }: { streak: number }) {
 
   return (
     <span
-      className={`relative inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide ${tierClasses} ${
+      className={`relative isolate inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide ${tierClasses} ${
         show ? "" : "invisible"
       }`}
     >
