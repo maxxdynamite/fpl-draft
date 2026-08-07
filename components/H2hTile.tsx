@@ -28,7 +28,7 @@ function StreakBadge({ streak }: { streak: number }) {
 
   return (
     <span
-      className={`relative isolate inline-block mt-3 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide ${tierClasses} ${
+      className={`relative isolate inline-block mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide ${tierClasses} ${
         show ? "" : "invisible"
       }`}
     >
@@ -106,7 +106,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           />
         </div>
 
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mt-4">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mt-0.5">
           <span className="text-4xl font-extrabold tabular-nums tracking-tight">
             {teamA.wins}
           </span>
@@ -115,7 +115,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
               <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                 GW Points
               </p>
-              <p className="text-lg font-bold tabular-nums mt-1">
+              <p className="text-lg font-bold tabular-nums mt-0.5">
                 <span
                   className={
                     (teamA.latestScore ?? 0) > (teamB.latestScore ?? 0)
