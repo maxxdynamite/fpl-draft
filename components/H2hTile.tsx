@@ -97,7 +97,7 @@ function ChevronIcon({ direction }: { direction: "up" | "down" }) {
   );
 }
 
-const RIGHT_FADE_WIDTH = 36;
+const RIGHT_FADE_WIDTH = 24;
 
 export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
   const [showAllGameweeks, setShowAllGameweeks] = useState(false);
@@ -215,10 +215,10 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
 
             <div
               ref={scrollRef}
-              className="no-scrollbar h-full overflow-x-auto overflow-y-hidden [scroll-snap-type:x_proximity] [scroll-padding-left:60px] [mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-36px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-36px),transparent)]"
+              className="no-scrollbar h-full overflow-x-auto overflow-y-hidden -mx-4 sm:-mx-5 pl-4 sm:pl-5 [mask-image:linear-gradient(to_right,transparent,black_30px,black_calc(100%-24px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_30px,black_calc(100%-24px),transparent)]"
             >
               <div className="flex items-start gap-1 w-max">
-                <div className="flex-none w-14" aria-hidden="true" />
+                <div className="flex-none w-9" aria-hidden="true" />
                 {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
                   (gw) => {
                     const row = historyByGw.get(gw);
@@ -227,7 +227,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                       <div
                         key={gw}
                         data-gw={gw}
-                        className="flex-none w-7 flex flex-col items-center [scroll-snap-align:start]"
+                        className="flex-none w-7 flex flex-col items-center"
                       >
                         <span className="h-2 mb-1.5 text-[8px] font-extrabold text-[#04211a]/60 uppercase leading-[8px]">
                           GW{gw}
@@ -250,7 +250,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                     );
                   },
                 )}
-                <div className="flex-none w-10" aria-hidden="true" />
+                <div className="flex-none w-7" aria-hidden="true" />
               </div>
             </div>
           </div>
