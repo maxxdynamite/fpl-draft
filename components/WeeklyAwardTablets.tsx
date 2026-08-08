@@ -49,7 +49,7 @@ export async function WeeklyAwardTablets() {
   if (!awards) return null;
 
   return (
-    <div className="rounded-xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden mb-4">
+    <div className="rounded-xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden">
       <div className="flex items-center gap-2.5 px-3.5 py-2.5">
         <TrophyIcon className={motwColor} />
         <span className="flex-1 min-w-0 truncate text-zinc-900 dark:text-white text-[12.5px] font-bold">

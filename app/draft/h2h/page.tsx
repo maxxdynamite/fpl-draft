@@ -9,7 +9,7 @@ export default async function H2hPage() {
   const matchups = await getH2hMatchups();
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_220px] gap-6 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_440px] gap-6 items-start">
       <div className="grid gap-4 sm:grid-cols-2">
         {matchups.map((matchup) => (
           <H2hTile
@@ -18,11 +18,15 @@ export default async function H2hPage() {
           />
         ))}
       </div>
-      <aside className="lg:sticky lg:top-24">
-        <WeeklyAwardTablets />
-        <MiniLeaderboard />
-        <MotwSotwLeaderboard />
-        <GwScoreRecords />
+      <aside className="grid grid-cols-2 gap-4 lg:sticky lg:top-24">
+        <div className="space-y-4">
+          <WeeklyAwardTablets />
+          <MiniLeaderboard />
+        </div>
+        <div className="space-y-4">
+          <MotwSotwLeaderboard />
+          <GwScoreRecords />
+        </div>
       </aside>
     </div>
   );
