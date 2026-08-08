@@ -113,7 +113,7 @@ function SideHeader({
 }) {
   return (
     <div className={align === "right" ? "text-right" : "text-left"}>
-      <div className="group relative inline-block max-w-full cursor-default">
+      <div className="group relative cursor-default">
         <p
           className={`font-bold text-sm leading-tight truncate transition-colors duration-300 ${
             dark ? "text-[#04211a]" : "text-zinc-900 dark:text-white"
