@@ -134,7 +134,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
 
         {/* Fixed-height slot shared by both states — never resizes, so
             toggling only ever crossfades opacity inside it, nothing jumps. */}
-        <div className="relative mt-0.5 h-16">
+        <div className="relative -mt-4 h-16">
           <div
             className={`absolute inset-0 grid grid-cols-[1fr_auto_1fr] items-start gap-3 transition-opacity duration-300 ${
               showAllGameweeks ? "opacity-0 pointer-events-none" : "opacity-100"
@@ -179,7 +179,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
               showAllGameweeks ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
           >
-            <div className="absolute left-0 top-0 bottom-0 w-8 z-10 flex flex-col items-center pointer-events-none">
+            <div className="absolute left-0 top-0 bottom-0 w-8 z-10 flex flex-col items-start pl-0.5 pointer-events-none">
               <span className="h-2 mb-1.5" aria-hidden="true" />
               <span className="h-4 w-6 rounded-[5px] bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center">
                 {initials(teamA.managerName)}
@@ -189,7 +189,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
               </span>
             </div>
 
-            <div className="no-scrollbar h-full overflow-x-auto overflow-y-hidden [scroll-snap-type:x_proximity] [scroll-padding-left:38px] [mask-image:linear-gradient(to_right,transparent,black_36px,black_calc(100%-36px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_36px,black_calc(100%-36px),transparent)]">
+            <div className="no-scrollbar h-full overflow-x-auto overflow-y-hidden [scroll-snap-type:x_proximity] [scroll-padding-left:38px] [mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-36px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-36px),transparent)]">
               <div className="flex items-start gap-1 w-max">
                 <div className="flex-none w-9" aria-hidden="true" />
                 {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
