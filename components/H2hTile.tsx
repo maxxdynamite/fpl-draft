@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { H2hMatchup } from "@/lib/h2h";
 import { formatPl } from "@/lib/format";
 
@@ -24,7 +24,7 @@ const STREAK_THRESHOLD = 3;
 // Tier 1 (3+ weeks): solid cyan.
 // Tier 2 (5+ weeks): amber gradient, pulsing glow.
 // Tier 3 (7+ weeks): black "legendary" badge, rainbow halo + shimmer sweep.
-function StreakBadge({ streak }: { streak: number }) {
+function StreakBadge({ streak, hide }: { streak: number; hide: boolean }) {
   const show = streak >= STREAK_THRESHOLD;
   const tier = streak >= 7 ? 3 : streak >= 5 ? 2 : 1;
 
@@ -37,8 +37,8 @@ function StreakBadge({ streak }: { streak: number }) {
 
   return (
     <span
-      className={`relative isolate inline-block mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide ${tierClasses} ${
-        show ? "" : "invisible"
+      className={`relative isolate inline-block mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide transition-opacity duration-300 ${tierClasses} ${
+        show ? (hide ? "opacity-0" : "opacity-100") : "invisible"
       }`}
     >
       {tier === 3 && (
@@ -78,7 +78,7 @@ function SideHeader({
       >
         {teamName}
       </p>
-      <StreakBadge streak={streak} />
+      <StreakBadge streak={streak} hide={dark} />
     </div>
   );
 }
@@ -97,11 +97,35 @@ function ChevronIcon({ direction }: { direction: "up" | "down" }) {
   );
 }
 
+const RIGHT_FADE_WIDTH = 36;
+
 export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
   const [showAllGameweeks, setShowAllGameweeks] = useState(false);
   const { teamA, teamB, history } = matchup;
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const historyByGw = new Map(history.map((row) => [row.gameweek, row]));
+  const latestGw =
+    history.length > 0 ? Math.max(...history.map((row) => row.gameweek)) : 1;
+
+  // Jump straight to the latest played gameweek whenever the sheet opens,
+  // with enough runway past it to clear the right-edge fade entirely —
+  // otherwise the gameweek someone actually cares about seeing is either
+  // scrolled out of view (once the season is past ~GW8) or sitting faded
+  // right at the edge.
+  useEffect(() => {
+    if (!showAllGameweeks) return;
+    const area = scrollRef.current;
+    const target = area?.querySelector<HTMLDivElement>(
+      `[data-gw="${latestGw}"]`,
+    );
+    if (!area || !target) return;
+    const targetRight = target.offsetLeft + target.offsetWidth;
+    area.scrollLeft = Math.max(
+      0,
+      targetRight + RIGHT_FADE_WIDTH - area.clientWidth,
+    );
+  }, [showAllGameweeks, latestGw]);
 
   return (
     <div className="relative rounded-2xl shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden">
@@ -134,7 +158,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
 
         {/* Fixed-height slot shared by both states — never resizes, so
             toggling only ever crossfades opacity inside it, nothing jumps. */}
-        <div className="relative -mt-4 h-16">
+        <div className="relative mt-0.5 h-16">
           <div
             className={`absolute inset-0 grid grid-cols-[1fr_auto_1fr] items-start gap-3 transition-opacity duration-300 ${
               showAllGameweeks ? "opacity-0 pointer-events-none" : "opacity-100"
@@ -175,7 +199,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           </div>
 
           <div
-            className={`absolute inset-0 transition-opacity duration-300 ${
+            className={`absolute left-0 right-0 bottom-0 -top-[18px] transition-opacity duration-300 ${
               showAllGameweeks ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
           >
@@ -189,7 +213,10 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
               </span>
             </div>
 
-            <div className="no-scrollbar h-full overflow-x-auto overflow-y-hidden [scroll-snap-type:x_proximity] [scroll-padding-left:38px] [mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-36px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-36px),transparent)]">
+            <div
+              ref={scrollRef}
+              className="no-scrollbar h-full overflow-x-auto overflow-y-hidden [scroll-snap-type:x_proximity] [scroll-padding-left:38px] [mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-36px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-36px),transparent)]"
+            >
               <div className="flex items-start gap-1 w-max">
                 <div className="flex-none w-9" aria-hidden="true" />
                 {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
@@ -199,6 +226,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                     return (
                       <div
                         key={gw}
+                        data-gw={gw}
                         className="flex-none w-7 flex flex-col items-center [scroll-snap-align:start]"
                       >
                         <span className="h-2 mb-1.5 text-[8px] font-extrabold text-[#04211a]/60 uppercase leading-[8px]">
@@ -222,6 +250,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                     );
                   },
                 )}
+                <div className="flex-none w-10" aria-hidden="true" />
               </div>
             </div>
           </div>
