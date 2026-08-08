@@ -227,7 +227,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                       <div
                         key={gw}
                         data-gw={gw}
-                        className="flex-none w-7 flex flex-col items-center"
+                        className="flex-none w-8 flex flex-col items-center"
                       >
                         <span className="h-2 mb-1.5 text-[8px] font-extrabold text-[#04211a]/60 uppercase leading-[8px]">
                           GW{gw}

@@ -62,7 +62,7 @@ export function LeaderboardToggle({
             key={row.entryId}
             className="flex items-center gap-2 px-3 py-1.5 border-t border-black/[0.04] dark:border-white/[0.06] text-xs"
           >
-            <span className="w-3.5 tabular-nums text-zinc-400 dark:text-zinc-500 font-medium">
+            <span className="w-5 shrink-0 text-right tabular-nums text-zinc-400 dark:text-zinc-500 font-medium">
               {row.rank ?? i + 1}
             </span>
             <span className="flex-1 font-medium truncate">

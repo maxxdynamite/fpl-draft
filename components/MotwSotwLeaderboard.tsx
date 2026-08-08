@@ -9,7 +9,7 @@ export async function MotwSotwLeaderboard() {
       {motw.length > 0 && (
         <>
           <p className="px-3 pt-3 pb-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-            Most MOTW
+            Manager of the Week
           </p>
           <ul>
             {motw.map((leader, i) => (
@@ -17,7 +17,7 @@ export async function MotwSotwLeaderboard() {
                 key={leader.entryId}
                 className="flex items-center gap-2 px-3 py-1.5 border-t border-black/[0.04] dark:border-white/[0.06] text-xs"
               >
-                <span className="w-3.5 tabular-nums text-zinc-400 dark:text-zinc-500 font-medium">
+                <span className="w-5 shrink-0 text-right tabular-nums text-zinc-400 dark:text-zinc-500 font-medium">
                   {i + 1}
                 </span>
                 <span className="flex-1 font-medium truncate">
@@ -40,7 +40,7 @@ export async function MotwSotwLeaderboard() {
                 : ""
             }`}
           >
-            Most SOTW
+            Spanner of the Week
           </p>
           <ul>
             {sotw.map((leader, i) => (
@@ -48,7 +48,7 @@ export async function MotwSotwLeaderboard() {
                 key={leader.entryId}
                 className="flex items-center gap-2 px-3 py-1.5 border-t border-black/[0.04] dark:border-white/[0.06] text-xs"
               >
-                <span className="w-3.5 tabular-nums text-zinc-400 dark:text-zinc-500 font-medium">
+                <span className="w-5 shrink-0 text-right tabular-nums text-zinc-400 dark:text-zinc-500 font-medium">
                   {i + 1}
                 </span>
                 <span className="flex-1 font-medium truncate">

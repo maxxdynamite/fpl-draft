@@ -5,7 +5,7 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
   const gameweek = await getCurrentGameweek();
 
   return (
-    <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+    <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-4 sm:pb-6">
       <div className="flex items-center gap-4 mb-5">
         <DraftSubNav />
         {gameweek !== null && (
