@@ -107,7 +107,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
     <div className="relative rounded-2xl shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden">
       <div className="absolute inset-0 bg-white dark:bg-zinc-900" />
       <div
-        className={`absolute inset-0 bg-gradient-to-br from-[#00ff85] to-[#04f5ff] transition-[clip-path] duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`absolute inset-0 bg-gradient-to-br from-[#00ff85] to-[#04f5ff] transition-[clip-path] duration-[380ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
           showAllGameweeks
             ? "[clip-path:inset(0%_0%_0%_0%)]"
             : "[clip-path:inset(100%_0%_0%_0%)]"
@@ -132,56 +132,14 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           />
         </div>
 
-        {showAllGameweeks ? (
-          <div className="relative mt-1 h-[56px]">
-            <div className="absolute left-0 top-0 bottom-0 w-8 z-10 flex flex-col items-center pointer-events-none">
-              <span className="h-2 mb-1" aria-hidden="true" />
-              <span className="h-4 w-6 rounded-[5px] bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center">
-                {initials(teamA.managerName)}
-              </span>
-              <span className="h-4 w-6 rounded-[5px] bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center mt-2.5">
-                {initials(teamB.managerName)}
-              </span>
-            </div>
-
-            <div className="no-scrollbar h-full overflow-x-auto overflow-y-hidden [scroll-snap-type:x_proximity] [scroll-padding-left:38px] [mask-image:linear-gradient(to_right,transparent,black_40px,black_calc(100%-14px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_40px,black_calc(100%-14px),transparent)]">
-              <div className="flex items-start gap-1 w-max">
-                <div className="flex-none w-9" aria-hidden="true" />
-                {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
-                  (gw) => {
-                    const row = historyByGw.get(gw);
-                    const aWin = row ? row.aScore > row.bScore : null;
-                    return (
-                      <div
-                        key={gw}
-                        className="flex-none w-7 flex flex-col items-center [scroll-snap-align:start]"
-                      >
-                        <span className="h-2 mb-1 text-[8px] font-extrabold text-[#04211a]/60 uppercase leading-[8px]">
-                          GW{gw}
-                        </span>
-                        <span
-                          className={`h-4 flex items-center justify-center text-base font-extrabold tabular-nums leading-none text-[#04211a] ${
-                            row ? (aWin ? "" : "opacity-45") : "opacity-35 font-semibold"
-                          }`}
-                        >
-                          {row ? row.aScore : "–"}
-                        </span>
-                        <span
-                          className={`h-4 flex items-center justify-center text-base font-extrabold tabular-nums leading-none text-[#04211a] mt-2.5 ${
-                            row ? (!aWin ? "" : "opacity-45") : "opacity-35 font-semibold"
-                          }`}
-                        >
-                          {row ? row.bScore : "–"}
-                        </span>
-                      </div>
-                    );
-                  },
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mt-0.5">
+        {/* Fixed-height slot shared by both states — never resizes, so
+            toggling only ever crossfades opacity inside it, nothing jumps. */}
+        <div className="relative mt-0.5 h-16">
+          <div
+            className={`absolute inset-0 grid grid-cols-[1fr_auto_1fr] items-start gap-3 transition-opacity duration-300 ${
+              showAllGameweeks ? "opacity-0 pointer-events-none" : "opacity-100"
+            }`}
+          >
             <span className="text-4xl font-extrabold tabular-nums tracking-tight">
               {teamA.wins}
             </span>
@@ -215,13 +173,61 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
               {teamB.wins}
             </span>
           </div>
-        )}
 
-        <div
-          className={`flex items-center justify-between gap-3 transition-[margin] duration-300 ${
-            showAllGameweeks ? "mt-1" : "mt-4"
-          }`}
-        >
+          <div
+            className={`absolute inset-0 transition-opacity duration-300 ${
+              showAllGameweeks ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+          >
+            <div className="absolute left-0 top-0 bottom-0 w-8 z-10 flex flex-col items-center pointer-events-none">
+              <span className="h-2 mb-1.5" aria-hidden="true" />
+              <span className="h-4 w-6 rounded-[5px] bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center">
+                {initials(teamA.managerName)}
+              </span>
+              <span className="h-4 w-6 rounded-[5px] bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center mt-2.5">
+                {initials(teamB.managerName)}
+              </span>
+            </div>
+
+            <div className="no-scrollbar h-full overflow-x-auto overflow-y-hidden [scroll-snap-type:x_proximity] [scroll-padding-left:38px] [mask-image:linear-gradient(to_right,transparent,black_36px,black_calc(100%-36px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_36px,black_calc(100%-36px),transparent)]">
+              <div className="flex items-start gap-1 w-max">
+                <div className="flex-none w-9" aria-hidden="true" />
+                {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
+                  (gw) => {
+                    const row = historyByGw.get(gw);
+                    const aWin = row ? row.aScore > row.bScore : null;
+                    return (
+                      <div
+                        key={gw}
+                        className="flex-none w-7 flex flex-col items-center [scroll-snap-align:start]"
+                      >
+                        <span className="h-2 mb-1.5 text-[8px] font-extrabold text-[#04211a]/60 uppercase leading-[8px]">
+                          GW{gw}
+                        </span>
+                        <span
+                          className={`h-4 flex items-center justify-center text-base font-extrabold tabular-nums leading-none text-[#04211a] ${
+                            row ? (aWin ? "" : "opacity-45") : "opacity-35 font-semibold"
+                          }`}
+                        >
+                          {row ? row.aScore : "–"}
+                        </span>
+                        <span
+                          className={`h-4 flex items-center justify-center text-base font-extrabold tabular-nums leading-none text-[#04211a] mt-2.5 ${
+                            row ? (!aWin ? "" : "opacity-45") : "opacity-35 font-semibold"
+                          }`}
+                        >
+                          {row ? row.bScore : "–"}
+                        </span>
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 mt-2">
           <span
             className={`text-xs font-semibold transition-colors duration-300 ${
               showAllGameweeks ? "text-[#04211a]" : plColor(teamA.pl)
