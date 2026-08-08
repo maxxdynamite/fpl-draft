@@ -21,7 +21,7 @@ export async function MotwSotwLeaderboard() {
                   {i + 1}
                 </span>
                 <span className="flex-1 font-medium truncate">
-                  {leader.teamName}
+                  {leader.managerName}
                 </span>
                 <span className="tabular-nums font-bold text-[#00b368] dark:text-[#00ff85]">
                   {leader.count}
@@ -52,7 +52,7 @@ export async function MotwSotwLeaderboard() {
                   {i + 1}
                 </span>
                 <span className="flex-1 font-medium truncate">
-                  {leader.teamName}
+                  {leader.managerName}
                 </span>
                 <span className="tabular-nums font-bold text-[#e90052] dark:text-[#ff2d78]">
                   {leader.count}

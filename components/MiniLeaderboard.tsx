@@ -21,19 +21,25 @@ export async function MiniLeaderboard() {
 
   const latestGw =
     gwScores.length > 0 ? Math.max(...gwScores.map((r) => r.gameweek)) : null;
-  const teamsByEntry = new Map(managers.map((m) => [m.entryId, m.teamName]));
+
+  // Every manager appears even if their gameweek score hasn't synced yet
+  // (defaults to 0), rather than only showing whoever has data so far.
+  const scoresByEntry = new Map(
+    gwScores
+      .filter((r) => r.gameweek === latestGw)
+      .map((r) => [r.entryId, r.eventTotal]),
+  );
 
   const gameweekRows: LeaderboardRow[] =
     latestGw === null
       ? []
-      : gwScores
-          .filter((r) => r.gameweek === latestGw)
-          .sort((a, b) => b.eventTotal - a.eventTotal)
-          .map((r) => ({
-            entryId: r.entryId,
-            teamName: teamsByEntry.get(r.entryId) ?? "Unknown",
-            value: r.eventTotal,
-          }));
+      : managers
+          .map((m) => ({
+            entryId: m.entryId,
+            teamName: m.teamName,
+            value: scoresByEntry.get(m.entryId) ?? 0,
+          }))
+          .sort((a, b) => b.value - a.value);
 
   return (
     <LeaderboardToggle
