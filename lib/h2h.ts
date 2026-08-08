@@ -1,6 +1,7 @@
 import { getManagers } from "./managers";
 import { getStandings } from "./standings";
 import { getGwScores } from "./gwScores";
+import { getDraftOrder } from "./draftOrder";
 
 export type H2hSide = {
   entryId: number;
@@ -11,6 +12,11 @@ export type H2hSide = {
   latestGameweek: number | null;
   latestScore: number | null;
   streak: number;
+  overallRank: number | null;
+  totalPoints: number | null;
+  motwCount: number | null;
+  sotwCount: number | null;
+  draftPosition: number | null;
 };
 
 export type GwHistoryRow = {
@@ -42,10 +48,11 @@ export type H2hMatchup = {
 // relationship once (lower entry_id first) rather than twice, and attaches
 // the full gameweek-by-gameweek score history between the two of them.
 export async function getH2hMatchups(): Promise<H2hMatchup[]> {
-  const [managers, standings, gwScores] = await Promise.all([
+  const [managers, standings, gwScores, draftOrder] = await Promise.all([
     getManagers(),
     getStandings(),
     getGwScores(),
+    getDraftOrder(),
   ]);
 
   const standingsByEntry = new Map(standings.map((s) => [s.entryId, s]));
@@ -73,6 +80,11 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
       latestGameweek: latest?.gameweek ?? null,
       latestScore: latest?.eventTotal ?? null,
       streak,
+      overallRank: standing?.rank ?? null,
+      totalPoints: standing?.totalPoints ?? null,
+      motwCount: standing?.motwCount ?? null,
+      sotwCount: standing?.sotwCount ?? null,
+      draftPosition: draftOrder.get(entryId) ?? null,
     };
   }
 

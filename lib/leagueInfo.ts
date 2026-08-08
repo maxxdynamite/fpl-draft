@@ -1,4 +1,4 @@
-const LEAGUE_ID = 11903;
+export const LEAGUE_ID = 11903;
 
 export async function getLeagueName(): Promise<string> {
   const res = await fetch(

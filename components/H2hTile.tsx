@@ -49,28 +49,87 @@ function StreakBadge({ streak, hide }: { streak: number; hide: boolean }) {
   );
 }
 
+function StatRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-1 first:pt-0 last:pb-0">
+      <span className="text-zinc-400 dark:text-zinc-500">{label}</span>
+      <span className="font-semibold tabular-nums text-zinc-900 dark:text-white">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function PlayerStatsMenu({
+  align,
+  draftPosition,
+  overallRank,
+  totalPoints,
+  motwCount,
+  sotwCount,
+}: {
+  align: "left" | "right";
+  draftPosition: number | null;
+  overallRank: number | null;
+  totalPoints: number | null;
+  motwCount: number | null;
+  sotwCount: number | null;
+}) {
+  return (
+    <div
+      className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} mt-1.5 z-30 w-44 rounded-lg bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.06] dark:ring-white/[0.1] p-2.5 text-xs opacity-0 invisible pointer-events-none transition-all duration-150 group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto`}
+    >
+      <StatRow label="Draft Order" value={draftPosition?.toString() ?? "TBD"} />
+      <StatRow label="Overall Rank" value={overallRank?.toString() ?? "–"} />
+      <StatRow label="Total Points" value={totalPoints?.toString() ?? "–"} />
+      <StatRow label="MOTW" value={motwCount?.toString() ?? "–"} />
+      <StatRow label="SOTW" value={sotwCount?.toString() ?? "–"} />
+    </div>
+  );
+}
+
 function SideHeader({
   managerName,
   teamName,
   align,
   streak,
   dark,
+  draftPosition,
+  overallRank,
+  totalPoints,
+  motwCount,
+  sotwCount,
 }: {
   managerName: string;
   teamName: string;
   align: "left" | "right";
   streak: number;
   dark: boolean;
+  draftPosition: number | null;
+  overallRank: number | null;
+  totalPoints: number | null;
+  motwCount: number | null;
+  sotwCount: number | null;
 }) {
   return (
     <div className={align === "right" ? "text-right" : "text-left"}>
-      <p
-        className={`font-bold text-sm leading-tight truncate transition-colors duration-300 ${
-          dark ? "text-[#04211a]" : "text-zinc-900 dark:text-white"
-        }`}
-      >
-        {managerName}
-      </p>
+      <div className="group relative inline-block max-w-full cursor-default">
+        <p
+          className={`font-bold text-sm leading-tight truncate transition-colors duration-300 ${
+            dark ? "text-[#04211a]" : "text-zinc-900 dark:text-white"
+          }`}
+        >
+          {managerName}
+        </p>
+        <PlayerStatsMenu
+          align={align}
+          draftPosition={draftPosition}
+          overallRank={overallRank}
+          totalPoints={totalPoints}
+          motwCount={motwCount}
+          sotwCount={sotwCount}
+        />
+      </div>
       <p
         className={`text-xs truncate mt-0.5 transition-colors duration-300 ${
           dark ? "text-[#04211a]/70" : "text-zinc-400 dark:text-zinc-500"
@@ -146,6 +205,11 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
             align="left"
             streak={teamA.streak}
             dark={showAllGameweeks}
+            draftPosition={teamA.draftPosition}
+            overallRank={teamA.overallRank}
+            totalPoints={teamA.totalPoints}
+            motwCount={teamA.motwCount}
+            sotwCount={teamA.sotwCount}
           />
           <SideHeader
             managerName={teamB.managerName}
@@ -153,6 +217,11 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
             align="right"
             streak={teamB.streak}
             dark={showAllGameweeks}
+            draftPosition={teamB.draftPosition}
+            overallRank={teamB.overallRank}
+            totalPoints={teamB.totalPoints}
+            motwCount={teamB.motwCount}
+            sotwCount={teamB.sotwCount}
           />
         </div>
 
