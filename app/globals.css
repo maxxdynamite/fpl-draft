@@ -94,3 +94,13 @@ body {
     animation: none;
   }
 }
+
+/* Native horizontal scrollbars eat into a fixed-height row (the H2H
+   card's gameweek strip) — hide them, dragging/swiping still works. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

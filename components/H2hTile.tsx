@@ -6,6 +6,13 @@ import { formatPl } from "@/lib/format";
 
 const TOTAL_GAMEWEEKS = 38;
 
+function initials(managerName: string): string {
+  const parts = managerName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 function plColor(pl: number) {
   if (pl > 0) return "text-emerald-600 dark:text-emerald-400";
   if (pl < 0) return "text-rose-600 dark:text-rose-400";
@@ -126,39 +133,54 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
         </div>
 
         {showAllGameweeks ? (
-          <div className="mt-0.5 h-[46px] overflow-x-auto overflow-y-hidden [scroll-snap-type:x_proximity]">
-            <div className="flex items-start gap-3 w-max">
-              {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
-                (gw) => {
-                  const row = historyByGw.get(gw);
-                  const aWin = row ? row.aScore > row.bScore : null;
-                  return (
-                    <div
-                      key={gw}
-                      className="flex-none w-9 flex flex-col items-center [scroll-snap-align:start]"
-                    >
-                      <span className="text-[9px] font-extrabold text-[#04211a]/60 uppercase mb-1">
-                        GW{gw}
-                      </span>
-                      <span
-                        className={`text-base font-extrabold tabular-nums leading-none text-[#04211a] ${
-                          row ? (aWin ? "" : "opacity-45") : "opacity-35 font-semibold"
-                        }`}
-                      >
-                        {row ? row.aScore : "–"}
-                      </span>
-                      <span
-                        className={`text-base font-extrabold tabular-nums leading-none text-[#04211a] ${
-                          row ? (!aWin ? "" : "opacity-45") : "opacity-35 font-semibold"
-                        }`}
-                      >
-                        {row ? row.bScore : "–"}
-                      </span>
-                    </div>
-                  );
-                },
-              )}
+          <div className="relative mt-0.5 h-[45px]">
+            <div className="absolute left-0 top-0 bottom-0 w-8 z-10 flex flex-col items-center pointer-events-none">
+              <span className="h-[9px] mb-0.5" aria-hidden="true" />
+              <span className="h-4 w-6 rounded-[5px] bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center">
+                {initials(teamA.managerName)}
+              </span>
+              <span className="h-4 w-6 rounded-[5px] bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center mt-0.5">
+                {initials(teamB.managerName)}
+              </span>
             </div>
+
+            <div className="no-scrollbar h-full overflow-x-auto overflow-y-hidden pr-1 [scroll-snap-type:x_proximity] [scroll-padding-left:38px]">
+              <div className="flex items-start gap-3 w-max">
+                <div className="flex-none w-9" aria-hidden="true" />
+                {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
+                  (gw) => {
+                    const row = historyByGw.get(gw);
+                    const aWin = row ? row.aScore > row.bScore : null;
+                    return (
+                      <div
+                        key={gw}
+                        className="flex-none w-9 flex flex-col items-center [scroll-snap-align:start]"
+                      >
+                        <span className="h-[9px] mb-0.5 text-[8px] font-extrabold text-[#04211a]/60 uppercase leading-[9px]">
+                          GW{gw}
+                        </span>
+                        <span
+                          className={`h-4 flex items-center justify-center text-base font-extrabold tabular-nums leading-none text-[#04211a] ${
+                            row ? (aWin ? "" : "opacity-45") : "opacity-35 font-semibold"
+                          }`}
+                        >
+                          {row ? row.aScore : "–"}
+                        </span>
+                        <span
+                          className={`h-4 flex items-center justify-center text-base font-extrabold tabular-nums leading-none text-[#04211a] mt-0.5 ${
+                            row ? (!aWin ? "" : "opacity-45") : "opacity-35 font-semibold"
+                          }`}
+                        >
+                          {row ? row.bScore : "–"}
+                        </span>
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+            </div>
+
+            <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-[#04f5ff] to-transparent opacity-90 pointer-events-none" />
           </div>
         ) : (
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mt-0.5">
