@@ -133,19 +133,19 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
         </div>
 
         {showAllGameweeks ? (
-          <div className="relative h-[47px]">
-            <div className="absolute left-0 top-0 bottom-0 w-8 z-10 flex flex-col items-center bg-gradient-to-br from-[#00ff85] to-[#04f5ff] pointer-events-none">
-              <span className="h-2 mb-0.5" aria-hidden="true" />
+          <div className="relative mt-1 h-[56px]">
+            <div className="absolute left-0 top-0 bottom-0 w-8 z-10 flex flex-col items-center pointer-events-none">
+              <span className="h-2 mb-1" aria-hidden="true" />
               <span className="h-4 w-6 rounded-[5px] bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center">
                 {initials(teamA.managerName)}
               </span>
-              <span className="h-4 w-6 rounded-[5px] bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center mt-2">
+              <span className="h-4 w-6 rounded-[5px] bg-[#04211a] text-[#00ff85] text-[8px] font-extrabold flex items-center justify-center mt-2.5">
                 {initials(teamB.managerName)}
               </span>
             </div>
 
-            <div className="no-scrollbar h-full overflow-x-auto overflow-y-hidden pr-1 [scroll-snap-type:x_proximity] [scroll-padding-left:38px] [mask-image:linear-gradient(to_left,transparent,black_16px)] [-webkit-mask-image:linear-gradient(to_left,transparent,black_16px)]">
-              <div className="flex items-start gap-1.5 w-max">
+            <div className="no-scrollbar h-full overflow-x-auto overflow-y-hidden [scroll-snap-type:x_proximity] [scroll-padding-left:38px] [mask-image:linear-gradient(to_right,transparent,black_40px,black_calc(100%-14px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_40px,black_calc(100%-14px),transparent)]">
+              <div className="flex items-start gap-1 w-max">
                 <div className="flex-none w-9" aria-hidden="true" />
                 {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
                   (gw) => {
@@ -154,9 +154,9 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                     return (
                       <div
                         key={gw}
-                        className="flex-none w-9 flex flex-col items-center [scroll-snap-align:start]"
+                        className="flex-none w-7 flex flex-col items-center [scroll-snap-align:start]"
                       >
-                        <span className="h-2 mb-0.5 text-[8px] font-extrabold text-[#04211a]/60 uppercase leading-[8px]">
+                        <span className="h-2 mb-1 text-[8px] font-extrabold text-[#04211a]/60 uppercase leading-[8px]">
                           GW{gw}
                         </span>
                         <span
@@ -167,7 +167,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                           {row ? row.aScore : "–"}
                         </span>
                         <span
-                          className={`h-4 flex items-center justify-center text-base font-extrabold tabular-nums leading-none text-[#04211a] mt-2 ${
+                          className={`h-4 flex items-center justify-center text-base font-extrabold tabular-nums leading-none text-[#04211a] mt-2.5 ${
                             row ? (!aWin ? "" : "opacity-45") : "opacity-35 font-semibold"
                           }`}
                         >
@@ -217,7 +217,11 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-3 mt-4">
+        <div
+          className={`flex items-center justify-between gap-3 transition-[margin] duration-300 ${
+            showAllGameweeks ? "mt-1" : "mt-4"
+          }`}
+        >
           <span
             className={`text-xs font-semibold transition-colors duration-300 ${
               showAllGameweeks ? "text-[#04211a]" : plColor(teamA.pl)
