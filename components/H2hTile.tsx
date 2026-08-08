@@ -165,36 +165,36 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
             }`}
           >
             <span className="text-4xl font-extrabold tabular-nums tracking-tight">
-              {teamA.wins}
+              {teamA.latestScore ?? 0}
             </span>
             <div className="text-center">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                GW Points
+                Head-to-Head
               </p>
               <p className="text-lg font-bold tabular-nums mt-0.5">
                 <span
                   className={
-                    (teamA.latestScore ?? 0) > (teamB.latestScore ?? 0)
+                    teamA.wins > teamB.wins
                       ? "text-zinc-900 dark:text-white"
                       : "text-zinc-500 dark:text-zinc-400"
                   }
                 >
-                  {teamA.latestScore ?? 0}
+                  {teamA.wins}
                 </span>
                 <span className="text-zinc-500 dark:text-zinc-400"> – </span>
                 <span
                   className={
-                    (teamB.latestScore ?? 0) > (teamA.latestScore ?? 0)
+                    teamB.wins > teamA.wins
                       ? "text-zinc-900 dark:text-white"
                       : "text-zinc-500 dark:text-zinc-400"
                   }
                 >
-                  {teamB.latestScore ?? 0}
+                  {teamB.wins}
                 </span>
               </p>
             </div>
             <span className="text-4xl font-extrabold tabular-nums tracking-tight text-right">
-              {teamB.wins}
+              {teamB.latestScore ?? 0}
             </span>
           </div>
 
