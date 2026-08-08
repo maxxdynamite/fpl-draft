@@ -215,10 +215,10 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
 
             <div
               ref={scrollRef}
-              className="no-scrollbar h-full overflow-x-auto overflow-y-hidden -mx-4 sm:-mx-5 pl-4 sm:pl-5 [mask-image:linear-gradient(to_right,transparent,black_30px,black_calc(100%-24px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_30px,black_calc(100%-24px),transparent)]"
+              className="no-scrollbar h-full overflow-x-auto overflow-y-hidden -mx-4 sm:-mx-5 pl-4 sm:pl-5 [mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-24px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-24px),transparent)]"
             >
               <div className="flex items-start gap-1 w-max">
-                <div className="flex-none w-9" aria-hidden="true" />
+                <div className="flex-none w-14" aria-hidden="true" />
                 {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
                   (gw) => {
                     const row = historyByGw.get(gw);
