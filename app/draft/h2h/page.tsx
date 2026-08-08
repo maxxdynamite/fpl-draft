@@ -2,6 +2,8 @@ import { getH2hMatchups } from "@/lib/h2h";
 import { H2hTile } from "@/components/H2hTile";
 import { MiniLeaderboard } from "@/components/MiniLeaderboard";
 import { WeeklyAwardTablets } from "@/components/WeeklyAwardTablets";
+import { MotwSotwLeaderboard } from "@/components/MotwSotwLeaderboard";
+import { GwScoreRecords } from "@/components/GwScoreRecords";
 
 export default async function H2hPage() {
   const matchups = await getH2hMatchups();
@@ -19,6 +21,8 @@ export default async function H2hPage() {
       <aside className="lg:sticky lg:top-24">
         <WeeklyAwardTablets />
         <MiniLeaderboard />
+        <MotwSotwLeaderboard />
+        <GwScoreRecords />
       </aside>
     </div>
   );
