@@ -349,7 +349,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
             }`}
           >
             All Gameweeks
-            <ChevronIcon flipped={showAllGameweeks} />
+            <ChevronIcon flipped={!showAllGameweeks} />
           </button>
           <span
             className={`text-xs font-semibold transition-colors duration-300 ${
