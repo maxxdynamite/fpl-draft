@@ -142,11 +142,17 @@ function SideHeader({
   );
 }
 
-function ChevronIcon({ direction }: { direction: "up" | "down" }) {
+function ChevronIcon({ flipped }: { flipped: boolean }) {
   return (
-    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 12 12"
+      fill="none"
+      className={`transition-transform duration-300 ${flipped ? "rotate-180" : ""}`}
+    >
       <path
-        d={direction === "up" ? "M2.5 7.5L6 4L9.5 7.5" : "M2.5 4.5L6 8L9.5 4.5"}
+        d="M2.5 7.5L6 4L9.5 7.5"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
@@ -342,9 +348,8 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                 : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
             }`}
           >
-            <ChevronIcon direction={showAllGameweeks ? "down" : "up"} />
             All Gameweeks
-            <ChevronIcon direction={showAllGameweeks ? "down" : "up"} />
+            <ChevronIcon flipped={showAllGameweeks} />
           </button>
           <span
             className={`text-xs font-semibold transition-colors duration-300 ${
