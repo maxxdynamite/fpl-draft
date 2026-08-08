@@ -199,7 +199,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           </div>
 
           <div
-            className={`absolute left-0 right-0 bottom-0 -top-[18px] transition-opacity duration-300 ${
+            className={`absolute left-0 right-0 bottom-0 -top-[8px] transition-opacity duration-300 ${
               showAllGameweeks ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
           >
@@ -215,10 +215,10 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
 
             <div
               ref={scrollRef}
-              className="no-scrollbar h-full overflow-x-auto overflow-y-hidden [scroll-snap-type:x_proximity] [scroll-padding-left:38px] [mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-36px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-36px),transparent)]"
+              className="no-scrollbar h-full overflow-x-auto overflow-y-hidden [scroll-snap-type:x_proximity] [scroll-padding-left:60px] [mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-36px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_56px,black_calc(100%-36px),transparent)]"
             >
               <div className="flex items-start gap-1 w-max">
-                <div className="flex-none w-9" aria-hidden="true" />
+                <div className="flex-none w-14" aria-hidden="true" />
                 {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
                   (gw) => {
                     const row = historyByGw.get(gw);
