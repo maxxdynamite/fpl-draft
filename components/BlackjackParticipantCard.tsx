@@ -44,18 +44,19 @@ export function BlackjackParticipantCard({
               const hasntScored = player.goals === 0;
               return (
                 <div key={player.id} className="flex flex-col items-center text-center">
-                  {/* Outer circle is the background; the photo itself is
-                      inset smaller so there's a real visible margin ring
-                      of daylight around it (including above the head) -
-                      the source photos are already tightly cropped, so
-                      cropping/positioning tricks alone ran out of room. */}
-                  <div className="h-10 w-10 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center overflow-hidden">
+                  {/* Circle is a pure mask (overflow-hidden) - the photo
+                      fills it edge to edge via object-cover, no inset. The
+                      portrait source overflows the square window
+                      vertically, so object-top pushes the visible window
+                      to the top of the frame, clearing headroom above the
+                      head instead of cropping it. */}
+                  <div className="h-10 w-10 rounded-full overflow-hidden">
                     <Image
                       src={player.photoUrl}
                       alt={player.name}
-                      width={32}
-                      height={32}
-                      className={`h-8 w-8 rounded-full object-cover transition-opacity ${
+                      width={40}
+                      height={40}
+                      className={`h-10 w-10 object-cover object-top transition-opacity ${
                         hasntScored ? "opacity-40 grayscale" : ""
                       }`}
                     />

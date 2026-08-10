@@ -87,12 +87,13 @@ export async function getPlayersData(): Promise<PlayersData> {
       // prefix. PL bumps this version segment periodically; if photos go
       // stale again, re-check what the live site is using.
       //
-      // The "40x40" size (despite the name, actually serves 80x80 - a
-      // retina variant) is a genuinely square, purpose-cropped headshot
-      // with natural headroom, unlike every other size on this CDN which
-      // is an 11:14 portrait crop that needs fighting with object-position
-      // to avoid heads sitting right at the top edge of a circular avatar.
-      photoUrl: `https://resources.premierleague.com/premierleague25/photos/players/40x40/${el.code}.png`,
+      // The 110x140 portrait crop (not the near-square "40x40"/80x80
+      // variant) is deliberate: rendered with object-cover inside a square
+      // circular mask, it overflows vertically by design, which is exactly
+      // the slack object-top needs to push the visible window toward the
+      // top of the frame and clear headroom above the head. The near-square
+      // variant has almost no overflow to work with.
+      photoUrl: `https://resources.premierleague.com/premierleague25/photos/players/110x140/${el.code}.png`,
       status: el.status,
     }),
   );
