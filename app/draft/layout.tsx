@@ -12,8 +12,7 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
 
   return (
     <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-4 sm:pb-6">
-      <div className="flex items-center gap-4 mb-5">
-        <DraftSubNav />
+      <div className="flex items-center justify-between gap-4 mb-5">
         <div className="flex items-baseline gap-2">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
             Gameweek {gameweekNumber}
@@ -24,6 +23,7 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
             </span>
           )}
         </div>
+        <DraftSubNav />
       </div>
       {children}
     </main>
