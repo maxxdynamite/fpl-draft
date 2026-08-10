@@ -38,34 +38,40 @@ export function BlackjackParticipantCard({
         </span>
       </div>
 
-      {participant.players ? (
-        <div className="grid grid-cols-4 gap-2 mt-4">
-          {participant.players.map((player) => (
-            <div key={player.id} className="flex flex-col items-center text-center">
-              <Image
-                src={player.photoUrl}
-                alt={player.name}
-                width={40}
-                height={40}
-                className="h-10 w-10 rounded-full object-cover bg-black/[0.04] dark:bg-white/[0.06]"
-              />
-              <p className="text-[11px] font-semibold mt-1 truncate w-full">
-                {player.name}
-              </p>
-              <p className="text-[9px] text-zinc-400 dark:text-zinc-500">
-                {player.club.shortName}
-              </p>
-              <p className="text-xs font-bold tabular-nums mt-0.5">
-                {player.goals}
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-4">
-          Hasn&apos;t picked yet.
-        </p>
-      )}
+      <div className="grid grid-cols-4 gap-2 mt-4">
+        {participant.players
+          ? participant.players.map((player) => (
+              <div key={player.id} className="flex flex-col items-center text-center">
+                <Image
+                  src={player.photoUrl}
+                  alt={player.name}
+                  width={40}
+                  height={40}
+                  className="h-10 w-10 rounded-full object-cover bg-black/[0.04] dark:bg-white/[0.06]"
+                />
+                <p className="text-[11px] font-semibold mt-1 truncate w-full">
+                  {player.name}
+                </p>
+                <p className="text-[9px] text-zinc-400 dark:text-zinc-500">
+                  {player.club.shortName}
+                </p>
+                <p className="text-xs font-bold tabular-nums mt-0.5">
+                  {player.goals}
+                </p>
+              </div>
+            ))
+          : Array.from({ length: 4 }, (_, i) => (
+              // Placeholder slots so a card without picks yet takes up the
+              // exact same height as one with picks - otherwise the grid
+              // looks like a ragged masonry layout instead of even rows.
+              <div key={i} className="flex flex-col items-center text-center">
+                <div className="h-10 w-10 rounded-full bg-black/[0.05] dark:bg-white/[0.06]" />
+                <div className="h-[11px] w-9 rounded-sm bg-black/[0.05] dark:bg-white/[0.06] mt-1.5" />
+                <div className="h-[9px] w-6 rounded-sm bg-black/[0.04] dark:bg-white/[0.05] mt-1" />
+                <div className="h-3 w-4 rounded-sm bg-black/[0.05] dark:bg-white/[0.06] mt-1" />
+              </div>
+            ))}
+      </div>
     </div>
   );
 }

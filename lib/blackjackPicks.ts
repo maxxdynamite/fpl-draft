@@ -9,9 +9,12 @@ export type BlackjackPicks = {
 
 // Reads the BlackjackPicks tab - the only *written-to* sheet in this app,
 // via app/api/blackjack/picks/route.ts. Same public-CSV read pattern as
-// every other sheet-backed source (see lib/sheets.ts).
+// every other sheet-backed source (see lib/sheets.ts), but always fresh
+// (no cache): the picks page redirects back to the leaderboard right
+// after a save, so anything less than "always fresh" here means a user
+// can land back on their own just-saved picks and see them missing.
 export async function getBlackjackPicks(): Promise<BlackjackPicks[]> {
-  const csv = await fetchSheetCsv("BlackjackPicks", 60);
+  const csv = await fetchSheetCsv("BlackjackPicks", 0);
 
   const { data } = Papa.parse<Record<string, string>>(csv, {
     header: true,
