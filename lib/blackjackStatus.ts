@@ -26,18 +26,21 @@ export const STATUS_META: Record<
     dotClass: "bg-red-500",
     textClass: "text-red-600 dark:text-red-400",
   },
+  // Label wording is "pace", but the key stays "-target" - it matches
+  // the underlying spreadsheet formula's own naming (lib/blackjack.ts)
+  // and there's no user-facing reason to touch the internal identifier.
   "over-target": {
-    label: "Over Target",
+    label: "Over Pace",
     dotClass: "bg-orange-500",
     textClass: "text-orange-600 dark:text-orange-400",
   },
   "on-target": {
-    label: "On Target",
+    label: "On Pace",
     dotClass: "bg-green-500",
     textClass: "text-green-600 dark:text-green-400",
   },
   "under-target": {
-    label: "Under Target",
+    label: "Under Pace",
     dotClass: "bg-blue-500",
     textClass: "text-blue-600 dark:text-blue-400",
   },

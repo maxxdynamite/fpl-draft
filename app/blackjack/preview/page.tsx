@@ -90,35 +90,35 @@ const scenarios: BlackjackParticipant[] = [
     player(527, "Richarlison", "TOT", 19, "FWD", 212319, 1),
   ]),
 
-  buildParticipant(11, "Over target + qualified", "12 goals, all 4 scored", [
+  buildParticipant(11, "Over pace + qualified", "12 goals, all 4 scored", [
     player(40, "Rogers", "CHE", 6, "MID", 244850, 4),
     player(154, "Palmer", "CHE", 6, "MID", 244851, 4),
     player(155, "Enzo", "CHE", 6, "MID", 448047, 2),
     player(260, "Wilson", "LEE", 13, "MID", 153682, 2),
   ]),
 
-  buildParticipant(6, "Over target, not qualified", "11 goals, one pick on 0", [
+  buildParticipant(6, "Over pace, not qualified", "11 goals, one pick on 0", [
     player(40, "Rogers", "CHE", 6, "MID", 244850, 5),
     player(154, "Palmer", "CHE", 6, "MID", 244851, 4),
     player(155, "Enzo", "CHE", 6, "MID", 448047, 2),
     player(260, "Wilson", "LEE", 13, "MID", 153682, 0),
   ]),
 
-  buildParticipant(7, "On target + qualified", "8 goals, all 4 scored", [
+  buildParticipant(7, "On pace + qualified", "8 goals, all 4 scored", [
     player(428, "Cunha", "MUN", 16, "MID", 430871, 3),
     player(208, "Sarr", "CRY", 8, "MID", 232185, 2),
     player(248, "Beto", "EVE", 9, "FWD", 486385, 2),
     player(426, "B.Fernandes", "MUN", 16, "MID", 141746, 1),
   ]),
 
-  buildParticipant(8, "On target, not qualified", "8 goals, two picks on 0", [
+  buildParticipant(8, "On pace, not qualified", "8 goals, two picks on 0", [
     player(452, "Bruno G.", "NEW", 17, "MID", 208706, 5),
     player(94, "Schade", "BRE", 4, "MID", 513418, 3),
     player(236, "Dewsbury-Hall", "EVE", 9, "MID", 215413, 0),
     player(249, "Barry", "EVE", 9, "FWD", 586309, 0),
   ]),
 
-  buildParticipant(9, "Under target + qualified", "4 goals, all 4 scored", [
+  buildParticipant(9, "Under pace + qualified", "4 goals, all 4 scored", [
     player(336, "Okafor", "LEE", 13, "MID", 435997, 1),
     player(463, "Woltemade", "NEW", 17, "FWD", 470313, 1),
     player(12, "Saka", "ARS", 1, "MID", 223340, 1),
