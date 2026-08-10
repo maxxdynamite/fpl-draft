@@ -11,11 +11,9 @@ export const STATUS_META: Record<
   },
   // Tile gets a fully custom white pill (see BlackjackParticipantCard) -
   // this entry is really only consumed by the leaderboard's dot marker.
-  // The ring keeps a plain white dot visible against a white card in
-  // light mode, where it would otherwise have zero contrast.
   selected: {
     label: "Selected",
-    dotClass: "bg-white ring-1 ring-zinc-300 dark:ring-zinc-600",
+    dotClass: "bg-white",
     textClass: "text-zinc-900 dark:text-white",
   },
   // True black, not near-black - low contrast on dark cards is an accepted

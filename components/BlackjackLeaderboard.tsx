@@ -27,9 +27,16 @@ export function BlackjackLeaderboard({
               </span>
               {/* Dot stays on meta.dotClass (black for bust) regardless of
                   the greyed-out name/score - it's the one element that
-                  doesn't fade, same black as the tile's bust pill. */}
+                  doesn't fade, same black as the tile's bust pill. The ring
+                  is leaderboard-only (not baked into dotClass, which the
+                  tile's own smaller pill dot also reads from) - every dot
+                  here gets the same deliberate edge for consistency.
+                  Translucent rather than a flat zinc shade, since a flat
+                  ring-zinc-300 would be invisible against the no-picks dot
+                  (same zinc-300 fill) - an opacity-based overlay darkens/
+                  lightens any fill instead of trying to match one. */}
               <span
-                className={`h-2 w-2 shrink-0 rounded-full ${meta.dotClass}`}
+                className={`h-2 w-2 shrink-0 rounded-full ring-1 ring-black/[0.12] dark:ring-white/[0.12] ${meta.dotClass}`}
                 aria-hidden="true"
               />
               <span className="flex-1 flex items-center gap-1.5 min-w-0">
