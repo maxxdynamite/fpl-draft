@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { fetchSheetCsv } from "./sheets";
 
 export type StandingsRow = {
   entryId: number;
@@ -11,21 +12,8 @@ export type StandingsRow = {
   sotwCount: number;
 };
 
-function sheetCsvUrl(sheetName: string) {
-  const id = process.env.SHEETS_SPREADSHEET_ID;
-  if (!id) throw new Error("SHEETS_SPREADSHEET_ID is not set");
-  const params = new URLSearchParams({ tqx: "out:csv", sheet: sheetName });
-  return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?${params}`;
-}
-
 export async function getStandings(): Promise<StandingsRow[]> {
-  const res = await fetch(sheetCsvUrl("Standings"), {
-    next: { revalidate: 300 }, // 5 minutes — daily-updated data doesn't need to be hammered
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch Standings sheet: ${res.status}`);
-  }
-  const csv = await res.text();
+  const csv = await fetchSheetCsv("Standings", 300); // 5 minutes — daily-updated data doesn't need to be hammered
 
   const { data } = Papa.parse<Record<string, string>>(csv, {
     header: true,

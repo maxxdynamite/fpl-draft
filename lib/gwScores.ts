@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { fetchSheetCsv } from "./sheets";
 
 export type GwScoreRow = {
   gameweek: number;
@@ -10,21 +11,8 @@ export type GwScoreRow = {
   h2hPl: number;
 };
 
-function sheetCsvUrl(sheetName: string) {
-  const id = process.env.SHEETS_SPREADSHEET_ID;
-  if (!id) throw new Error("SHEETS_SPREADSHEET_ID is not set");
-  const params = new URLSearchParams({ tqx: "out:csv", sheet: sheetName });
-  return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?${params}`;
-}
-
 export async function getGwScores(): Promise<GwScoreRow[]> {
-  const res = await fetch(sheetCsvUrl("GW_Scores"), {
-    next: { revalidate: 300 },
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch GW_Scores sheet: ${res.status}`);
-  }
-  const csv = await res.text();
+  const csv = await fetchSheetCsv("GW_Scores", 300);
 
   const { data } = Papa.parse<Record<string, string>>(csv, {
     header: true,

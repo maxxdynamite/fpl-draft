@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { fetchSheetCsv } from "./sheets";
 
 export type Manager = {
   entryId: number;
@@ -7,21 +8,8 @@ export type Manager = {
   rivalEntryId: number;
 };
 
-function sheetCsvUrl(sheetName: string) {
-  const id = process.env.SHEETS_SPREADSHEET_ID;
-  if (!id) throw new Error("SHEETS_SPREADSHEET_ID is not set");
-  const params = new URLSearchParams({ tqx: "out:csv", sheet: sheetName });
-  return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?${params}`;
-}
-
 export async function getManagers(): Promise<Manager[]> {
-  const res = await fetch(sheetCsvUrl("Managers"), {
-    next: { revalidate: 300 },
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch Managers sheet: ${res.status}`);
-  }
-  const csv = await res.text();
+  const csv = await fetchSheetCsv("Managers", 300);
 
   const { data } = Papa.parse<Record<string, string>>(csv, {
     header: true,
