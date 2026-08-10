@@ -1,6 +1,7 @@
 import type { BlackjackParticipant } from "@/lib/blackjack";
 import { BLACKJACK_TARGET } from "@/lib/blackjack";
 import { STATUS_META } from "@/lib/blackjackStatus";
+import { QualifiedBadge } from "./QualifiedBadge";
 
 export function BlackjackLeaderboard({
   participants,
@@ -27,8 +28,9 @@ export function BlackjackLeaderboard({
                 className={`h-2 w-2 shrink-0 rounded-full ${meta.dotClass}`}
                 aria-hidden="true"
               />
-              <span className="flex-1 font-medium truncate">
-                {p.managerName}
+              <span className="flex-1 flex items-center gap-1.5 min-w-0">
+                <span className="font-medium truncate">{p.managerName}</span>
+                {p.allScored && <QualifiedBadge />}
               </span>
               <span className="tabular-nums font-bold">{p.totalGoals}</span>
             </li>

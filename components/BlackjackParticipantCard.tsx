@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { BlackjackParticipant } from "@/lib/blackjack";
 import { BLACKJACK_TARGET } from "@/lib/blackjack";
 import { STATUS_META } from "@/lib/blackjackStatus";
+import { QualifiedBadge } from "./QualifiedBadge";
 
 export function BlackjackParticipantCard({
   participant,
@@ -14,23 +15,20 @@ export function BlackjackParticipantCard({
     <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-bold text-sm leading-tight truncate text-zinc-900 dark:text-white">
-            {participant.managerName}
-          </p>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5 truncate">
-            {participant.teamName}
-          </p>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="font-bold text-sm leading-tight truncate text-zinc-900 dark:text-white">
+              {participant.managerName}
+            </p>
+            {participant.allScored && <QualifiedBadge />}
+          </div>
+          <span
+            className={`inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-black/[0.03] dark:bg-white/[0.06] ${meta.textClass}`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${meta.dotClass}`} />
+            {meta.label}
+          </span>
         </div>
-        <span
-          className={`flex items-center gap-1.5 shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-black/[0.03] dark:bg-white/[0.06] ${meta.textClass}`}
-        >
-          <span className={`h-1.5 w-1.5 rounded-full ${meta.dotClass}`} />
-          {meta.label}
-        </span>
-      </div>
-
-      <div className="flex items-center justify-between gap-3 mt-3">
-        <div className="flex items-baseline gap-1.5">
+        <div className="flex items-baseline gap-1.5 shrink-0">
           <span className="text-4xl font-extrabold tabular-nums tracking-tight">
             {participant.totalGoals}
           </span>
@@ -38,12 +36,6 @@ export function BlackjackParticipantCard({
             / {BLACKJACK_TARGET}
           </span>
         </div>
-        {participant.allScored && (
-          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-            <span aria-hidden="true">✓</span>
-            All 4 have scored
-          </span>
-        )}
       </div>
 
       <div className="grid grid-cols-4 gap-2 mt-4">
