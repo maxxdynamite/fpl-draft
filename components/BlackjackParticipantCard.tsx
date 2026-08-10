@@ -44,20 +44,19 @@ export function BlackjackParticipantCard({
               const hasntScored = player.goals === 0;
               return (
                 <div key={player.id} className="flex flex-col items-center text-center">
-                  {/* Circle is a pure mask (overflow-hidden) - the photo
-                      fills it edge to edge via object-cover, no inset. The
-                      portrait source overflows the square window
-                      vertically, so object-top pushes the visible window
-                      to the top of the frame, clearing headroom above the
-                      head instead of cropping it. The bg color sits behind
-                      the photo as a fallback while it loads. */}
-                  <div className="h-10 w-10 rounded-full overflow-hidden bg-black/[0.04] dark:bg-white/[0.06]">
+                  {/* Circle is the mask (overflow-hidden) and the fallback
+                      fill behind the photo. The photo doesn't need to reach
+                      the top edge - it's bottom-anchored and a touch shorter
+                      than the circle, so the background shows through as
+                      genuine daylight above the head rather than cropping
+                      into the source to chase headroom that isn't there. */}
+                  <div className="h-10 w-10 rounded-full overflow-hidden bg-black/[0.04] dark:bg-white/[0.06] flex items-end justify-center">
                     <Image
                       src={player.photoUrl}
                       alt={player.name}
                       width={40}
-                      height={40}
-                      className={`h-10 w-10 object-cover object-top transition-opacity ${
+                      height={34}
+                      className={`h-[34px] w-10 object-cover object-top transition-opacity ${
                         hasntScored ? "opacity-40 grayscale" : ""
                       }`}
                     />
