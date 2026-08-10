@@ -16,6 +16,7 @@ export function BlackjackLeaderboard({
       <ul>
         {participants.map((p, i) => {
           const meta = STATUS_META[p.status];
+          const isBust = p.status === "bust";
           return (
             <li
               key={p.entryId}
@@ -24,15 +25,30 @@ export function BlackjackLeaderboard({
               <span className="w-5 shrink-0 tabular-nums text-zinc-400 dark:text-zinc-500 font-medium">
                 {i + 1}
               </span>
+              {/* Dot stays on meta.dotClass (black for bust) regardless of
+                  the greyed-out name/score - it's the one element that
+                  doesn't fade, same black as the tile's bust pill. */}
               <span
                 className={`h-2 w-2 shrink-0 rounded-full ${meta.dotClass}`}
                 aria-hidden="true"
               />
               <span className="flex-1 flex items-center gap-1.5 min-w-0">
-                <span className="font-medium truncate">{p.managerName}</span>
+                <span
+                  className={`font-medium truncate ${
+                    isBust ? "text-zinc-400 dark:text-zinc-500" : ""
+                  }`}
+                >
+                  {p.managerName}
+                </span>
                 {p.allScored && <QualifiedBadge size="sm" />}
               </span>
-              <span className="tabular-nums font-bold">{p.totalGoals}</span>
+              <span
+                className={`tabular-nums font-bold ${
+                  isBust ? "text-zinc-400 dark:text-zinc-500" : ""
+                }`}
+              >
+                {p.totalGoals}
+              </span>
             </li>
           );
         })}

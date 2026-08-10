@@ -11,13 +11,18 @@ export function BlackjackParticipantCard({
   participant: BlackjackParticipant;
 }) {
   const meta = STATUS_META[participant.status];
+  const isBust = participant.status === "bust";
 
   return (
     <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
-            <p className="font-bold text-sm leading-tight truncate text-zinc-900 dark:text-white">
+            <p
+              className={`font-bold text-sm leading-tight truncate ${
+                isBust ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-900 dark:text-white"
+              }`}
+            >
               {participant.managerName}
             </p>
             {participant.allScored && <QualifiedBadge />}
@@ -31,10 +36,13 @@ export function BlackjackParticipantCard({
               <SpadeIcon size={10} />
               {meta.label}
             </span>
-          ) : participant.status === "bust" ? (
+          ) : isBust ? (
             // Solid black fill, not the neutral wrapper every other status
-            // uses - a distinct "this hand is dead" treatment.
-            <span className="inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-black text-white">
+            // uses - a distinct "this hand is dead" treatment. Dot is white
+            // (not a colour from STATUS_META) so it reads against the
+            // black fill instead of disappearing into it.
+            <span className="inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-black text-white">
+              <span className="h-1.5 w-1.5 rounded-full bg-white" />
               {meta.label}
             </span>
           ) : (
@@ -47,7 +55,11 @@ export function BlackjackParticipantCard({
           )}
         </div>
         <div className="flex items-baseline gap-1.5 shrink-0">
-          <span className="text-4xl font-extrabold tabular-nums tracking-tight">
+          <span
+            className={`text-4xl font-extrabold tabular-nums tracking-tight ${
+              isBust ? "text-zinc-400 dark:text-zinc-500" : ""
+            }`}
+          >
             {participant.totalGoals}
           </span>
           <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">
