@@ -72,6 +72,7 @@ export function BlackjackParticipantCard({
         {participant.players
           ? participant.players.map((player) => {
               const hasntScored = player.goals === 0;
+              const playerGreyed = isBust || hasntScored;
               return (
                 <div key={player.id} className="flex flex-col items-center text-center">
                   {/* Circle is the mask (overflow-hidden) and the fallback
@@ -81,12 +82,14 @@ export function BlackjackParticipantCard({
                       the background shows as a deliberate gap above the
                       photo rather than the photo touching the top edge. */}
                   <div className="relative z-0">
-                    {participant.allScored && (
+                    {participant.allScored && !isBust && (
                       // A heavier blur averages the gradient into one
                       // blended hue, so this stays well short of the
                       // original 8px/-inset-1.5 version - wider than the
                       // tightest cut, but the green-to-cyan split still
                       // needs to read clearly rather than mush together.
+                      // Suppressed on bust even if every pick individually
+                      // scored - a busted hand doesn't get to celebrate.
                       <span
                         aria-hidden="true"
                         className="absolute -inset-1 rounded-full bg-gradient-to-br from-[#00ff85] to-[#04f5ff] opacity-90 blur-[5px] -z-10"
@@ -103,20 +106,33 @@ export function BlackjackParticipantCard({
                         width={52}
                         height={52}
                         className={`h-[52px] w-[52px] object-cover object-top transition-opacity ${
-                          hasntScored ? "opacity-40 grayscale" : ""
+                          playerGreyed ? "opacity-40 grayscale" : ""
                         }`}
                       />
                     </div>
                   </div>
-                  <p className="text-[11px] font-semibold mt-1 truncate w-full">
+                  {/* Name/club normally stay full-brightness even for an
+                      individual player on 0 (only their photo/tally dim) -
+                      but on bust every player's info greys uniformly,
+                      matching the greyed name/tally at the top of the
+                      tile. */}
+                  <p
+                    className={`text-[11px] font-semibold mt-1 truncate w-full transition-opacity ${
+                      isBust ? "opacity-40" : ""
+                    }`}
+                  >
                     {player.name}
                   </p>
-                  <p className="text-[9px] text-zinc-400 dark:text-zinc-500">
+                  <p
+                    className={`text-[9px] text-zinc-400 dark:text-zinc-500 transition-opacity ${
+                      isBust ? "opacity-40" : ""
+                    }`}
+                  >
                     {player.club.shortName}
                   </p>
                   <p
                     className={`text-xs font-bold tabular-nums mt-0.5 transition-opacity ${
-                      hasntScored ? "opacity-40" : ""
+                      playerGreyed ? "opacity-40" : ""
                     }`}
                   >
                     {player.goals}
