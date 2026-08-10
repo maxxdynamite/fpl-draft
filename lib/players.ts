@@ -25,6 +25,7 @@ export type PlayersData = {
   players: Player[];
   clubs: Club[];
   seasonStartTime: string | null;
+  currentGameweek: number;
 };
 
 // The general FPL game API (not the Draft-specific one used elsewhere in
@@ -73,11 +74,21 @@ export async function getPlayersData(): Promise<PlayersData> {
     }),
   );
 
+  const events: Array<{ finished: boolean; is_current: boolean }> = data.events ?? [];
   const firstEvent = data.events?.[0];
+
+  // Finished gameweeks, plus one more if a gameweek is currently live (in
+  // progress counts as partial pace, not zero) - this is the real Premier
+  // League calendar, not this app's own Draft league gameweek tracker,
+  // which is a separate competition on a separate (and currently
+  // out-of-sync) schedule.
+  const currentGameweek =
+    events.filter((e) => e.finished).length + (events.some((e) => e.is_current) ? 1 : 0);
 
   return {
     players,
     clubs: [...clubsById.values()].sort((a, b) => a.name.localeCompare(b.name)),
     seasonStartTime: firstEvent?.deadline_time ?? null,
+    currentGameweek,
   };
 }

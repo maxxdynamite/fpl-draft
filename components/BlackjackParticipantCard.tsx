@@ -29,25 +29,38 @@ export function BlackjackParticipantCard({
         </span>
       </div>
 
-      <div className="flex items-baseline gap-1.5 mt-3">
-        <span className="text-4xl font-extrabold tabular-nums tracking-tight">
-          {participant.totalGoals}
-        </span>
-        <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">
-          / {BLACKJACK_TARGET}
-        </span>
+      <div className="flex items-center justify-between gap-3 mt-3">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-4xl font-extrabold tabular-nums tracking-tight">
+            {participant.totalGoals}
+          </span>
+          <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">
+            / {BLACKJACK_TARGET}
+          </span>
+        </div>
+        {participant.allScored && (
+          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+            <span aria-hidden="true">✓</span>
+            All 4 have scored
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-4 gap-2 mt-4">
         {participant.players
           ? participant.players.map((player) => (
-              <div key={player.id} className="flex flex-col items-center text-center">
+              <div
+                key={player.id}
+                className={`flex flex-col items-center text-center transition-opacity ${
+                  player.goals === 0 ? "opacity-40 grayscale" : ""
+                }`}
+              >
                 <Image
                   src={player.photoUrl}
                   alt={player.name}
                   width={40}
                   height={40}
-                  className="h-10 w-10 rounded-full object-cover bg-black/[0.04] dark:bg-white/[0.06]"
+                  className="h-10 w-10 rounded-full object-cover object-[center_25%] bg-black/[0.04] dark:bg-white/[0.06]"
                 />
                 <p className="text-[11px] font-semibold mt-1 truncate w-full">
                   {player.name}
