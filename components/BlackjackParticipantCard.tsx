@@ -49,8 +49,9 @@ export function BlackjackParticipantCard({
                       portrait source overflows the square window
                       vertically, so object-top pushes the visible window
                       to the top of the frame, clearing headroom above the
-                      head instead of cropping it. */}
-                  <div className="h-10 w-10 rounded-full overflow-hidden">
+                      head instead of cropping it. The bg color sits behind
+                      the photo as a fallback while it loads. */}
+                  <div className="h-10 w-10 rounded-full overflow-hidden bg-black/[0.04] dark:bg-white/[0.06]">
                     <Image
                       src={player.photoUrl}
                       alt={player.name}
