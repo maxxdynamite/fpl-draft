@@ -45,6 +45,15 @@ export function BlackjackParticipantCard({
               <span className="h-1.5 w-1.5 rounded-full bg-white" />
               {meta.label}
             </span>
+          ) : participant.status === "selected" ? (
+            // Pre-season: picks are in but there's no pace to read yet.
+            // Solid white fill (inverse of the bust pill) - the ring keeps
+            // it visible against the card's own white background in light
+            // mode, where a plain white-on-white pill would vanish.
+            <span className="inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-white text-black ring-1 ring-zinc-200 dark:ring-zinc-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-black" />
+              {meta.label}
+            </span>
           ) : (
             <span
               className={`inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-black/[0.03] dark:bg-white/[0.06] ${meta.textClass}`}

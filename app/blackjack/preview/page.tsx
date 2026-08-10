@@ -43,6 +43,7 @@ function buildParticipant(
   managerName: string,
   teamName: string,
   players: Player[] | null,
+  gameweek: number = PREVIEW_GAMEWEEK,
 ): BlackjackParticipant {
   const totalGoals = players ? players.reduce((sum, p) => sum + p.goals, 0) : 0;
   const allScored = players ? players.every((p) => p.goals > 0) : false;
@@ -53,12 +54,27 @@ function buildParticipant(
     players,
     totalGoals,
     allScored,
-    status: players ? computeStatus(totalGoals, allScored, PREVIEW_GAMEWEEK) : "no-picks",
+    status: players ? computeStatus(totalGoals, allScored, gameweek) : "no-picks",
   };
 }
 
 const scenarios: BlackjackParticipant[] = [
   buildParticipant(1, "No picks yet", "Hasn't submitted", null),
+
+  // gameweek=0 - picks are in, but the season hasn't started so there's no
+  // pace to read yet (see computeStatus's currentGameweek===0 check).
+  buildParticipant(
+    12,
+    "Selected",
+    "Picks in, season not started",
+    [
+      player(25, "Gyökeres", "ARS", 1, "FWD", 224117, 0),
+      player(12, "Saka", "ARS", 1, "MID", 223340, 0),
+      player(14, "Eze", "ARS", 1, "MID", 232413, 0),
+      player(455, "Gabriel", "ARS", 1, "DEF", 172780, 0),
+    ],
+    0,
+  ),
 
   buildParticipant(2, "Bust example", "26 goals — over target", [
     player(411, "Haaland", "MCI", 15, "FWD", 223094, 12),

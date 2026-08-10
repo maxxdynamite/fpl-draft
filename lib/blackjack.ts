@@ -15,6 +15,7 @@ const PACE_HIGH_OUTER = 4; // at-risk boundary (above expected pace)
 
 export type BlackjackStatus =
   | "no-picks"
+  | "selected"
   | "bust"
   | "blackjack"
   | "at-risk"
@@ -44,6 +45,15 @@ export function computeStatus(
   allScored: boolean,
   currentGameweek: number,
 ): BlackjackStatus {
+  // currentGameweek is 0 before the season's first ball is kicked (see
+  // lib/players.ts's seasonHasStarted). Pre-season the pace formula is
+  // meaningless - expectedPace works out to 0, which everyone's 0-goal
+  // total trivially satisfies as "on target" - so this is only ever
+  // called for participants who already have 4 valid picks in, "Selected"
+  // overrides the pace calculation entirely rather than showing a
+  // misleading pace read against a season that hasn't started.
+  if (currentGameweek === 0) return "selected";
+
   if (totalGoals > BLACKJACK_TARGET) return "bust";
   if (totalGoals === BLACKJACK_TARGET && allScored) return "blackjack";
 
