@@ -32,7 +32,7 @@ function player(
     club: { id: clubId, name: clubShort, shortName: clubShort },
     position,
     goals,
-    photoUrl: `https://resources.premierleague.com/premierleague25/photos/players/110x140/${code}.png`,
+    photoUrl: `https://resources.premierleague.com/premierleague25/photos/players/40x40/${code}.png`,
     status: "a",
   };
 }
