@@ -62,7 +62,13 @@ export async function getPlayersData(): Promise<PlayersData> {
       club: clubsById.get(el.team)!,
       position: POSITION_LABELS[el.element_type] ?? "?",
       goals: el.goals_scored,
-      photoUrl: `https://resources.premierleague.com/premierleague/photos/players/250x250/p${el.code}.png`,
+      // The bare (unversioned) "premierleague" path also resolves with a
+      // "p" prefix, but silently serves stale, outdated photos - confirmed
+      // by diffing it against what fantasy.premierleague.com itself
+      // actually loads, which uses this season-versioned path with no
+      // prefix. PL bumps this version segment periodically; if photos go
+      // stale again, re-check what the live site is using.
+      photoUrl: `https://resources.premierleague.com/premierleague25/photos/players/110x140/${el.code}.png`,
       status: el.status,
     }),
   );

@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "resources.premierleague.com",
-        pathname: "/premierleague/photos/players/**",
+        pathname: "/premierleague25/photos/players/**",
       },
     ],
   },

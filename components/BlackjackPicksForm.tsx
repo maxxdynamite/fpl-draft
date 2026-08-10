@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { Player, Club } from "@/lib/players";
 import type { BlackjackPicks } from "@/lib/blackjackPicks";
@@ -20,6 +21,7 @@ export function BlackjackPicksForm({
   clubs: Club[];
   existingPicks: BlackjackPicks[];
 }) {
+  const router = useRouter();
   const [selectedEntryId, setSelectedEntryId] = useState<number | "">("");
   const [selectedClubId, setSelectedClubId] = useState<number>(clubs[0]?.id ?? 0);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<number[]>([]);
@@ -69,7 +71,8 @@ export function BlackjackPicksForm({
         return;
       }
       setStatus("success");
-      setMessage("Picks saved!");
+      setMessage("Picks saved! Heading back to Blackjack…");
+      setTimeout(() => router.push("/blackjack"), 900);
     } catch {
       setStatus("error");
       setMessage("Something went wrong. Try again.");
