@@ -30,7 +30,7 @@ export type BlackjackParticipant = {
 // needs every card face-up. Short of the target, allScored isn't a status
 // of its own (it's shown as a separate indicator alongside pace), but it
 // gates the win itself.
-function computeStatus(
+export function computeStatus(
   totalGoals: number,
   allScored: boolean,
   currentGameweek: number,
