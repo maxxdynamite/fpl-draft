@@ -86,7 +86,13 @@ export async function getPlayersData(): Promise<PlayersData> {
       // actually loads, which uses this season-versioned path with no
       // prefix. PL bumps this version segment periodically; if photos go
       // stale again, re-check what the live site is using.
-      photoUrl: `https://resources.premierleague.com/premierleague25/photos/players/110x140/${el.code}.png`,
+      //
+      // The "40x40" size (despite the name, actually serves 80x80 - a
+      // retina variant) is a genuinely square, purpose-cropped headshot
+      // with natural headroom, unlike every other size on this CDN which
+      // is an 11:14 portrait crop that needs fighting with object-position
+      // to avoid heads sitting right at the top edge of a circular avatar.
+      photoUrl: `https://resources.premierleague.com/premierleague25/photos/players/40x40/${el.code}.png`,
       status: el.status,
     }),
   );

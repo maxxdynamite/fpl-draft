@@ -40,31 +40,35 @@ export function BlackjackParticipantCard({
 
       <div className="grid grid-cols-4 gap-2 mt-4">
         {participant.players
-          ? participant.players.map((player) => (
-              <div
-                key={player.id}
-                className={`flex flex-col items-center text-center transition-opacity ${
-                  player.goals === 0 ? "opacity-40 grayscale" : ""
-                }`}
-              >
-                <Image
-                  src={player.photoUrl}
-                  alt={player.name}
-                  width={40}
-                  height={40}
-                  className="h-10 w-10 rounded-full object-cover object-top bg-black/[0.04] dark:bg-white/[0.06]"
-                />
-                <p className="text-[11px] font-semibold mt-1 truncate w-full">
-                  {player.name}
-                </p>
-                <p className="text-[9px] text-zinc-400 dark:text-zinc-500">
-                  {player.club.shortName}
-                </p>
-                <p className="text-xs font-bold tabular-nums mt-0.5">
-                  {player.goals}
-                </p>
-              </div>
-            ))
+          ? participant.players.map((player) => {
+              const hasntScored = player.goals === 0;
+              return (
+                <div key={player.id} className="flex flex-col items-center text-center">
+                  <Image
+                    src={player.photoUrl}
+                    alt={player.name}
+                    width={40}
+                    height={40}
+                    className={`h-10 w-10 rounded-full object-cover bg-black/[0.04] dark:bg-white/[0.06] transition-opacity ${
+                      hasntScored ? "opacity-40 grayscale" : ""
+                    }`}
+                  />
+                  <p className="text-[11px] font-semibold mt-1 truncate w-full">
+                    {player.name}
+                  </p>
+                  <p className="text-[9px] text-zinc-400 dark:text-zinc-500">
+                    {player.club.shortName}
+                  </p>
+                  <p
+                    className={`text-xs font-bold tabular-nums mt-0.5 transition-opacity ${
+                      hasntScored ? "opacity-40" : ""
+                    }`}
+                  >
+                    {player.goals}
+                  </p>
+                </div>
+              );
+            })
           : Array.from({ length: 4 }, (_, i) => (
               // Placeholder slots so a card without picks yet takes up the
               // exact same height as one with picks - otherwise the grid

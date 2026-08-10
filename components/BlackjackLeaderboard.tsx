@@ -30,7 +30,7 @@ export function BlackjackLeaderboard({
               />
               <span className="flex-1 flex items-center gap-1.5 min-w-0">
                 <span className="font-medium truncate">{p.managerName}</span>
-                {p.allScored && <QualifiedBadge />}
+                {p.allScored && <QualifiedBadge size="sm" />}
               </span>
               <span className="tabular-nums font-bold">{p.totalGoals}</span>
             </li>
