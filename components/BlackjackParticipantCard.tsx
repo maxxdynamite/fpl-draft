@@ -52,20 +52,15 @@ export function BlackjackParticipantCard({
                       photo rather than the photo touching the top edge. */}
                   <div className="relative z-0">
                     {participant.allScored && (
-                      // A single blurred gradient shape homogenizes into one
-                      // blended hue at this size - two separate colour blobs,
-                      // offset toward opposite corners, keep the green and
-                      // cyan ends of the brand gradient visually distinct.
-                      <>
-                        <span
-                          aria-hidden="true"
-                          className="absolute -inset-1 -translate-x-1 -translate-y-1 rounded-full bg-[#00ff85] opacity-30 blur-md -z-10"
-                        />
-                        <span
-                          aria-hidden="true"
-                          className="absolute -inset-1 translate-x-1 translate-y-1 rounded-full bg-[#04f5ff] opacity-30 blur-md -z-10"
-                        />
-                      </>
+                      // A heavier blur averages the gradient into one
+                      // blended hue - a light blur keeps the green-to-cyan
+                      // direction visible while still softening the edge,
+                      // and a tight inset keeps the glow close to the photo
+                      // instead of spreading into a big halo.
+                      <span
+                        aria-hidden="true"
+                        className="absolute -inset-0.5 rounded-full bg-gradient-to-br from-[#00ff85] to-[#04f5ff] opacity-60 blur-[3px] -z-10"
+                      />
                     )}
                     <div className="h-10 w-10 rounded-full overflow-hidden bg-black/[0.04] dark:bg-white/[0.06] flex items-start justify-center pt-1">
                       <Image
