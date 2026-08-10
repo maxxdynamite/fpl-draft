@@ -3,6 +3,7 @@ import type { BlackjackParticipant } from "@/lib/blackjack";
 import { BLACKJACK_TARGET } from "@/lib/blackjack";
 import { STATUS_META } from "@/lib/blackjackStatus";
 import { QualifiedBadge } from "./QualifiedBadge";
+import { SpadeIcon } from "./SpadeIcon";
 
 export function BlackjackParticipantCard({
   participant,
@@ -26,7 +27,14 @@ export function BlackjackParticipantCard({
             // solid brand-gradient fill (matching the Q badge/picks-chip
             // convention) with a shimmer sweep, instead of the neutral pill
             // every other status uses.
-            <span className="blackjack-shimmer relative overflow-hidden inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-gradient-to-br from-[#00ff85] to-[#04f5ff] text-[#04211a]">
+            <span className="blackjack-shimmer relative overflow-hidden inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-gradient-to-br from-[#00ff85] to-[#04f5ff] text-[#04211a]">
+              <SpadeIcon size={10} />
+              {meta.label}
+            </span>
+          ) : participant.status === "bust" ? (
+            // Solid black fill, not the neutral wrapper every other status
+            // uses - a distinct "this hand is dead" treatment.
+            <span className="inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-black text-white">
               {meta.label}
             </span>
           ) : (

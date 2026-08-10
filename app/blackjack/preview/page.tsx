@@ -13,8 +13,9 @@ import type { Player } from "@/lib/players";
 // logic, so this stays accurate to the real app rather than drifting into
 // its own hand-maintained "looks right" copy.
 
-// Mid-season gameweek so every pace band (ahead/on-pace/behind) is
-// actually reachable - pre-season everything would trivially read "ahead".
+// Mid-season gameweek so every pace band (at-risk/over-target/on-target/
+// under-target/miles-off) is actually reachable - pre-season everything
+// would trivially read "over target".
 const PREVIEW_GAMEWEEK = 15;
 
 function player(
@@ -80,9 +81,8 @@ const scenarios: BlackjackParticipant[] = [
     player(3, "Meslier", "ARS", 1, "GKP", 437495, 0),
   ]),
 
-  // 14 goals against an ~8.3 expected pace at GW15 clears the wider
-  // at-risk band (delta > 5), not just "ahead" - too fast a pace risks
-  // overshooting past 21 before the season's out.
+  // 14 goals against an ~8.3 expected pace at GW15 is > pace+4, i.e. "At
+  // Risk" (too fast a pace risks overshooting past 21).
   buildParticipant(5, "At risk + qualified", "14 goals, all 4 scored", [
     player(380, "Ekitiké", "LIV", 14, "FWD", 510663, 6),
     player(427, "Mbeumo", "MUN", 16, "MID", 446008, 4),
@@ -90,43 +90,42 @@ const scenarios: BlackjackParticipant[] = [
     player(527, "Richarlison", "TOT", 19, "FWD", 212319, 1),
   ]),
 
-  buildParticipant(11, "Ahead of pace + qualified", "12 goals, all 4 scored", [
+  buildParticipant(11, "Over target + qualified", "12 goals, all 4 scored", [
     player(40, "Rogers", "CHE", 6, "MID", 244850, 4),
     player(154, "Palmer", "CHE", 6, "MID", 244851, 4),
     player(155, "Enzo", "CHE", 6, "MID", 448047, 2),
     player(260, "Wilson", "LEE", 13, "MID", 153682, 2),
   ]),
 
-  buildParticipant(6, "Ahead of pace, not qualified", "13 goals, one pick on 0", [
-    player(40, "Rogers", "CHE", 6, "MID", 244850, 7),
+  buildParticipant(6, "Over target, not qualified", "11 goals, one pick on 0", [
+    player(40, "Rogers", "CHE", 6, "MID", 244850, 5),
     player(154, "Palmer", "CHE", 6, "MID", 244851, 4),
     player(155, "Enzo", "CHE", 6, "MID", 448047, 2),
     player(260, "Wilson", "LEE", 13, "MID", 153682, 0),
   ]),
 
-  buildParticipant(7, "On pace + qualified", "8 goals, all 4 scored", [
+  buildParticipant(7, "On target + qualified", "8 goals, all 4 scored", [
     player(428, "Cunha", "MUN", 16, "MID", 430871, 3),
     player(208, "Sarr", "CRY", 8, "MID", 232185, 2),
     player(248, "Beto", "EVE", 9, "FWD", 486385, 2),
     player(426, "B.Fernandes", "MUN", 16, "MID", 141746, 1),
   ]),
 
-  buildParticipant(8, "On pace, not qualified", "8 goals, two picks on 0", [
+  buildParticipant(8, "On target, not qualified", "8 goals, two picks on 0", [
     player(452, "Bruno G.", "NEW", 17, "MID", 208706, 5),
     player(94, "Schade", "BRE", 4, "MID", 513418, 3),
     player(236, "Dewsbury-Hall", "EVE", 9, "MID", 215413, 0),
     player(249, "Barry", "EVE", 9, "FWD", 586309, 0),
   ]),
 
-  buildParticipant(9, "Behind pace + qualified", "4 goals, all 4 scored", [
+  buildParticipant(9, "Under target + qualified", "4 goals, all 4 scored", [
     player(336, "Okafor", "LEE", 13, "MID", 435997, 1),
     player(463, "Woltemade", "NEW", 17, "FWD", 470313, 1),
     player(12, "Saka", "ARS", 1, "MID", 223340, 1),
     player(14, "Eze", "ARS", 1, "MID", 232413, 1),
   ]),
 
-  // 2 goals against an ~8.3 expected pace clears the wider miles-off band
-  // (delta < -5), not just "behind".
+  // 2 goals against an ~8.3 expected pace is < pace-5, i.e. "Miles Off It".
   buildParticipant(10, "Miles off it, not qualified", "2 goals, three picks on 0", [
     player(68, "Tavernier", "BOU", 3, "MID", 201658, 2),
     player(95, "O.Dango", "BRE", 4, "MID", 533463, 0),

@@ -4,17 +4,23 @@ import { getPlayersData, type Player } from "./players";
 
 export const BLACKJACK_TARGET = 21;
 export const TOTAL_GAMEWEEKS = 38;
-const PACE_TOLERANCE_INNER = 2; // on-pace boundary
-const PACE_TOLERANCE_OUTER = 5; // at-risk / miles-off boundary
+// Mirrors the user's own spreadsheet pace formula exactly (including the
+// asymmetric outer bounds - miles-off at -5, at-risk at +4, not a rounded
+// +-5): =IF(C3>21,"BUST",IF(C3<pace-5,"Miles Off It",IF(C3<pace-0.5,
+// "Under Target",IF(C3<=pace+0.5,"On Target",IF(C3<=pace+4,"Over Target",
+// "At Risk")))))
+const PACE_TOLERANCE = 0.5; // on-target boundary
+const PACE_LOW_OUTER = 5; // miles-off boundary (below expected pace)
+const PACE_HIGH_OUTER = 4; // at-risk boundary (above expected pace)
 
 export type BlackjackStatus =
   | "no-picks"
   | "bust"
   | "blackjack"
   | "at-risk"
-  | "ahead"
-  | "on-pace"
-  | "behind"
+  | "over-target"
+  | "on-target"
+  | "under-target"
   | "miles-off";
 
 export type BlackjackParticipant = {
@@ -42,12 +48,11 @@ export function computeStatus(
   if (totalGoals === BLACKJACK_TARGET && allScored) return "blackjack";
 
   const expectedPace = (BLACKJACK_TARGET * currentGameweek) / TOTAL_GAMEWEEKS;
-  const delta = totalGoals - expectedPace;
-  if (delta > PACE_TOLERANCE_OUTER) return "at-risk";
-  if (delta > PACE_TOLERANCE_INNER) return "ahead";
-  if (delta < -PACE_TOLERANCE_OUTER) return "miles-off";
-  if (delta < -PACE_TOLERANCE_INNER) return "behind";
-  return "on-pace";
+  if (totalGoals < expectedPace - PACE_LOW_OUTER) return "miles-off";
+  if (totalGoals < expectedPace - PACE_TOLERANCE) return "under-target";
+  if (totalGoals <= expectedPace + PACE_TOLERANCE) return "on-target";
+  if (totalGoals <= expectedPace + PACE_HIGH_OUTER) return "over-target";
+  return "at-risk";
 }
 
 // Combines manager identity, submitted picks, and live player goal counts

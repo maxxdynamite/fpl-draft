@@ -17,32 +17,32 @@ export const STATUS_META: Record<
     textClass: "text-black",
   },
   blackjack: {
-    label: "Blackjack!",
+    label: "Blackjack",
     dotClass: "bg-gradient-to-br from-[#00ff85] to-[#04f5ff]",
     textClass: "text-[#00b368] dark:text-[#00ff85]",
   },
   "at-risk": {
-    label: "At risk",
+    label: "At Risk",
     dotClass: "bg-red-500",
     textClass: "text-red-600 dark:text-red-400",
   },
-  ahead: {
-    label: "Ahead of pace",
+  "over-target": {
+    label: "Over Target",
     dotClass: "bg-orange-500",
     textClass: "text-orange-600 dark:text-orange-400",
   },
-  "on-pace": {
-    label: "On pace",
+  "on-target": {
+    label: "On Target",
     dotClass: "bg-green-500",
     textClass: "text-green-600 dark:text-green-400",
   },
-  behind: {
-    label: "Behind pace",
+  "under-target": {
+    label: "Under Target",
     dotClass: "bg-blue-500",
     textClass: "text-blue-600 dark:text-blue-400",
   },
   "miles-off": {
-    label: "Miles off it",
+    label: "Miles Off It",
     dotClass: "bg-purple-500",
     textClass: "text-purple-600 dark:text-purple-400",
   },
