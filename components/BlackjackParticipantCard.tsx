@@ -59,10 +59,14 @@ export function BlackjackParticipantCard({
                       // instead of spreading into a big halo.
                       <span
                         aria-hidden="true"
-                        className="absolute -inset-0.5 rounded-full bg-gradient-to-br from-[#00ff85] to-[#04f5ff] opacity-60 blur-[3px] -z-10"
+                        className="absolute -inset-0.5 rounded-full bg-gradient-to-br from-[#00ff85] to-[#04f5ff] opacity-90 blur-[3px] -z-10"
                       />
                     )}
-                    <div className="h-10 w-10 rounded-full overflow-hidden bg-black/[0.04] dark:bg-white/[0.06] flex items-start justify-center pt-1">
+                    {/* Solid, not translucent - the glow sits directly
+                        behind this circle, and a translucent fill let its
+                        colour bleed through the pt-1 gap above the head,
+                        which read as the circle itself changing colour. */}
+                    <div className="h-10 w-10 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-start justify-center pt-1">
                       <Image
                         src={player.photoUrl}
                         alt={player.name}
