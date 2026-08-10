@@ -44,15 +44,22 @@ export function BlackjackParticipantCard({
               const hasntScored = player.goals === 0;
               return (
                 <div key={player.id} className="flex flex-col items-center text-center">
-                  <Image
-                    src={player.photoUrl}
-                    alt={player.name}
-                    width={40}
-                    height={40}
-                    className={`h-10 w-10 rounded-full object-cover bg-black/[0.04] dark:bg-white/[0.06] transition-opacity ${
-                      hasntScored ? "opacity-40 grayscale" : ""
-                    }`}
-                  />
+                  {/* Outer circle is the background; the photo itself is
+                      inset smaller so there's a real visible margin ring
+                      of daylight around it (including above the head) -
+                      the source photos are already tightly cropped, so
+                      cropping/positioning tricks alone ran out of room. */}
+                  <div className="h-10 w-10 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center overflow-hidden">
+                    <Image
+                      src={player.photoUrl}
+                      alt={player.name}
+                      width={32}
+                      height={32}
+                      className={`h-8 w-8 rounded-full object-cover transition-opacity ${
+                        hasntScored ? "opacity-40 grayscale" : ""
+                      }`}
+                    />
+                  </div>
                   <p className="text-[11px] font-semibold mt-1 truncate w-full">
                     {player.name}
                   </p>
