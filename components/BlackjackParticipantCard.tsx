@@ -60,7 +60,7 @@ export function BlackjackParticipantCard({
                   alt={player.name}
                   width={40}
                   height={40}
-                  className="h-10 w-10 rounded-full object-cover object-[center_25%] bg-black/[0.04] dark:bg-white/[0.06]"
+                  className="h-10 w-10 rounded-full object-cover object-top bg-black/[0.04] dark:bg-white/[0.06]"
                 />
                 <p className="text-[11px] font-semibold mt-1 truncate w-full">
                   {player.name}

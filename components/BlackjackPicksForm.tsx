@@ -137,7 +137,7 @@ export function BlackjackPicksForm({
                       alt=""
                       width={20}
                       height={20}
-                      className="h-5 w-5 rounded-full object-cover object-[center_25%]"
+                      className="h-5 w-5 rounded-full object-cover object-top"
                     />
                     {player.name}
                     <span aria-hidden="true">×</span>
@@ -187,9 +187,7 @@ export function BlackjackPicksForm({
                     alt=""
                     width={36}
                     height={36}
-                    className={`h-9 w-9 rounded-full object-cover object-[center_25%] bg-black/[0.04] dark:bg-white/[0.06] shrink-0 ${
-                      player.goals === 0 ? "opacity-40 grayscale" : ""
-                    }`}
+                    className="h-9 w-9 rounded-full object-cover object-top bg-black/[0.04] dark:bg-white/[0.06] shrink-0"
                   />
                   <span className="min-w-0">
                     <span className="block text-xs font-bold truncate">{player.name}</span>

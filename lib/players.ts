@@ -48,6 +48,23 @@ export async function getPlayersData(): Promise<PlayersData> {
     ]),
   );
 
+  const events: Array<{ finished: boolean; is_current: boolean }> = data.events ?? [];
+  const firstEvent = data.events?.[0];
+
+  // Finished gameweeks, plus one more if a gameweek is currently live (in
+  // progress counts as partial pace, not zero) - this is the real Premier
+  // League calendar, not this app's own Draft league gameweek tracker,
+  // which is a separate competition on a separate (and currently
+  // out-of-sync) schedule.
+  const currentGameweek =
+    events.filter((e) => e.finished).length + (events.some((e) => e.is_current) ? 1 : 0);
+
+  // Before a season's first gameweek, bootstrap-static still reports last
+  // season's final goals_scored rather than resetting to 0 - real
+  // behaviour of the API, not a caching issue. Zero it out ourselves so
+  // nobody looks like they've already scored before a ball's been kicked.
+  const seasonHasStarted = currentGameweek > 0;
+
   const players: Player[] = data.elements.map(
     (el: {
       id: number;
@@ -62,7 +79,7 @@ export async function getPlayersData(): Promise<PlayersData> {
       name: el.web_name,
       club: clubsById.get(el.team)!,
       position: POSITION_LABELS[el.element_type] ?? "?",
-      goals: el.goals_scored,
+      goals: seasonHasStarted ? el.goals_scored : 0,
       // The bare (unversioned) "premierleague" path also resolves with a
       // "p" prefix, but silently serves stale, outdated photos - confirmed
       // by diffing it against what fantasy.premierleague.com itself
@@ -73,17 +90,6 @@ export async function getPlayersData(): Promise<PlayersData> {
       status: el.status,
     }),
   );
-
-  const events: Array<{ finished: boolean; is_current: boolean }> = data.events ?? [];
-  const firstEvent = data.events?.[0];
-
-  // Finished gameweeks, plus one more if a gameweek is currently live (in
-  // progress counts as partial pace, not zero) - this is the real Premier
-  // League calendar, not this app's own Draft league gameweek tracker,
-  // which is a separate competition on a separate (and currently
-  // out-of-sync) schedule.
-  const currentGameweek =
-    events.filter((e) => e.finished).length + (events.some((e) => e.is_current) ? 1 : 0);
 
   return {
     players,
