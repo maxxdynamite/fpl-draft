@@ -50,16 +50,24 @@ export function BlackjackParticipantCard({
                       tighter on the head/shoulders, but with a small pt so
                       the background shows as a deliberate gap above the
                       photo rather than the photo touching the top edge. */}
-                  <div className="h-10 w-10 rounded-full overflow-hidden bg-black/[0.04] dark:bg-white/[0.06] flex items-start justify-center pt-1">
-                    <Image
-                      src={player.photoUrl}
-                      alt={player.name}
-                      width={52}
-                      height={52}
-                      className={`h-[52px] w-[52px] object-cover object-top transition-opacity ${
-                        hasntScored ? "opacity-40 grayscale" : ""
-                      }`}
-                    />
+                  <div className="relative z-0">
+                    {participant.allScored && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -inset-1.5 rounded-full bg-gradient-to-br from-[#00ff85] to-[#04f5ff] opacity-80 blur -z-10"
+                      />
+                    )}
+                    <div className="h-10 w-10 rounded-full overflow-hidden bg-black/[0.04] dark:bg-white/[0.06] flex items-start justify-center pt-1">
+                      <Image
+                        src={player.photoUrl}
+                        alt={player.name}
+                        width={52}
+                        height={52}
+                        className={`h-[52px] w-[52px] object-cover object-top transition-opacity ${
+                          hasntScored ? "opacity-40 grayscale" : ""
+                        }`}
+                      />
+                    </div>
                   </div>
                   <p className="text-[11px] font-semibold mt-1 truncate w-full">
                     {player.name}
