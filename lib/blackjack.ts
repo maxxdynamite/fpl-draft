@@ -4,15 +4,18 @@ import { getPlayersData, type Player } from "./players";
 
 export const BLACKJACK_TARGET = 21;
 export const TOTAL_GAMEWEEKS = 38;
-const PACE_TOLERANCE = 2;
+const PACE_TOLERANCE_INNER = 2; // on-pace boundary
+const PACE_TOLERANCE_OUTER = 5; // at-risk / miles-off boundary
 
 export type BlackjackStatus =
   | "no-picks"
   | "bust"
   | "blackjack"
+  | "at-risk"
   | "ahead"
   | "on-pace"
-  | "behind";
+  | "behind"
+  | "miles-off";
 
 export type BlackjackParticipant = {
   entryId: number;
@@ -39,8 +42,11 @@ export function computeStatus(
   if (totalGoals === BLACKJACK_TARGET && allScored) return "blackjack";
 
   const expectedPace = (BLACKJACK_TARGET * currentGameweek) / TOTAL_GAMEWEEKS;
-  if (totalGoals > expectedPace + PACE_TOLERANCE) return "ahead";
-  if (totalGoals < expectedPace - PACE_TOLERANCE) return "behind";
+  const delta = totalGoals - expectedPace;
+  if (delta > PACE_TOLERANCE_OUTER) return "at-risk";
+  if (delta > PACE_TOLERANCE_INNER) return "ahead";
+  if (delta < -PACE_TOLERANCE_OUTER) return "miles-off";
+  if (delta < -PACE_TOLERANCE_INNER) return "behind";
   return "on-pace";
 }
 

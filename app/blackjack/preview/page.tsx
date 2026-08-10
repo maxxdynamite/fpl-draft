@@ -80,11 +80,21 @@ const scenarios: BlackjackParticipant[] = [
     player(3, "Meslier", "ARS", 1, "GKP", 437495, 0),
   ]),
 
-  buildParticipant(5, "Ahead of pace + qualified", "14 goals, all 4 scored", [
+  // 14 goals against an ~8.3 expected pace at GW15 clears the wider
+  // at-risk band (delta > 5), not just "ahead" - too fast a pace risks
+  // overshooting past 21 before the season's out.
+  buildParticipant(5, "At risk + qualified", "14 goals, all 4 scored", [
     player(380, "Ekitiké", "LIV", 14, "FWD", 510663, 6),
     player(427, "Mbeumo", "MUN", 16, "MID", 446008, 4),
     player(439, "Šeško", "MUN", 16, "FWD", 485711, 3),
     player(527, "Richarlison", "TOT", 19, "FWD", 212319, 1),
+  ]),
+
+  buildParticipant(11, "Ahead of pace + qualified", "12 goals, all 4 scored", [
+    player(40, "Rogers", "CHE", 6, "MID", 244850, 4),
+    player(154, "Palmer", "CHE", 6, "MID", 244851, 4),
+    player(155, "Enzo", "CHE", 6, "MID", 448047, 2),
+    player(260, "Wilson", "LEE", 13, "MID", 153682, 2),
   ]),
 
   buildParticipant(6, "Ahead of pace, not qualified", "13 goals, one pick on 0", [
@@ -115,7 +125,9 @@ const scenarios: BlackjackParticipant[] = [
     player(14, "Eze", "ARS", 1, "MID", 232413, 1),
   ]),
 
-  buildParticipant(10, "Behind pace, not qualified", "2 goals, three picks on 0", [
+  // 2 goals against an ~8.3 expected pace clears the wider miles-off band
+  // (delta < -5), not just "behind".
+  buildParticipant(10, "Miles off it, not qualified", "2 goals, three picks on 0", [
     player(68, "Tavernier", "BOU", 3, "MID", 201658, 2),
     player(95, "O.Dango", "BRE", 4, "MID", 533463, 0),
     player(367, "Gakpo", "LIV", 14, "MID", 243298, 0),

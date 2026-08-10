@@ -21,12 +21,22 @@ export function BlackjackParticipantCard({
             </p>
             {participant.allScored && <QualifiedBadge />}
           </div>
-          <span
-            className={`inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-black/[0.03] dark:bg-white/[0.06] ${meta.textClass}`}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${meta.dotClass}`} />
-            {meta.label}
-          </span>
+          {participant.status === "blackjack" ? (
+            // Loud and celebratory rather than just another coloured label -
+            // solid brand-gradient fill (matching the Q badge/picks-chip
+            // convention) with a shimmer sweep, instead of the neutral pill
+            // every other status uses.
+            <span className="blackjack-shimmer relative overflow-hidden inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-gradient-to-br from-[#00ff85] to-[#04f5ff] text-[#04211a]">
+              {meta.label}
+            </span>
+          ) : (
+            <span
+              className={`inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-black/[0.03] dark:bg-white/[0.06] ${meta.textClass}`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${meta.dotClass}`} />
+              {meta.label}
+            </span>
+          )}
         </div>
         <div className="flex items-baseline gap-1.5 shrink-0">
           <span className="text-4xl font-extrabold tabular-nums tracking-tight">

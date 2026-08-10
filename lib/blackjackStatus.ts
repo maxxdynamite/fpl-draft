@@ -9,29 +9,41 @@ export const STATUS_META: Record<
     dotClass: "bg-zinc-300 dark:bg-zinc-600",
     textClass: "text-zinc-400 dark:text-zinc-500",
   },
+  // True black, not near-black - low contrast on dark cards is an accepted
+  // trade-off rather than a bug to fix.
   bust: {
     label: "Bust",
-    dotClass: "bg-rose-500",
-    textClass: "text-rose-600 dark:text-rose-400",
+    dotClass: "bg-black",
+    textClass: "text-black",
   },
   blackjack: {
     label: "Blackjack!",
     dotClass: "bg-gradient-to-br from-[#00ff85] to-[#04f5ff]",
     textClass: "text-[#00b368] dark:text-[#00ff85]",
   },
+  "at-risk": {
+    label: "At risk",
+    dotClass: "bg-red-500",
+    textClass: "text-red-600 dark:text-red-400",
+  },
   ahead: {
     label: "Ahead of pace",
-    dotClass: "bg-amber-500",
-    textClass: "text-amber-600 dark:text-amber-400",
+    dotClass: "bg-orange-500",
+    textClass: "text-orange-600 dark:text-orange-400",
   },
   "on-pace": {
     label: "On pace",
-    dotClass: "bg-emerald-500",
-    textClass: "text-emerald-600 dark:text-emerald-400",
+    dotClass: "bg-green-500",
+    textClass: "text-green-600 dark:text-green-400",
   },
   behind: {
     label: "Behind pace",
-    dotClass: "bg-zinc-400 dark:bg-zinc-500",
-    textClass: "text-zinc-500 dark:text-zinc-400",
+    dotClass: "bg-blue-500",
+    textClass: "text-blue-600 dark:text-blue-400",
+  },
+  "miles-off": {
+    label: "Miles off it",
+    dotClass: "bg-purple-500",
+    textClass: "text-purple-600 dark:text-purple-400",
   },
 };
