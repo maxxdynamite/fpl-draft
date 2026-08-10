@@ -46,10 +46,10 @@ export function BlackjackParticipantCard({
                 <div key={player.id} className="flex flex-col items-center text-center">
                   {/* Circle is the mask (overflow-hidden) and the fallback
                       fill behind the photo. The photo is rendered larger
-                      than the circle and top-anchored, so it crops in
-                      tighter on the head/shoulders and pushes the torso out
-                      of frame at the bottom, instead of shrinking to fit. */}
-                  <div className="h-10 w-10 rounded-full overflow-hidden bg-black/[0.04] dark:bg-white/[0.06] flex items-start justify-center">
+                      than the circle and bottom-anchored, so it crops in
+                      tighter on the head/shoulders while keeping them
+                      anchored to the bottom of the frame. */}
+                  <div className="h-10 w-10 rounded-full overflow-hidden bg-black/[0.04] dark:bg-white/[0.06] flex items-end justify-center">
                     <Image
                       src={player.photoUrl}
                       alt={player.name}
