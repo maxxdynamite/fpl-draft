@@ -53,13 +53,13 @@ export function BlackjackParticipantCard({
                   <div className="relative z-0">
                     {participant.allScored && (
                       // A heavier blur averages the gradient into one
-                      // blended hue - a light blur keeps the green-to-cyan
-                      // direction visible while still softening the edge,
-                      // and a tight inset keeps the glow close to the photo
-                      // instead of spreading into a big halo.
+                      // blended hue, so this stays well short of the
+                      // original 8px/-inset-1.5 version - wider than the
+                      // tightest cut, but the green-to-cyan split still
+                      // needs to read clearly rather than mush together.
                       <span
                         aria-hidden="true"
-                        className="absolute -inset-0.5 rounded-full bg-gradient-to-br from-[#00ff85] to-[#04f5ff] opacity-90 blur-[3px] -z-10"
+                        className="absolute -inset-1 rounded-full bg-gradient-to-br from-[#00ff85] to-[#04f5ff] opacity-90 blur-[5px] -z-10"
                       />
                     )}
                     {/* Solid, not translucent - the glow sits directly
