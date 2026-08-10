@@ -5,14 +5,16 @@ export default async function BlackjackLayout({ children }: LayoutProps<"/blackj
   // Real Premier League calendar, same source the pace logic itself uses
   // (lib/blackjack.ts) - not the Draft section's own gameweek tracker,
   // which is a separate, out-of-sync competition schedule. Falls back to
-  // the "Blackjack" title pre-season, before there's a gameweek to show.
+  // Gameweek 1 pre-season (currentGameweek is 0 before a ball's kicked),
+  // same convention as the Draft layout's own pre-season fallback.
   const { currentGameweek } = await getPlayersData();
+  const gameweekNumber = currentGameweek > 0 ? currentGameweek : 1;
 
   return (
     <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-4 sm:pb-6">
       <div className="flex items-center justify-between gap-4 mb-5">
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
-          {currentGameweek > 0 ? `Gameweek ${currentGameweek}` : "Blackjack"}
+          Gameweek {gameweekNumber}
         </h1>
         <Link
           href="/blackjack/picks"
