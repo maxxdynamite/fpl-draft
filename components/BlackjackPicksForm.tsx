@@ -182,7 +182,7 @@ export function BlackjackPicksForm({
                         : "bg-white dark:bg-zinc-900 ring-black/[0.03] dark:ring-white/[0.06] hover:ring-black/[0.1] dark:hover:ring-white/[0.2] shadow-[var(--shadow-soft)]"
                   }`}
                 >
-                  <span className="h-9 w-9 rounded-full overflow-hidden shrink-0 bg-black/[0.04] dark:bg-white/[0.06] flex items-end justify-center">
+                  <span className="h-9 w-9 rounded-full overflow-hidden shrink-0 bg-black/[0.04] dark:bg-white/[0.06] flex items-start justify-center pt-1">
                     <Image
                       src={player.photoUrl}
                       alt=""
