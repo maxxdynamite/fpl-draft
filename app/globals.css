@@ -52,6 +52,14 @@ body {
   85% { opacity: 1; }
   100% { background-position: 250% 0; opacity: 0; }
 }
+/* Same pulse timing as pulse-glow above, but that one's amber colour is
+   baked into its box-shadow - the Cup bracket's "live gameweek" indicator
+   needs the brand green instead, so it gets its own keyframe rather than
+   reusing pulse-glow verbatim. See components/CupBracket.tsx. */
+@keyframes cup-live-pulse {
+  0%, 100% { box-shadow: 0 0 6px 1px rgba(0, 255, 133, 0.5); }
+  50% { box-shadow: 0 0 14px 4px rgba(0, 255, 133, 0.9); }
+}
 
 .streak-t2 {
   animation: pulse-glow 1.8s ease-in-out infinite;
@@ -100,11 +108,16 @@ body {
   animation: shimmer-sweep 2.5s ease-in-out infinite;
 }
 
+.cup-live {
+  animation: cup-live-pulse 1.8s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .streak-t2,
   .streak-t3::before,
   .streak-t3-shimmer::after,
-  .blackjack-shimmer::after {
+  .blackjack-shimmer::after,
+  .cup-live {
     animation: none;
   }
 }
