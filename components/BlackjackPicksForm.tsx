@@ -21,31 +21,36 @@ const STATUS_LABELS: Record<string, string> = {
   d: "Doubtful",
 };
 
+// Squad-sheet order, not alphabetical - GKP/DEF/MID/FWD is how every real
+// team sheet groups players, and it's how managers actually scan a club's
+// roster when picking.
+const POSITION_ORDER: Record<string, number> = { GKP: 0, DEF: 1, MID: 2, FWD: 3 };
+
 // Renders a player's photo, falling back to a generic silhouette on load
 // failure (missing headshots are common for fringe/new-signing players on
-// the FPL photo CDN) instead of a broken-image icon. cropHeadroom
+// the FPL photo CDN) instead of a broken-image icon. headroomOffset
 // reproduces the grid tile's deliberate crop (see lib/players.ts) - the
-// image renders larger than its circular window and is top-anchored so the
-// visible crop clears headroom above the head; the fallback icon has no
-// such asymmetry, so it's simply centered regardless.
+// image renders larger than its circular window and is top-anchored (by
+// this offset) so the visible crop clears headroom above the head; the
+// fallback icon has no such asymmetry, so it's simply centered regardless.
 function PlayerAvatar({
   photoUrl,
   containerClassName,
   imageSize,
   imageClassName,
   fallbackClassName,
-  cropHeadroom = false,
+  headroomOffset,
 }: {
   photoUrl: string;
   containerClassName: string;
   imageSize: number;
   imageClassName: string;
   fallbackClassName: string;
-  cropHeadroom?: boolean;
+  headroomOffset?: string;
 }) {
   const [failed, setFailed] = useState(false);
   const align =
-    !failed && cropHeadroom ? "items-start justify-center pt-1" : "items-center justify-center";
+    !failed && headroomOffset ? `items-start justify-center ${headroomOffset}` : "items-center justify-center";
   return (
     <span className={`flex ${align} ${containerClassName}`}>
       {failed ? (
@@ -138,7 +143,11 @@ export function BlackjackPicksForm({
 
   const clubPlayers = players
     .filter((p) => p.club.id === selectedClubId)
-    .sort((a, b) => b.goals - a.goals || a.name.localeCompare(b.name));
+    .sort(
+      (a, b) =>
+        (POSITION_ORDER[a.position] ?? 99) - (POSITION_ORDER[b.position] ?? 99) ||
+        a.name.localeCompare(b.name),
+    );
 
   return (
     <div className="grid gap-4">
@@ -241,11 +250,11 @@ export function BlackjackPicksForm({
                 >
                   <PlayerAvatar
                     photoUrl={player.photoUrl}
-                    containerClassName="h-9 w-9 rounded-full shrink-0 bg-black/[0.04] dark:bg-white/[0.06] overflow-hidden"
-                    imageSize={47}
-                    imageClassName="h-[47px] w-[47px] object-cover object-top"
-                    fallbackClassName="h-5 w-5 text-zinc-400 dark:text-zinc-500"
-                    cropHeadroom
+                    containerClassName="h-12 w-12 rounded-full shrink-0 bg-black/[0.04] dark:bg-white/[0.06] overflow-hidden"
+                    imageSize={63}
+                    imageClassName="h-[63px] w-[63px] object-cover object-top"
+                    fallbackClassName="h-6 w-6 text-zinc-400 dark:text-zinc-500"
+                    headroomOffset="pt-1.5"
                   />
                   <span className="min-w-0">
                     <span className="block text-xs font-bold truncate">{player.name}</span>
