@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { getPlayersData } from "@/lib/players";
+import { BlackjackHeaderAction } from "@/components/BlackjackHeaderAction";
 
 export default async function BlackjackLayout({ children }: LayoutProps<"/blackjack">) {
   // Real Premier League calendar, same source the pace logic itself uses
@@ -20,12 +20,7 @@ export default async function BlackjackLayout({ children }: LayoutProps<"/blackj
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
           Gameweek {gameweekNumber}
         </h1>
-        <Link
-          href="/blackjack/picks"
-          className="px-4 py-1.5 rounded-full text-sm font-semibold bg-gradient-to-r from-[#00ff85] to-[#04f5ff] text-[#04211a] shadow-[var(--shadow-soft)] hover:opacity-90 transition-opacity"
-        >
-          Make Your Picks
-        </Link>
+        <BlackjackHeaderAction />
       </div>
       {children}
     </main>
