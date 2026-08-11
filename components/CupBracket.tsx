@@ -127,16 +127,16 @@ function buildUnseededViewModel(): ViewModel {
   // drop whitespace-only text content entirely) - a non-breaking space
   // doesn't collapse. See components/CupBracket.tsx history.
   const blankTile = (): TileContent => ({ label: " ", score: null, emphasis: "neutral", gradient: false });
-  const seedTile = (seed: string, gradient: boolean): TileContent => ({
+  const seedTile = (seed: string): TileContent => ({
     label: seed,
     score: null,
     emphasis: "neutral",
-    gradient,
+    gradient: false,
   });
 
   const r12: PairContent[] = UNSEEDED_R12.map(({ id, seeds }) => ({
     id,
-    tiles: [seedTile(seeds[0], true), seedTile(seeds[1], true)],
+    tiles: [seedTile(seeds[0]), seedTile(seeds[1])],
     topLabel: null,
     live: false,
     status: "upcoming",
@@ -155,10 +155,10 @@ function buildUnseededViewModel(): ViewModel {
   const qf = UNSEEDED_QF_IDS.map(blankPair);
   // Seed 1's bye lives directly in qf1's own first slot, seed 2's in qf3's.
   const qf1 = qf.find((p) => p.id === "qf1")!;
-  qf1.tiles[0] = seedTile("1", true);
+  qf1.tiles[0] = seedTile("1");
   qf1.topLabel = "Bye";
   const qf3 = qf.find((p) => p.id === "qf3")!;
-  qf3.tiles[0] = seedTile("2", true);
+  qf3.tiles[0] = seedTile("2");
   qf3.topLabel = "Bye";
 
   const sf = UNSEEDED_SF_IDS.map(blankPair);
