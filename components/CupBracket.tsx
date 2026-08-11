@@ -567,7 +567,9 @@ function StackedBracket({ vm }: { vm: ViewModel }) {
 export function CupBracket({ data }: { data: CupBracketData }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const [paths, setPaths] = useState<{ id: string; d: string; advanced: boolean }[]>([]);
+  const [paths, setPaths] = useState<
+    { id: string; d: string; isFlat: boolean; advanced: boolean }[]
+  >([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const vm = useMemo(
@@ -625,12 +627,12 @@ export function CupBracket({ data }: { data: CupBracketData }) {
         // imperceptible, so treating it as flat isn't a lie.
         const midX = x1 + (x2 - x1) / 2;
         const yFlat = (y1 + y2) / 2;
-        const d =
-          Math.abs(y2 - y1) < FLAT_THRESHOLD
-            ? `M ${x1} ${yFlat} L ${x2} ${yFlat}`
-            : `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
-        return { id: `${edge.from}-${edge.to}`, d, advanced: vm.advancedByFrom.get(edge.from) ?? false };
-      }).filter((p): p is { id: string; d: string; advanced: boolean } => p !== null);
+        const isFlat = Math.abs(y2 - y1) < FLAT_THRESHOLD;
+        const d = isFlat
+          ? `M ${x1} ${yFlat} L ${x2} ${yFlat}`
+          : `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
+        return { id: `${edge.from}-${edge.to}`, d, isFlat, advanced: vm.advancedByFrom.get(edge.from) ?? false };
+      }).filter((p): p is { id: string; d: string; isFlat: boolean; advanced: boolean } => p !== null);
 
       setPaths(next);
     }
@@ -674,7 +676,13 @@ export function CupBracket({ data }: { data: CupBracketData }) {
                 fill="none"
                 stroke={p.advanced ? "url(#cup-connector)" : "#71717a"}
                 strokeWidth={2}
-                strokeOpacity={p.advanced ? 1 : 0.3}
+                // A flat connector only spans the column gap minus its two
+                // end insets (~20px) - at the same 0.3 opacity a full
+                // elbow uses, that little surface area reads as invisible
+                // against the dark background. Elbow connectors don't need
+                // the boost since their vertical leg gives them much more
+                // visible length at the same opacity.
+                strokeOpacity={p.advanced ? 1 : p.isFlat ? 0.6 : 0.3}
                 strokeLinecap="butt"
               />
             ))}
