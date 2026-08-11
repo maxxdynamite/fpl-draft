@@ -6,13 +6,13 @@ import { useLayoutEffect, useRef, useState } from "react";
 // happened yet (TBC, closer to Christmas), so this is the fixed matchup
 // shape by seed number only - no manager names, no live winner computation.
 //
-// Progressive styling: the brand gradient marks whichever stage is
-// "active" - for now that's Round of 12 (plus the two byes, which sit at
-// the same tournament depth as Round of 12 despite being drawn in the QF
-// column). Every other stage stays neutral until this shell is updated to
-// reflect real results, at which point the gradient moves forward one
-// stage at a time (both the connectors leaving a decided round AND the
-// cells that were advanced into pick up the border).
+// Progressive styling: the brand gradient (full brightness) marks a
+// genuinely *finalised* result, not just "this round is up next" - a
+// Round of 12 fixture hasn't been played, so it stays neutral like every
+// other undecided match. Byes are the one exception: seed 1/2's place in
+// the QF is certain from the start, no game required, so their cell and
+// connector are gradient immediately. As this shell is updated to reflect
+// real results, the gradient moves forward one decided match at a time.
 
 type Slot = string | null;
 type BracketNode = { id: string; top: Slot; bottom: Slot };
@@ -60,14 +60,18 @@ const ROUNDS: Round[] = [
 ];
 
 const EDGES: Edge[] = [
+  // Byes are a certain outcome from the start (no match to decide them),
+  // so their connector is gradient immediately. Every Round of 12 match
+  // is still unplayed, so its connector stays neutral until it's actually
+  // decided.
   { from: "bye1", to: "qf1", toSlot: 0, advanced: true },
-  { from: "m89", to: "qf1", toSlot: 1, advanced: true },
-  { from: "m413", to: "qf2", toSlot: 0, advanced: true },
-  { from: "m512", to: "qf2", toSlot: 1, advanced: true },
+  { from: "m89", to: "qf1", toSlot: 1, advanced: false },
+  { from: "m413", to: "qf2", toSlot: 0, advanced: false },
+  { from: "m512", to: "qf2", toSlot: 1, advanced: false },
   { from: "bye2", to: "qf3", toSlot: 0, advanced: true },
-  { from: "m710", to: "qf3", toSlot: 1, advanced: true },
-  { from: "m314", to: "qf4", toSlot: 0, advanced: true },
-  { from: "m611", to: "qf4", toSlot: 1, advanced: true },
+  { from: "m710", to: "qf3", toSlot: 1, advanced: false },
+  { from: "m314", to: "qf4", toSlot: 0, advanced: false },
+  { from: "m611", to: "qf4", toSlot: 1, advanced: false },
   { from: "qf1", to: "sf1", toSlot: 0, advanced: false },
   { from: "qf2", to: "sf1", toSlot: 1, advanced: false },
   { from: "qf3", to: "sf2", toSlot: 0, advanced: false },
@@ -205,14 +209,17 @@ export function CupBracket() {
   }, []);
 
   return (
-    <div className="min-w-0 rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-4 sm:p-6">
+    <div className="min-w-0 rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] px-4 sm:px-6 pt-3 pb-4 sm:pb-6">
       {/* min-w-0 is required, not decorative - as a CSS grid item this
           card defaults to min-width:auto, which would let it grow to fit
           the bracket's full intrinsic width instead of respecting the
           grid's 1fr track, and overflow-x-auto below would never actually
-          activate (whole page gets horizontal scroll instead). */}
+          activate (whole page gets horizontal scroll instead). Top padding
+          is pt-3 (not the same p-4/p-6 as the sides/bottom) specifically to
+          match the sidebar leaderboard's own pt-3 above its title, so the
+          two title rows land on the same line. */}
       <div className="overflow-x-auto">
-        <div ref={containerRef} className="relative min-w-max py-2">
+        <div ref={containerRef} className="relative min-w-max pb-2">
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none"
             aria-hidden="true"
@@ -230,12 +237,12 @@ export function CupBracket() {
                 fill="none"
                 stroke={p.advanced ? "url(#cup-connector)" : "#71717a"}
                 strokeWidth={2}
-                strokeOpacity={p.advanced ? 0.55 : 0.3}
+                strokeOpacity={p.advanced ? 1 : 0.3}
                 strokeLinecap="round"
               />
             ))}
           </svg>
-          <div className="relative flex gap-16">
+          <div className="relative flex gap-8">
             {ROUNDS.map((round) => (
               <div key={round.title} className="flex flex-col items-center gap-3">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
@@ -253,7 +260,7 @@ export function CupBracket() {
                         top={node.top}
                         bottom={node.bottom}
                         subtle={round.subtle}
-                        gradient={round.subtle ?? false}
+                        gradient={false}
                         registerRef={(el) => {
                           nodeRefs.current[node.id] = el;
                         }}
