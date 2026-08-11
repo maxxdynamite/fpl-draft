@@ -6,6 +6,14 @@ import { useLayoutEffect, useRef, useState } from "react";
 // happened yet (TBC, closer to Christmas), so this is the fixed matchup
 // shape by seed number only - no manager names, no live winner computation.
 //
+// From the quarter-final onward, each match is two independent single-slot
+// tiles (not one two-row card) stacked with a small gap - a pair wrapper
+// div (no border of its own) groups them for layout and gives the
+// outgoing connector to the next round a place to originate from (its
+// vertical centre, i.e. the midpoint between the two tiles). Round of 12
+// keeps the two-row merged card, and byes keep their existing standalone
+// badge - neither of those changed here.
+//
 // Progressive styling: the brand gradient (full brightness) marks a
 // genuinely *finalised* result, not just "this round is up next" - a
 // Round of 12 fixture hasn't been played, so it stays neutral like every
@@ -15,13 +23,12 @@ import { useLayoutEffect, useRef, useState } from "react";
 // real results, the gradient moves forward one decided match at a time.
 
 type Slot = string | null;
-type BracketNode = { id: string; top: Slot; bottom: Slot };
-type Round = { title: string; nodes: BracketNode[]; subtle?: boolean };
-// toSlot: which row of the destination card this edge feeds (0 = top, 1 = bottom).
-// advanced: gradient-coloured (this stage has been decided) vs neutral.
-type Edge = { from: string; to: string; toSlot: 0 | 1; advanced: boolean };
+type MatchNode = { id: string; top: Slot; bottom: Slot };
+type PairNode = { id: string; slots: [Slot, Slot] };
+// advanced: gradient-coloured, full brightness (this result is decided) vs neutral.
+type Edge = { from: string; to: string; advanced: boolean };
 
-const ROUND_OF_12: BracketNode[] = [
+const ROUND_OF_12: MatchNode[] = [
   { id: "m89", top: "8", bottom: "9" },
   { id: "m413", top: "4", bottom: "13" },
   { id: "m512", top: "5", bottom: "12" },
@@ -30,54 +37,51 @@ const ROUND_OF_12: BracketNode[] = [
   { id: "m611", top: "6", bottom: "11" },
 ];
 
+const QF: PairNode[] = [
+  { id: "qf1", slots: [null, null] },
+  { id: "qf2", slots: [null, null] },
+  { id: "qf3", slots: [null, null] },
+  { id: "qf4", slots: [null, null] },
+];
+const SF: PairNode[] = [
+  { id: "sf1", slots: [null, null] },
+  { id: "sf2", slots: [null, null] },
+];
+const FINAL: PairNode = { id: "final", slots: [null, null] };
+const WINNER: MatchNode = { id: "winner", top: "Winner", bottom: null };
+
 const BYES = [
-  { id: "bye1", seed: "1", feedsQF: "qf1" as const },
-  { id: "bye2", seed: "2", feedsQF: "qf3" as const },
+  { id: "bye1", seed: "1", feedsQF: "qf1" },
+  { id: "bye2", seed: "2", feedsQF: "qf3" },
 ];
 
-const ROUNDS: Round[] = [
-  { title: "Round of 12", subtle: true, nodes: ROUND_OF_12 },
-  {
-    title: "Quarter-Final",
-    nodes: [
-      { id: "qf1", top: null, bottom: null },
-      { id: "qf2", top: null, bottom: null },
-      { id: "qf3", top: null, bottom: null },
-      { id: "qf4", top: null, bottom: null },
-    ],
-  },
-  {
-    title: "Semi-Final",
-    nodes: [
-      { id: "sf1", top: null, bottom: null },
-      { id: "sf2", top: null, bottom: null },
-    ],
-  },
-  {
-    title: "Final",
-    nodes: [{ id: "final", top: null, bottom: null }],
-  },
-];
+// slot(pairId, 0|1) is the individual tile's ref id within a pair.
+const slot = (pairId: string, i: 0 | 1) => `${pairId}-${i}`;
 
 const EDGES: Edge[] = [
   // Byes are a certain outcome from the start (no match to decide them),
   // so their connector is gradient immediately. Every Round of 12 match
   // is still unplayed, so its connector stays neutral until it's actually
   // decided.
-  { from: "bye1", to: "qf1", toSlot: 0, advanced: true },
-  { from: "m89", to: "qf1", toSlot: 1, advanced: false },
-  { from: "m413", to: "qf2", toSlot: 0, advanced: false },
-  { from: "m512", to: "qf2", toSlot: 1, advanced: false },
-  { from: "bye2", to: "qf3", toSlot: 0, advanced: true },
-  { from: "m710", to: "qf3", toSlot: 1, advanced: false },
-  { from: "m314", to: "qf4", toSlot: 0, advanced: false },
-  { from: "m611", to: "qf4", toSlot: 1, advanced: false },
-  { from: "qf1", to: "sf1", toSlot: 0, advanced: false },
-  { from: "qf2", to: "sf1", toSlot: 1, advanced: false },
-  { from: "qf3", to: "sf2", toSlot: 0, advanced: false },
-  { from: "qf4", to: "sf2", toSlot: 1, advanced: false },
-  { from: "sf1", to: "final", toSlot: 0, advanced: false },
-  { from: "sf2", to: "final", toSlot: 1, advanced: false },
+  { from: "bye1", to: slot("qf1", 0), advanced: true },
+  { from: "m89", to: slot("qf1", 1), advanced: false },
+  { from: "m413", to: slot("qf2", 0), advanced: false },
+  { from: "m512", to: slot("qf2", 1), advanced: false },
+  { from: "bye2", to: slot("qf3", 0), advanced: true },
+  { from: "m710", to: slot("qf3", 1), advanced: false },
+  { from: "m314", to: slot("qf4", 0), advanced: false },
+  { from: "m611", to: slot("qf4", 1), advanced: false },
+  // From here, "from" is a pair wrapper id (qf1, sf1, final, ...) - its
+  // own bounding box spans exactly the two tiles it wraps, so its right
+  // edge/vertical-centre is the correct merge point regardless of which
+  // of the two tiles ends up being the actual winner.
+  { from: "qf1", to: slot("sf1", 0), advanced: false },
+  { from: "qf2", to: slot("sf1", 1), advanced: false },
+  { from: "qf3", to: slot("sf2", 0), advanced: false },
+  { from: "qf4", to: slot("sf2", 1), advanced: false },
+  { from: "sf1", to: slot("final", 0), advanced: false },
+  { from: "sf2", to: slot("final", 1), advanced: false },
+  { from: "final", to: "winner", advanced: false },
 ];
 
 const COLUMN_HEIGHT = 640;
@@ -112,17 +116,16 @@ function CardShell({
   );
 }
 
+// Round of 12 only - the two-row merged card.
 function MatchCard({
   top,
   bottom,
   subtle,
-  gradient,
   registerRef,
 }: {
   top: Slot;
   bottom: Slot;
   subtle?: boolean;
-  gradient: boolean;
   registerRef: (el: HTMLDivElement | null) => void;
 }) {
   const rowClass = subtle
@@ -130,7 +133,7 @@ function MatchCard({
     : "px-3 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 truncate";
 
   return (
-    <CardShell gradient={gradient} registerRef={registerRef}>
+    <CardShell gradient={false} registerRef={registerRef}>
       <div className={`${rowClass} border-b border-black/[0.04] dark:border-white/[0.06]`}>
         {top ?? " "}
       </div>
@@ -139,13 +142,28 @@ function MatchCard({
   );
 }
 
+// QF/SF/Final - a single independent tile representing one slot.
+function SlotTile({
+  value,
+  registerRef,
+}: {
+  value: Slot;
+  registerRef: (el: HTMLDivElement | null) => void;
+}) {
+  return (
+    <CardShell gradient={false} registerRef={registerRef}>
+      <div className="px-3 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 truncate">
+        {value ?? " "}
+      </div>
+    </CardShell>
+  );
+}
+
 function ByeBadge({
   seed,
-  gradient,
   registerRef,
 }: {
   seed: string;
-  gradient: boolean;
   registerRef: (el: HTMLDivElement | null) => void;
 }) {
   return (
@@ -153,7 +171,7 @@ function ByeBadge({
       <span className="text-[9px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
         Bye
       </span>
-      <CardShell gradient={gradient} registerRef={registerRef}>
+      <CardShell gradient registerRef={registerRef}>
         <div className="px-2.5 py-1.5 text-[11px] font-medium text-zinc-400 dark:text-zinc-500 truncate">
           {seed}
         </div>
@@ -162,10 +180,29 @@ function ByeBadge({
   );
 }
 
+function Pair({
+  pair,
+  registerRef,
+}: {
+  pair: PairNode;
+  registerRef: (id: string) => (el: HTMLDivElement | null) => void;
+}) {
+  return (
+    <div ref={registerRef(pair.id)} className="flex flex-col gap-1.5">
+      <SlotTile value={pair.slots[0]} registerRef={registerRef(slot(pair.id, 0))} />
+      <SlotTile value={pair.slots[1]} registerRef={registerRef(slot(pair.id, 1))} />
+    </div>
+  );
+}
+
 export function CupBracket() {
   const containerRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [paths, setPaths] = useState<{ id: string; d: string; advanced: boolean }[]>([]);
+
+  const registerRef = (id: string) => (el: HTMLDivElement | null) => {
+    nodeRefs.current[id] = el;
+  };
 
   useLayoutEffect(() => {
     function measure() {
@@ -183,10 +220,8 @@ export function CupBracket() {
 
         const x1 = fromRect.right - containerRect.left;
         const y1 = fromRect.top + fromRect.height / 2 - containerRect.top;
-
         const x2 = toRect.left - containerRect.left;
-        const rowHeight = toRect.height / 2;
-        const y2 = toRect.top + rowHeight * (edge.toSlot + 0.5) - containerRect.top;
+        const y2 = toRect.top + toRect.height / 2 - containerRect.top;
 
         // Conventional right-angle bracket connector: out horizontally,
         // up/down at the midpoint, in horizontally.
@@ -243,46 +278,69 @@ export function CupBracket() {
             ))}
           </svg>
           <div className="relative flex gap-8">
-            {ROUNDS.map((round) => (
-              <div key={round.title} className="flex flex-col items-center gap-3">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                  {round.title}
-                </p>
-                <div
-                  className="flex flex-col justify-around"
-                  style={{ height: COLUMN_HEIGHT }}
-                >
-                  {round.nodes.map((node) => {
-                    const bye = BYES.find((b) => b.feedsQF === node.id);
-                    const card = (
-                      <MatchCard
-                        key={node.id}
-                        top={node.top}
-                        bottom={node.bottom}
-                        subtle={round.subtle}
-                        gradient={false}
-                        registerRef={(el) => {
-                          nodeRefs.current[node.id] = el;
-                        }}
-                      />
-                    );
-                    if (!bye) return card;
-                    return (
-                      <div key={node.id} className="flex flex-col items-center gap-3">
-                        <ByeBadge
-                          seed={bye.seed}
-                          gradient
-                          registerRef={(el) => {
-                            nodeRefs.current[bye.id] = el;
-                          }}
-                        />
-                        {card}
-                      </div>
-                    );
-                  })}
-                </div>
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                Round of 12
+              </p>
+              <div className="flex flex-col justify-around" style={{ height: COLUMN_HEIGHT }}>
+                {ROUND_OF_12.map((node) => (
+                  <MatchCard
+                    key={node.id}
+                    top={node.top}
+                    bottom={node.bottom}
+                    subtle
+                    registerRef={registerRef(node.id)}
+                  />
+                ))}
               </div>
-            ))}
+            </div>
+
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                Quarter-Final
+              </p>
+              <div className="flex flex-col justify-around" style={{ height: COLUMN_HEIGHT }}>
+                {QF.map((pair) => {
+                  const bye = BYES.find((b) => b.feedsQF === pair.id);
+                  const pairEl = <Pair key={pair.id} pair={pair} registerRef={registerRef} />;
+                  if (!bye) return pairEl;
+                  return (
+                    <div key={pair.id} className="flex flex-col items-center gap-3">
+                      <ByeBadge seed={bye.seed} registerRef={registerRef(bye.id)} />
+                      {pairEl}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                Semi-Final
+              </p>
+              <div className="flex flex-col justify-around" style={{ height: COLUMN_HEIGHT }}>
+                {SF.map((pair) => (
+                  <Pair key={pair.id} pair={pair} registerRef={registerRef} />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                Final
+              </p>
+              <div
+                className="flex flex-col items-center justify-center gap-3"
+                style={{ height: COLUMN_HEIGHT }}
+              >
+                <Pair pair={FINAL} registerRef={registerRef} />
+                <MatchCard
+                  top={WINNER.top}
+                  bottom={WINNER.bottom}
+                  registerRef={registerRef(WINNER.id)}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
