@@ -628,8 +628,15 @@ export function CupBracket({ data }: { data: CupBracketData }) {
         const midX = x1 + (x2 - x1) / 2;
         const yFlat = (y1 + y2) / 2;
         const isFlat = Math.abs(y2 - y1) < FLAT_THRESHOLD;
+        // A perfectly flat line (both endpoints at the exact same y) has a
+        // zero-height bounding box - the advanced/decided state's stroke is
+        // an objectBoundingBox gradient, and per the SVG spec a gradient in
+        // that coordinate system paints nothing at all when the bounding
+        // box has zero width or height. A sub-pixel offset (invisible to
+        // the eye, nothing like the earlier visible diagonal) keeps the
+        // box non-degenerate so the gradient actually renders.
         const d = isFlat
-          ? `M ${x1} ${yFlat} L ${x2} ${yFlat}`
+          ? `M ${x1} ${yFlat} L ${x2} ${yFlat + 0.5}`
           : `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
         return { id: `${edge.from}-${edge.to}`, d, isFlat, advanced: vm.advancedByFrom.get(edge.from) ?? false };
       }).filter((p): p is { id: string; d: string; isFlat: boolean; advanced: boolean } => p !== null);
