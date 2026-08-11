@@ -11,7 +11,7 @@ export function BlackjackLeaderboard({
   return (
     <div className="rounded-xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden">
       <p className="px-3 pt-3 pb-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-        Leaderboard · target {BLACKJACK_TARGET}
+        BB Blackjack · target {BLACKJACK_TARGET}
       </p>
       <ul>
         {participants.map((p, i) => {
