@@ -571,15 +571,22 @@ export function CupBracket({ data }: { data: CupBracketData }) {
       const containerRect = container.getBoundingClientRect();
 
       const next = EDGES.map((edge) => {
-        const fromEl = nodeRefs.current[edge.from];
+        const fromTileA = nodeRefs.current[slot(edge.from, 0)];
+        const fromTileB = nodeRefs.current[slot(edge.from, 1)];
         const toEl = nodeRefs.current[edge.to];
-        if (!fromEl || !toEl) return null;
+        if (!fromTileA || !fromTileB || !toEl) return null;
 
-        const fromRect = fromEl.getBoundingClientRect();
+        const aRect = fromTileA.getBoundingClientRect();
+        const bRect = fromTileB.getBoundingClientRect();
         const toRect = toEl.getBoundingClientRect();
 
-        const x1 = fromRect.right - containerRect.left;
-        const y1 = fromRect.top + fromRect.height / 2 - containerRect.top;
+        // Origin is the midpoint between the pair's own two tiles, not the
+        // wrapper's own bounding box - a "Bye" label sitting only above
+        // tile 0 (nothing matching below tile 1) makes the wrapper taller
+        // and lopsided, so its own box-height/2 landed above the true
+        // midpoint between the two tiles it's meant to average.
+        const x1 = aRect.right - containerRect.left;
+        const y1 = (aRect.top + aRect.height / 2 + bRect.top + bRect.height / 2) / 2 - containerRect.top;
         const x2 = toRect.left - containerRect.left;
         const y2 = toRect.top + toRect.height / 2 - containerRect.top;
 
