@@ -36,7 +36,7 @@ export function BlackjackLeaderboard({
                   (same zinc-300 fill) - an opacity-based overlay darkens/
                   lightens any fill instead of trying to match one. */}
               <span
-                className={`h-2 w-2 shrink-0 rounded-full ring-1 ring-black/[0.12] dark:ring-white/[0.12] ${meta.dotClass}`}
+                className={`h-2 w-2 shrink-0 rounded-full ring-1 ring-black/[0.12] dark:ring-white/[0.12] mr-1.5 ${meta.dotClass}`}
                 aria-hidden="true"
               />
               <span className="flex-1 flex items-center gap-1.5 min-w-0">
