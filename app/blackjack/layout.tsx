@@ -12,7 +12,11 @@ export default async function BlackjackLayout({ children }: LayoutProps<"/blackj
 
   return (
     <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-4 sm:pb-6">
-      <div className="flex items-center justify-between gap-4 mb-5">
+      {/* h-10 matches the Draft section's title row - its DraftSubNav
+          sibling is naturally taller than a bare h1, and pinning both rows
+          to the same explicit height keeps "Gameweek N" and the content
+          below it aligned across the two sections. */}
+      <div className="flex items-center justify-between gap-4 mb-5 h-10">
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
           Gameweek {gameweekNumber}
         </h1>

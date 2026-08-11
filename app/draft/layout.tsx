@@ -12,7 +12,13 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
 
   return (
     <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-4 sm:pb-6">
-      <div className="flex items-center gap-4 mb-5">
+      {/* h-10 is explicit, not incidental - DraftSubNav's own padding
+          makes it naturally taller than a bare h1, and the Blackjack
+          section's equivalent title row has no such sibling. Pinning both
+          rows to the same height keeps "Gameweek N" and the content below
+          it aligned across the two sections regardless of what sits next
+          to the title. */}
+      <div className="flex items-center gap-4 mb-5 h-10">
         <div className="flex items-baseline gap-2">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
             Gameweek {gameweekNumber}
