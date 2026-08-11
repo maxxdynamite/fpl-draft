@@ -1,12 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import type {
-  CupBracketData,
-  CupMatch,
-  CupSlot,
-  RoundId,
-} from "@/lib/cupBracket";
+import type { CupBracketData, CupMatch, CupSlot } from "@/lib/cupBracket";
 
 // Live shell: seeds come from Gameweek 12 (lib/cupBracket.ts), Round of 12
 // from GW13, QF from GW14, SF from GW15, Final from GW16. Pre-season (no
@@ -30,11 +25,17 @@ import type {
 // two adjacent same-content boxes) and let the gradient border overlap
 // itself at the seam.
 //
-// Connectors are straight right-angle lines. Gradient marks whichever round
-// is the current "battlefront" (the earliest round not yet fully decided);
-// a bye's own tile is always gradient regardless of round, since that slot
-// needs no game to be certain. A connector is full-brightness gradient once
-// its source match is decided, neutral otherwise.
+// Connectors are straight right-angle lines, full-brightness gradient once
+// their source match is decided, neutral otherwise.
+//
+// Gradient follows each team through the bracket, not "whichever round is
+// current": a tile is gradient whenever a real team occupies it AND that
+// team hasn't lost there - i.e. the match is still undecided (including a
+// bye, which is undecided by definition until its first real game) or they
+// won it. The moment a team loses, that one cell drops the gradient; every
+// earlier cell they won stays lit, tracing their whole run. The Final's
+// winner gets the champion treatment instead of a plain gradient border -
+// a fully gradient-filled cell with a shimmer sweep across it.
 //
 // Match ids (m89, qf1, sf1, final) are shared between the live data layer
 // (lib/cupBracket.ts) and this component's fixed EDGES topology below - the
@@ -71,7 +72,7 @@ const CARD_WIDTH = "w-40";
 type TileContent = {
   label: string;
   score: number | null;
-  emphasis: "neutral" | "winner" | "loser";
+  emphasis: "neutral" | "winner" | "loser" | "champion";
   gradient: boolean;
 };
 
@@ -181,20 +182,25 @@ const SOURCE_LABELS: Record<string, string> = {
   sf2: "SF Winner",
 };
 
-function isRoundComplete(matches: CupMatch[]): boolean {
-  return matches.length > 0 && matches.every((m) => m.status === "completed");
-}
-
-function tileFromSlot(slotData: CupSlot, gradient: boolean): TileContent {
+// A slot is gradient whenever it holds a real team that hasn't lost there -
+// either the match is still undecided (they're alive, pending the result)
+// or they won it. A slot with no team yet (still waiting on an earlier
+// match) is never gradient - there's no one there to highlight.
+function tileFromSlot(slotData: CupSlot, matchDecided: boolean, won: boolean): TileContent {
   if (!slotData.participant) {
     return {
       label: (slotData.sourceMatchId && SOURCE_LABELS[slotData.sourceMatchId]) || "TBD",
       score: null,
       emphasis: "neutral",
-      gradient,
+      gradient: false,
     };
   }
-  return { label: slotData.participant.teamName, score: slotData.score, emphasis: "neutral", gradient };
+  return {
+    label: slotData.participant.teamName,
+    score: slotData.score,
+    emphasis: "neutral",
+    gradient: !matchDecided || won,
+  };
 }
 
 function detailEntryFromSlot(slotData: CupSlot): DetailEntry | null {
@@ -207,17 +213,24 @@ function detailEntryFromSlot(slotData: CupSlot): DetailEntry | null {
   };
 }
 
-function pairFromMatch(match: CupMatch, gradient: boolean): PairContent {
+function pairFromMatch(match: CupMatch): PairContent {
   const [slotA, slotB] = match.slots;
-  const tileA = tileFromSlot(slotA, gradient);
-  const tileB = tileFromSlot(slotB, gradient);
+  const decided = match.status === "completed" && match.winnerEntryId != null;
+  const aWon = decided && slotA.participant?.entryId === match.winnerEntryId;
+  const bWon = decided && slotB.participant?.entryId === match.winnerEntryId;
 
-  if (match.status === "completed" && match.winnerEntryId != null) {
-    if (slotA.participant?.entryId === match.winnerEntryId) {
-      tileA.emphasis = "winner";
+  const tileA = tileFromSlot(slotA, decided, aWon);
+  const tileB = tileFromSlot(slotB, decided, bWon);
+
+  if (decided) {
+    // The Final's winner gets the champion treatment instead of a plain
+    // "winner" gradient border - everyone else just advances.
+    const winnerEmphasis = match.round === "final" ? "champion" : "winner";
+    if (aWon) {
+      tileA.emphasis = winnerEmphasis;
       tileB.emphasis = "loser";
     } else {
-      tileB.emphasis = "winner";
+      tileB.emphasis = winnerEmphasis;
       tileA.emphasis = "loser";
     }
   }
@@ -240,34 +253,17 @@ function pairFromMatch(match: CupMatch, gradient: boolean): PairContent {
 }
 
 function buildSeededViewModel(data: CupBracketData): ViewModel {
-  const r1Complete = isRoundComplete(data.rounds.r1);
-  const qfComplete = isRoundComplete(data.rounds.qf);
-  const sfComplete = isRoundComplete(data.rounds.sf);
-  const finalComplete = data.final.status === "completed";
+  const r12 = data.rounds.r1.map((m) => pairFromMatch(m));
+  const qf = data.rounds.qf.map((m) => pairFromMatch(m));
+  const sf = data.rounds.sf.map((m) => pairFromMatch(m));
+  const final = pairFromMatch(data.final);
 
-  const currentRound: RoundId | null = !r1Complete
-    ? "r1"
-    : !qfComplete
-      ? "qf"
-      : !sfComplete
-        ? "sf"
-        : !finalComplete
-          ? "final"
-          : null;
-
-  const r12 = data.rounds.r1.map((m) => pairFromMatch(m, currentRound === "r1"));
-  const qf = data.rounds.qf.map((m) => pairFromMatch(m, currentRound === "qf"));
-  const sf = data.rounds.sf.map((m) => pairFromMatch(m, currentRound === "sf"));
-  const final = pairFromMatch(data.final, currentRound === "final");
-
-  // A bye is certain the moment seeding happens, independent of the current
-  // round - its own tile (always slot 0 of the QF match it feeds, per
-  // lib/cupBracket.ts's QF_MATCHES topology) is gradient regardless, with a
-  // "Bye" label placed above just that tile.
+  // A bye's own cell needs no game to be alive - that already falls out of
+  // the gradient rule above (undecided QF match -> gradient) once seeded.
+  // Only the "Bye" label itself needs setting explicitly here.
   for (const bye of data.byes) {
     const pair = qf.find((p) => p.id === bye.feedsMatchId);
     if (!pair) continue;
-    pair.tiles[0].gradient = true;
     pair.topLabel = "Bye";
   }
 
@@ -289,11 +285,20 @@ function Tile({
   content: TileContent;
   registerRef: (el: HTMLDivElement | null) => void;
 }) {
+  const isChampion = content.emphasis === "champion";
   const borderClass = content.gradient
     ? "bg-gradient-to-br from-[#00ff85] to-[#04f5ff]"
     : "bg-black/[0.06] dark:bg-white/[0.08]";
-  const textClass =
-    content.emphasis === "winner"
+  // The champion cell keeps the exact same two-layer box model as every
+  // other tile (so its height stays identical) - both layers just use the
+  // same gradient instead of a white/zinc-900 inner fill, so no sliver of
+  // background shows through and the whole cell reads as gradient-filled.
+  const innerClass = isChampion
+    ? "bg-gradient-to-br from-[#00ff85] to-[#04f5ff] cup-champion-shimmer"
+    : "bg-white dark:bg-zinc-900";
+  const textClass = isChampion
+    ? "text-[#04211a]"
+    : content.emphasis === "winner"
       ? "text-zinc-900 dark:text-white"
       : content.emphasis === "loser"
         ? "text-zinc-900 dark:text-white opacity-45"
@@ -303,8 +308,10 @@ function Tile({
       ref={registerRef}
       className={`${CARD_WIDTH} shrink-0 rounded-xl ${borderClass} p-[2px] shadow-[var(--shadow-soft)]`}
     >
-      <div className="rounded-[10px] bg-white dark:bg-zinc-900 overflow-hidden">
-        <div className={`px-3 py-[7px] text-xs font-semibold flex items-center gap-2 ${textClass}`}>
+      <div className={`relative rounded-[10px] overflow-hidden ${innerClass}`}>
+        <div
+          className={`relative px-3 py-[7px] text-xs flex items-center gap-2 ${isChampion ? "font-bold" : "font-semibold"} ${textClass}`}
+        >
           <span className="truncate flex-1">{content.label}</span>
           {content.score !== null && <span className="tabular-nums shrink-0">{content.score}</span>}
         </div>
@@ -485,6 +492,16 @@ function StackedStatusPill({ status }: { status: PairContent["status"] }) {
 }
 
 function StackedRow({ tile, badge }: { tile: TileContent; badge?: string | null }) {
+  if (tile.emphasis === "champion") {
+    return (
+      <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-[#00ff85] to-[#04f5ff] cup-champion-shimmer px-2 py-1 flex items-center gap-2">
+        <span className="relative truncate flex-1 text-sm font-bold text-[#04211a]">{tile.label}</span>
+        {tile.score !== null && (
+          <span className="relative tabular-nums shrink-0 text-sm font-bold text-[#04211a]">{tile.score}</span>
+        )}
+      </div>
+    );
+  }
   const textClass =
     tile.emphasis === "winner"
       ? "text-zinc-900 dark:text-white"

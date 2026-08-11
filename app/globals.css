@@ -112,12 +112,26 @@ body {
   animation: cup-live-pulse 1.8s ease-in-out infinite;
 }
 
+/* Cup bracket champion cell - same shimmer-sweep keyframe/base as
+   blackjack-shimmer above, reused on the bracket's own gradient-filled
+   winner tile. See components/CupBracket.tsx. */
+.cup-champion-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.65) 50%, transparent 58%);
+  background-size: 250% 100%;
+  background-position: -150% 0;
+  animation: shimmer-sweep 2.5s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .streak-t2,
   .streak-t3::before,
   .streak-t3-shimmer::after,
   .blackjack-shimmer::after,
-  .cup-live {
+  .cup-live,
+  .cup-champion-shimmer::after {
     animation: none;
   }
 }
