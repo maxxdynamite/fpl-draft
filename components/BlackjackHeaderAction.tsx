@@ -20,7 +20,15 @@ export function BlackjackHeaderAction() {
       // or their box heights (and therefore how centered the text looks)
       // can drift apart from each other, exactly what happened when only
       // "Back" got its own inner flex span.
-      className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold bg-gradient-to-r from-[#00ff85] to-[#04f5ff] text-[#04211a] shadow-[var(--shadow-soft)] hover:opacity-90 transition-opacity"
+      //
+      // pt-1 pb-2 (not py-1.5) is a deliberate optical nudge, not a bug fix
+      // - measured directly, the text's real glyph box already sits exactly
+      // centered (6.5px clear above and below) under symmetric padding, but
+      // text centered inside a rounded pill still reads as low to the eye,
+      // since the pill's own curve pulls the eye's sense of "center" up.
+      // Same total padding (12px) as before, so the pill's height doesn't
+      // change - only where the content sits within it.
+      className="flex items-center gap-2 px-4 pt-1 pb-2 rounded-full text-sm font-semibold bg-gradient-to-r from-[#00ff85] to-[#04f5ff] text-[#04211a] shadow-[var(--shadow-soft)] hover:opacity-90 transition-opacity"
     >
       {onPicksPage ? (
         <>
