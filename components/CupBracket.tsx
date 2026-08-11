@@ -21,28 +21,34 @@ import type {
 // centre, regardless of which tile ends up advancing). Every column shares
 // a fixed height with even (justify-around) distribution.
 //
-// Connectors are straight right-angle lines. Gradient marks whichever round
-// is the current "battlefront" (the earliest round not yet fully decided),
-// plus the two byes (already certain, no game needed) - once a round
-// completes, gradient moves forward to the next one. A connector is full-
-// brightness gradient once its source match/bye is decided, neutral
-// otherwise.
+// Byes: seed 1/2 don't get a separate standalone tile - they simply ARE one
+// of qf1/qf3's two slots (a "Bye" label sits above that specific tile
+// instead). An earlier version duplicated the bye into its own boxed cell
+// wired to qf1/qf3 by a connector, which was really just a line between two
+// cells showing the same team - that connector is what produced a stray
+// green fragment poking out (a real, sub-pixel-length path segment between
+// two adjacent same-content boxes) and let the gradient border overlap
+// itself at the seam.
 //
-// Match/bye ids (m89, qf1, sf1, final, bye1, bye2) are shared between the
-// live data layer (lib/cupBracket.ts) and this component's fixed EDGES
-// topology below - the measurement/connector-drawing logic never needs to
-// branch on whether the bracket is seeded, only each tile's *content* does.
+// Connectors are straight right-angle lines. Gradient marks whichever round
+// is the current "battlefront" (the earliest round not yet fully decided);
+// a bye's own tile is always gradient regardless of round, since that slot
+// needs no game to be certain. A connector is full-brightness gradient once
+// its source match is decided, neutral otherwise.
+//
+// Match ids (m89, qf1, sf1, final) are shared between the live data layer
+// (lib/cupBracket.ts) and this component's fixed EDGES topology below - the
+// measurement/connector-drawing logic never needs to branch on whether the
+// bracket is seeded, only each tile's *content* does.
 
 type Edge = { from: string; to: string };
 
 const slot = (pairId: string, i: 0 | 1) => `${pairId}-${i}`;
 
 const EDGES: Edge[] = [
-  { from: "bye1", to: slot("qf1", 0) },
   { from: "m89", to: slot("qf1", 1) },
   { from: "m413", to: slot("qf2", 0) },
   { from: "m512", to: slot("qf2", 1) },
-  { from: "bye2", to: slot("qf3", 0) },
   { from: "m710", to: slot("qf3", 1) },
   { from: "m314", to: slot("qf4", 0) },
   { from: "m611", to: slot("qf4", 1) },
@@ -53,8 +59,6 @@ const EDGES: Edge[] = [
   { from: "sf1", to: slot("final", 0) },
   { from: "sf2", to: slot("final", 1) },
 ];
-
-const FEEDS_QF: Record<"bye1" | "bye2", string> = { bye1: "qf1", bye2: "qf3" };
 
 const COLUMN_HEIGHT = 640;
 const CARD_WIDTH = "w-40";
@@ -68,6 +72,7 @@ type TileContent = {
   label: string;
   score: number | null;
   emphasis: "neutral" | "winner" | "loser";
+  gradient: boolean;
 };
 
 type DetailEntry = {
@@ -77,22 +82,19 @@ type DetailEntry = {
   score: number | null;
 };
 
-type DetailContent =
-  | { kind: "match"; gameweek: number; live: boolean; entries: [DetailEntry, DetailEntry] }
-  | { kind: "bye"; entry: DetailEntry };
+type DetailContent = {
+  gameweek: number;
+  live: boolean;
+  entries: [DetailEntry, DetailEntry];
+};
 
 type PairContent = {
   id: string;
   tiles: [TileContent, TileContent];
-  gradient: boolean;
+  // Label shown above tiles[0] specifically - only ever "Bye" today.
+  topLabel: string | null;
   live: boolean;
   status: "upcoming" | "live" | "completed";
-  detail: DetailContent | null;
-};
-
-type ByeContent = {
-  id: "bye1" | "bye2";
-  tile: TileContent;
   detail: DetailContent | null;
 };
 
@@ -101,7 +103,6 @@ type ViewModel = {
   qf: PairContent[];
   sf: PairContent[];
   final: PairContent;
-  byes: ByeContent[];
   advancedByFrom: Map<string, boolean>;
 };
 
@@ -122,13 +123,18 @@ function buildUnseededViewModel(): ViewModel {
   // A literal single space collapses to a zero-height line box (browsers
   // drop whitespace-only text content entirely) - a non-breaking space
   // doesn't collapse. See components/CupBracket.tsx history.
-  const blankTile = (): TileContent => ({ label: " ", score: null, emphasis: "neutral" });
-  const seedTile = (seed: string): TileContent => ({ label: seed, score: null, emphasis: "neutral" });
+  const blankTile = (): TileContent => ({ label: " ", score: null, emphasis: "neutral", gradient: false });
+  const seedTile = (seed: string, gradient: boolean): TileContent => ({
+    label: seed,
+    score: null,
+    emphasis: "neutral",
+    gradient,
+  });
 
   const r12: PairContent[] = UNSEEDED_R12.map(({ id, seeds }) => ({
     id,
-    tiles: [seedTile(seeds[0]), seedTile(seeds[1])],
-    gradient: true,
+    tiles: [seedTile(seeds[0], true), seedTile(seeds[1], true)],
+    topLabel: null,
     live: false,
     status: "upcoming",
     detail: null,
@@ -137,27 +143,25 @@ function buildUnseededViewModel(): ViewModel {
   const blankPair = (id: string): PairContent => ({
     id,
     tiles: [blankTile(), blankTile()],
-    gradient: false,
+    topLabel: null,
     live: false,
     status: "upcoming",
     detail: null,
   });
 
   const qf = UNSEEDED_QF_IDS.map(blankPair);
+  // Seed 1's bye lives directly in qf1's own first slot, seed 2's in qf3's.
+  const qf1 = qf.find((p) => p.id === "qf1")!;
+  qf1.tiles[0] = seedTile("1", true);
+  qf1.topLabel = "Bye";
+  const qf3 = qf.find((p) => p.id === "qf3")!;
+  qf3.tiles[0] = seedTile("2", true);
+  qf3.topLabel = "Bye";
+
   const sf = UNSEEDED_SF_IDS.map(blankPair);
   const final = blankPair("final");
 
-  const byes: ByeContent[] = [
-    { id: "bye1", tile: seedTile("1"), detail: null },
-    { id: "bye2", tile: seedTile("2"), detail: null },
-  ];
-
-  const advancedByFrom = new Map<string, boolean>([
-    ["bye1", true],
-    ["bye2", true],
-  ]);
-
-  return { r12, qf, sf, final, byes, advancedByFrom };
+  return { r12, qf, sf, final, advancedByFrom: new Map() };
 }
 
 // ---- live, data-driven bracket ---------------------------------------------
@@ -181,15 +185,16 @@ function isRoundComplete(matches: CupMatch[]): boolean {
   return matches.length > 0 && matches.every((m) => m.status === "completed");
 }
 
-function tileFromSlot(slotData: CupSlot): TileContent {
+function tileFromSlot(slotData: CupSlot, gradient: boolean): TileContent {
   if (!slotData.participant) {
     return {
       label: (slotData.sourceMatchId && SOURCE_LABELS[slotData.sourceMatchId]) || "TBD",
       score: null,
       emphasis: "neutral",
+      gradient,
     };
   }
-  return { label: slotData.participant.teamName, score: slotData.score, emphasis: "neutral" };
+  return { label: slotData.participant.teamName, score: slotData.score, emphasis: "neutral", gradient };
 }
 
 function detailEntryFromSlot(slotData: CupSlot): DetailEntry | null {
@@ -204,8 +209,8 @@ function detailEntryFromSlot(slotData: CupSlot): DetailEntry | null {
 
 function pairFromMatch(match: CupMatch, gradient: boolean): PairContent {
   const [slotA, slotB] = match.slots;
-  const tileA = tileFromSlot(slotA);
-  const tileB = tileFromSlot(slotB);
+  const tileA = tileFromSlot(slotA, gradient);
+  const tileB = tileFromSlot(slotB, gradient);
 
   if (match.status === "completed" && match.winnerEntryId != null) {
     if (slotA.participant?.entryId === match.winnerEntryId) {
@@ -221,13 +226,13 @@ function pairFromMatch(match: CupMatch, gradient: boolean): PairContent {
   const entryB = detailEntryFromSlot(slotB);
   const detail: DetailContent | null =
     entryA && entryB
-      ? { kind: "match", gameweek: match.gameweek, live: match.status === "live", entries: [entryA, entryB] }
+      ? { gameweek: match.gameweek, live: match.status === "live", entries: [entryA, entryB] }
       : null;
 
   return {
     id: match.id,
     tiles: [tileA, tileB],
-    gradient,
+    topLabel: null,
     live: match.status === "live",
     status: match.status,
     detail,
@@ -255,36 +260,23 @@ function buildSeededViewModel(data: CupBracketData): ViewModel {
   const sf = data.rounds.sf.map((m) => pairFromMatch(m, currentRound === "sf"));
   const final = pairFromMatch(data.final, currentRound === "final");
 
-  const byeIds: ("bye1" | "bye2")[] = ["bye1", "bye2"];
-  const byes: ByeContent[] = data.byes.map((bye, i) => {
-    const known = bye.participant !== null;
-    const tile: TileContent = {
-      label: known ? bye.participant!.teamName : String(bye.seed),
-      score: null,
-      emphasis: known ? "winner" : "neutral",
-    };
-    const detail: DetailContent | null = bye.participant
-      ? {
-          kind: "bye",
-          entry: {
-            seed: bye.participant.seed,
-            teamName: bye.participant.teamName,
-            managerName: bye.participant.managerName,
-            score: null,
-          },
-        }
-      : null;
-    return { id: byeIds[i], tile, detail };
-  });
+  // A bye is certain the moment seeding happens, independent of the current
+  // round - its own tile (always slot 0 of the QF match it feeds, per
+  // lib/cupBracket.ts's QF_MATCHES topology) is gradient regardless, with a
+  // "Bye" label placed above just that tile.
+  for (const bye of data.byes) {
+    const pair = qf.find((p) => p.id === bye.feedsMatchId);
+    if (!pair) continue;
+    pair.tiles[0].gradient = true;
+    pair.topLabel = "Bye";
+  }
 
   const advancedByFrom = new Map<string, boolean>();
   for (const m of [...data.rounds.r1, ...data.rounds.qf, ...data.rounds.sf, data.final]) {
     advancedByFrom.set(m.id, m.status === "completed");
   }
-  advancedByFrom.set("bye1", true);
-  advancedByFrom.set("bye2", true);
 
-  return { r12, qf, sf, final, byes, advancedByFrom };
+  return { r12, qf, sf, final, advancedByFrom };
 }
 
 // ---------------------------------------------------------------------------
@@ -292,14 +284,12 @@ function buildSeededViewModel(data: CupBracketData): ViewModel {
 
 function Tile({
   content,
-  gradient,
   registerRef,
 }: {
   content: TileContent;
-  gradient: boolean;
   registerRef: (el: HTMLDivElement | null) => void;
 }) {
-  const borderClass = gradient
+  const borderClass = content.gradient
     ? "bg-gradient-to-br from-[#00ff85] to-[#04f5ff]"
     : "bg-black/[0.06] dark:bg-white/[0.08]";
   const textClass =
@@ -357,34 +347,21 @@ function MatchDetailPanel({
         open ? "opacity-100 visible pointer-events-auto" : "opacity-0 invisible pointer-events-none"
       }`}
     >
-      {detail.kind === "bye" ? (
-        <>
-          <DetailRow label="Seed" value={String(detail.entry.seed)} />
-          <DetailRow label="Team" value={detail.entry.teamName} />
-          <DetailRow label="Manager" value={detail.entry.managerName} />
-          <p className="mt-1.5 pt-1.5 border-t border-black/[0.06] dark:border-white/[0.08] text-zinc-400 dark:text-zinc-500">
-            Bye — no opponent this round.
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 mb-1.5">
-            Gameweek {detail.gameweek}
-            {detail.live ? " · Live" : ""}
-          </p>
-          {detail.entries.map((entry, i) => (
-            <div
-              key={entry.seed}
-              className={i === 1 ? "mt-2 pt-2 border-t border-black/[0.06] dark:border-white/[0.08]" : ""}
-            >
-              <DetailRow label="Seed" value={String(entry.seed)} />
-              <DetailRow label="Team" value={entry.teamName} />
-              <DetailRow label="Manager" value={entry.managerName} />
-              <DetailRow label="Score" value={entry.score !== null ? String(entry.score) : "Not played yet"} />
-            </div>
-          ))}
-        </>
-      )}
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 mb-1.5">
+        Gameweek {detail.gameweek}
+        {detail.live ? " · Live" : ""}
+      </p>
+      {detail.entries.map((entry, i) => (
+        <div
+          key={entry.seed}
+          className={i === 1 ? "mt-2 pt-2 border-t border-black/[0.06] dark:border-white/[0.08]" : ""}
+        >
+          <DetailRow label="Seed" value={String(entry.seed)} />
+          <DetailRow label="Team" value={entry.teamName} />
+          <DetailRow label="Manager" value={entry.managerName} />
+          <DetailRow label="Score" value={entry.score !== null ? String(entry.score) : "Not played yet"} />
+        </div>
+      ))}
     </div>
   );
 }
@@ -401,7 +378,7 @@ function onKeyActivate(onToggle: () => void) {
 function MatchCard({
   id,
   tiles,
-  gradient,
+  topLabel,
   live,
   detail,
   expanded,
@@ -411,7 +388,7 @@ function MatchCard({
 }: {
   id: string;
   tiles: [TileContent, TileContent];
-  gradient: boolean;
+  topLabel: string | null;
   live: boolean;
   detail: DetailContent | null;
   expanded: boolean;
@@ -435,45 +412,15 @@ function MatchCard({
         onKeyDown={clickable ? onKeyActivate(onToggle) : undefined}
         className={`flex flex-col gap-1.5 ${clickable ? "cursor-pointer" : ""}`}
       >
-        <Tile content={tiles[0]} gradient={gradient} registerRef={registerRef(slot(id, 0))} />
-        <Tile content={tiles[1]} gradient={gradient} registerRef={registerRef(slot(id, 1))} />
+        {topLabel && (
+          <span className="text-[9px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 text-center">
+            {topLabel}
+          </span>
+        )}
+        <Tile content={tiles[0]} registerRef={registerRef(slot(id, 0))} />
+        <Tile content={tiles[1]} registerRef={registerRef(slot(id, 1))} />
       </div>
       {detail && <MatchDetailPanel detail={detail} open={expanded} align={panelAlign} />}
-    </div>
-  );
-}
-
-function ByeCard({
-  content,
-  expanded,
-  onToggle,
-  registerRef,
-  panelAlign,
-}: {
-  content: ByeContent;
-  expanded: boolean;
-  onToggle: () => void;
-  registerRef: (id: string) => (el: HTMLDivElement | null) => void;
-  panelAlign: PanelAlign;
-}) {
-  const clickable = content.detail !== null;
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-[9px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-        Bye
-      </span>
-      <div className="relative">
-        <div
-          role={clickable ? "button" : undefined}
-          tabIndex={clickable ? 0 : undefined}
-          onClick={clickable ? onToggle : undefined}
-          onKeyDown={clickable ? onKeyActivate(onToggle) : undefined}
-          className={clickable ? "cursor-pointer" : ""}
-        >
-          <Tile content={content.tile} gradient registerRef={registerRef(content.id)} />
-        </div>
-        {content.detail && <MatchDetailPanel detail={content.detail} open={expanded} align={panelAlign} />}
-      </div>
     </div>
   );
 }
@@ -481,7 +428,6 @@ function ByeCard({
 function Column({
   title,
   pairs,
-  byes,
   expandedId,
   onToggle,
   registerRef,
@@ -489,7 +435,6 @@ function Column({
 }: {
   title: string;
   pairs: PairContent[];
-  byes?: ByeContent[];
   expandedId: string | null;
   onToggle: (id: string) => void;
   registerRef: (id: string) => (el: HTMLDivElement | null) => void;
@@ -501,36 +446,20 @@ function Column({
         {title}
       </p>
       <div className="flex flex-col justify-around" style={{ height: COLUMN_HEIGHT }}>
-        {pairs.map((pair) => {
-          const bye = byes?.find((b) => FEEDS_QF[b.id] === pair.id);
-          const pairEl = (
-            <MatchCard
-              key={pair.id}
-              id={pair.id}
-              tiles={pair.tiles}
-              gradient={pair.gradient}
-              live={pair.live}
-              detail={pair.detail}
-              expanded={expandedId === pair.id}
-              onToggle={() => onToggle(pair.id)}
-              registerRef={registerRef}
-              panelAlign={panelAlign}
-            />
-          );
-          if (!bye) return pairEl;
-          return (
-            <div key={pair.id} className="flex flex-col items-center gap-3">
-              <ByeCard
-                content={bye}
-                expanded={expandedId === bye.id}
-                onToggle={() => onToggle(bye.id)}
-                registerRef={registerRef}
-                panelAlign={panelAlign}
-              />
-              {pairEl}
-            </div>
-          );
-        })}
+        {pairs.map((pair) => (
+          <MatchCard
+            key={pair.id}
+            id={pair.id}
+            tiles={pair.tiles}
+            topLabel={pair.topLabel}
+            live={pair.live}
+            detail={pair.detail}
+            expanded={expandedId === pair.id}
+            onToggle={() => onToggle(pair.id)}
+            registerRef={registerRef}
+            panelAlign={panelAlign}
+          />
+        ))}
       </div>
     </div>
   );
@@ -540,14 +469,7 @@ function Column({
 // No SVG/refs - pure stacked list grouped by round, sharing the same view
 // model (and therefore the same status/winner colours) as the desktop tree.
 
-function StackedStatusPill({ status, isBye }: { status: PairContent["status"]; isBye?: boolean }) {
-  if (isBye) {
-    return (
-      <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide bg-gradient-to-br from-[#00ff85] to-[#04f5ff] text-[#04211a]">
-        Bye
-      </span>
-    );
-  }
+function StackedStatusPill({ status }: { status: PairContent["status"] }) {
   const label = status === "live" ? "Live" : status === "completed" ? "Final" : "Upcoming";
   const cls =
     status === "live"
@@ -562,7 +484,7 @@ function StackedStatusPill({ status, isBye }: { status: PairContent["status"]; i
   );
 }
 
-function StackedRow({ tile, isBye }: { tile: TileContent; isBye?: boolean }) {
+function StackedRow({ tile, badge }: { tile: TileContent; badge?: string | null }) {
   const textClass =
     tile.emphasis === "winner"
       ? "text-zinc-900 dark:text-white"
@@ -571,9 +493,13 @@ function StackedRow({ tile, isBye }: { tile: TileContent; isBye?: boolean }) {
         : "text-zinc-700 dark:text-zinc-300";
   return (
     <div className={`flex items-center gap-2 text-sm font-semibold ${textClass}`}>
+      {badge && (
+        <span className="shrink-0 text-[9px] font-semibold uppercase text-zinc-400 dark:text-zinc-500">
+          {badge}
+        </span>
+      )}
       <span className="truncate flex-1">{tile.label}</span>
       {tile.score !== null && <span className="tabular-nums shrink-0">{tile.score}</span>}
-      {isBye && <span className="shrink-0 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">Bye</span>}
     </div>
   );
 }
@@ -585,37 +511,22 @@ function StackedMatch({ pair }: { pair: PairContent }) {
         <StackedStatusPill status={pair.status} />
         {pair.live && <span className="cup-live h-1.5 w-1.5 rounded-full bg-[#00ff85]" aria-hidden="true" />}
       </div>
-      <StackedRow tile={pair.tiles[0]} />
+      <StackedRow tile={pair.tiles[0]} badge={pair.topLabel} />
       <StackedRow tile={pair.tiles[1]} />
     </div>
   );
 }
 
-function StackedBye({ bye }: { bye: ByeContent }) {
-  return (
-    <div className="rounded-xl bg-black/[0.02] dark:bg-white/[0.03] px-3 py-2.5 flex flex-col gap-1.5">
-      <StackedStatusPill status="upcoming" isBye />
-      <StackedRow tile={bye.tile} isBye />
-    </div>
-  );
-}
-
-function StackedRound({ title, pairs, byes }: { title: string; pairs: PairContent[]; byes?: ByeContent[] }) {
+function StackedRound({ title, pairs }: { title: string; pairs: PairContent[] }) {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
         {title}
       </p>
       <div className="flex flex-col gap-2">
-        {pairs.map((pair) => {
-          const bye = byes?.find((b) => FEEDS_QF[b.id] === pair.id);
-          return (
-            <div key={pair.id} className="flex flex-col gap-2">
-              {bye && <StackedBye key={bye.id} bye={bye} />}
-              <StackedMatch pair={pair} />
-            </div>
-          );
-        })}
+        {pairs.map((pair) => (
+          <StackedMatch key={pair.id} pair={pair} />
+        ))}
       </div>
     </div>
   );
@@ -625,7 +536,7 @@ function StackedBracket({ vm }: { vm: ViewModel }) {
   return (
     <div className="flex flex-col gap-5">
       <StackedRound title="Round of 12" pairs={vm.r12} />
-      <StackedRound title="Quarter-Final" pairs={vm.qf} byes={vm.byes} />
+      <StackedRound title="Quarter-Final" pairs={vm.qf} />
       <StackedRound title="Semi-Final" pairs={vm.sf} />
       <StackedRound title="Final" pairs={[vm.final]} />
     </div>
@@ -738,7 +649,6 @@ export function CupBracket({ data }: { data: CupBracketData }) {
             <Column
               title="Quarter-Final"
               pairs={vm.qf}
-              byes={vm.byes}
               expandedId={expandedId}
               onToggle={toggleExpanded}
               registerRef={registerRef}
