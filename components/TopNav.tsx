@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SpadeIcon } from "./SpadeIcon";
+import { PoundIcon } from "./PoundIcon";
 
 function ArrowsLeftRightIcon() {
   return (
@@ -27,6 +28,7 @@ function ArrowsLeftRightIcon() {
 const links = [
   { href: "/draft", label: "Draft", Icon: ArrowsLeftRightIcon },
   { href: "/blackjack", label: "Blackjack", Icon: SpadeIcon },
+  { href: "/tab", label: "Tab", Icon: PoundIcon },
 ];
 
 export function TopNav() {
