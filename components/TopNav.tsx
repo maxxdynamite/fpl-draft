@@ -28,7 +28,7 @@ function ArrowsLeftRightIcon() {
 const links = [
   { href: "/draft", label: "Draft", Icon: ArrowsLeftRightIcon },
   { href: "/blackjack", label: "Blackjack", Icon: SpadeIcon },
-  { href: "/tab", label: "Tab", Icon: PoundIcon },
+  { href: "/money", label: "Money", Icon: PoundIcon },
 ];
 
 export function TopNav() {

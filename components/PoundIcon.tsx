@@ -9,8 +9,8 @@ export function PoundIcon({ size = 14, className }: { size?: number; className?:
         y="53%"
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize="30"
-        fontWeight="700"
+        fontSize="40"
+        fontWeight="800"
         fontFamily="system-ui, sans-serif"
       >
         £
