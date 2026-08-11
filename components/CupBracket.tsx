@@ -6,77 +6,93 @@ import { useLayoutEffect, useRef, useState } from "react";
 // happened yet (TBC, closer to Christmas), so this is the fixed matchup
 // shape by seed number only - no manager names, no live winner computation.
 //
+// Layout: a conventional mirrored bracket - the left half carries seed 1's
+// side of the draw flowing left-to-right into the Final at the centre, the
+// right half carries seed 2's side flowing right-to-left into that same
+// centre point, with a Winner card beneath the Final.
+//
 // Progressive styling: the brand gradient marks whichever stage is
 // "active" - for now that's Round of 12 (plus the two byes, which sit at
 // the same tournament depth as Round of 12 despite being drawn in the QF
 // column). Every other stage stays neutral until this shell is updated to
 // reflect real results, at which point the gradient moves forward one
-// stage at a time (both the connectors leaving a decided round AND the
-// cells that were advanced into pick up the border).
+// stage at a time.
 
 type Slot = string | null;
 type BracketNode = { id: string; top: Slot; bottom: Slot };
-type Round = { title: string; nodes: BracketNode[]; subtle?: boolean };
 // toSlot: which row of the destination card this edge feeds (0 = top, 1 = bottom).
+// reverse: right-half edges run right-to-left (mirrored) instead of left-to-right.
 // advanced: gradient-coloured (this stage has been decided) vs neutral.
-type Edge = { from: string; to: string; toSlot: 0 | 1; advanced: boolean };
+type Edge = { from: string; to: string; toSlot: 0 | 1; reverse?: boolean; advanced: boolean };
 
-const ROUND_OF_12: BracketNode[] = [
+const LEFT_ROUND_OF_12: BracketNode[] = [
   { id: "m89", top: "8", bottom: "9" },
   { id: "m413", top: "4", bottom: "13" },
   { id: "m512", top: "5", bottom: "12" },
+];
+const RIGHT_ROUND_OF_12: BracketNode[] = [
   { id: "m710", top: "7", bottom: "10" },
   { id: "m314", top: "3", bottom: "14" },
   { id: "m611", top: "6", bottom: "11" },
 ];
+
+const LEFT_QF: BracketNode[] = [
+  { id: "qf1", top: null, bottom: null },
+  { id: "qf2", top: null, bottom: null },
+];
+const RIGHT_QF: BracketNode[] = [
+  { id: "qf3", top: null, bottom: null },
+  { id: "qf4", top: null, bottom: null },
+];
+
+const LEFT_SF: BracketNode[] = [{ id: "sf1", top: null, bottom: null }];
+const RIGHT_SF: BracketNode[] = [{ id: "sf2", top: null, bottom: null }];
+
+const FINAL_NODE: BracketNode = { id: "final", top: null, bottom: null };
+const WINNER_NODE: BracketNode = { id: "winner", top: "Winner", bottom: null };
 
 const BYES = [
   { id: "bye1", seed: "1", feedsQF: "qf1" as const },
   { id: "bye2", seed: "2", feedsQF: "qf3" as const },
 ];
 
-const ROUNDS: Round[] = [
-  { title: "Round of 12", subtle: true, nodes: ROUND_OF_12 },
-  {
-    title: "Quarter-Final",
-    nodes: [
-      { id: "qf1", top: null, bottom: null },
-      { id: "qf2", top: null, bottom: null },
-      { id: "qf3", top: null, bottom: null },
-      { id: "qf4", top: null, bottom: null },
-    ],
-  },
-  {
-    title: "Semi-Final",
-    nodes: [
-      { id: "sf1", top: null, bottom: null },
-      { id: "sf2", top: null, bottom: null },
-    ],
-  },
-  {
-    title: "Final",
-    nodes: [{ id: "final", top: null, bottom: null }],
-  },
+type ColumnDef = {
+  title: string;
+  nodes: BracketNode[];
+  subtle?: boolean;
+  stacked?: boolean; // centre column: nodes stack directly (Final + Winner), not distributed
+};
+
+const COLUMNS: ColumnDef[] = [
+  { title: "Round of 12", subtle: true, nodes: LEFT_ROUND_OF_12 },
+  { title: "Quarter-Final", nodes: LEFT_QF },
+  { title: "Semi-Final", nodes: LEFT_SF },
+  { title: "Final", nodes: [FINAL_NODE, WINNER_NODE], stacked: true },
+  { title: "Semi-Final", nodes: RIGHT_SF },
+  { title: "Quarter-Final", nodes: RIGHT_QF },
+  { title: "Round of 12", subtle: true, nodes: RIGHT_ROUND_OF_12 },
 ];
 
 const EDGES: Edge[] = [
+  // Left half - flows left to right into the Final's top row.
   { from: "bye1", to: "qf1", toSlot: 0, advanced: true },
   { from: "m89", to: "qf1", toSlot: 1, advanced: true },
   { from: "m413", to: "qf2", toSlot: 0, advanced: true },
   { from: "m512", to: "qf2", toSlot: 1, advanced: true },
-  { from: "bye2", to: "qf3", toSlot: 0, advanced: true },
-  { from: "m710", to: "qf3", toSlot: 1, advanced: true },
-  { from: "m314", to: "qf4", toSlot: 0, advanced: true },
-  { from: "m611", to: "qf4", toSlot: 1, advanced: true },
   { from: "qf1", to: "sf1", toSlot: 0, advanced: false },
   { from: "qf2", to: "sf1", toSlot: 1, advanced: false },
-  { from: "qf3", to: "sf2", toSlot: 0, advanced: false },
-  { from: "qf4", to: "sf2", toSlot: 1, advanced: false },
   { from: "sf1", to: "final", toSlot: 0, advanced: false },
-  { from: "sf2", to: "final", toSlot: 1, advanced: false },
+  // Right half - mirrored, flows right to left into the Final's bottom row.
+  { from: "bye2", to: "qf3", toSlot: 0, reverse: true, advanced: true },
+  { from: "m710", to: "qf3", toSlot: 1, reverse: true, advanced: true },
+  { from: "m314", to: "qf4", toSlot: 0, reverse: true, advanced: true },
+  { from: "m611", to: "qf4", toSlot: 1, reverse: true, advanced: true },
+  { from: "qf3", to: "sf2", toSlot: 0, reverse: true, advanced: false },
+  { from: "qf4", to: "sf2", toSlot: 1, reverse: true, advanced: false },
+  { from: "sf2", to: "final", toSlot: 1, reverse: true, advanced: false },
 ];
 
-const COLUMN_HEIGHT = 640;
+const COLUMN_HEIGHT = 500;
 const CARD_WIDTH = "w-40";
 
 function CardShell({
@@ -128,9 +144,9 @@ function MatchCard({
   return (
     <CardShell gradient={gradient} registerRef={registerRef}>
       <div className={`${rowClass} border-b border-black/[0.04] dark:border-white/[0.06]`}>
-        {top ?? " "}
+        {top ?? " "}
       </div>
-      <div className={rowClass}>{bottom ?? " "}</div>
+      <div className={rowClass}>{bottom ?? " "}</div>
     </CardShell>
   );
 }
@@ -177,15 +193,20 @@ export function CupBracket() {
         const fromRect = fromEl.getBoundingClientRect();
         const toRect = toEl.getBoundingClientRect();
 
-        const x1 = fromRect.right - containerRect.left;
+        const x1 = edge.reverse
+          ? fromRect.left - containerRect.left
+          : fromRect.right - containerRect.left;
         const y1 = fromRect.top + fromRect.height / 2 - containerRect.top;
 
-        const x2 = toRect.left - containerRect.left;
+        const x2 = edge.reverse
+          ? toRect.right - containerRect.left
+          : toRect.left - containerRect.left;
         const rowHeight = toRect.height / 2;
         const y2 = toRect.top + rowHeight * (edge.toSlot + 0.5) - containerRect.top;
 
         // Conventional right-angle bracket connector: out horizontally,
-        // up/down at the midpoint, in horizontally.
+        // up/down at the midpoint, in horizontally - works the same for
+        // mirrored (right-to-left) edges since it's just point-to-point.
         const midX = x1 + (x2 - x1) / 2;
         const d = `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
         return { id: `${edge.from}-${edge.to}`, d, advanced: edge.advanced };
@@ -205,7 +226,12 @@ export function CupBracket() {
   }, []);
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-4 sm:p-6">
+    <div className="min-w-0 rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-4 sm:p-6">
+      {/* min-w-0 on the card above is required, not decorative - as a CSS
+          grid item it defaults to min-width:auto, which lets it grow to
+          fit this bracket's full intrinsic width instead of respecting
+          the grid's 1fr track, so overflow-x-auto below never actually
+          activates and the whole page gets horizontal scroll instead. */}
       <div className="overflow-x-auto">
         <div ref={containerRef} className="relative min-w-max py-2">
           <svg
@@ -231,24 +257,24 @@ export function CupBracket() {
             ))}
           </svg>
           <div className="relative flex gap-16">
-            {ROUNDS.map((round) => (
-              <div key={round.title} className="flex flex-col items-center gap-3">
+            {COLUMNS.map((col, colIndex) => (
+              <div key={`${col.title}-${colIndex}`} className="flex flex-col items-center gap-3">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                  {round.title}
+                  {col.title}
                 </p>
                 <div
-                  className="flex flex-col justify-around"
+                  className={`flex flex-col ${col.stacked ? "justify-center gap-0.5" : "justify-around"}`}
                   style={{ height: COLUMN_HEIGHT }}
                 >
-                  {round.nodes.map((node) => {
+                  {col.nodes.map((node) => {
                     const bye = BYES.find((b) => b.feedsQF === node.id);
                     const card = (
                       <MatchCard
                         key={node.id}
                         top={node.top}
                         bottom={node.bottom}
-                        subtle={round.subtle}
-                        gradient={round.subtle ?? false}
+                        subtle={col.subtle}
+                        gradient={col.subtle ?? false}
                         registerRef={(el) => {
                           nodeRefs.current[node.id] = el;
                         }}
