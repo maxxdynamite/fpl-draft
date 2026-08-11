@@ -63,6 +63,8 @@ const EDGES: Edge[] = [
 
 const COLUMN_HEIGHT = 640;
 const CARD_WIDTH = "w-40";
+const CONNECTOR_GAP = 6;
+const FLAT_THRESHOLD = 20;
 
 // ---------------------------------------------------------------------------
 // View model: both the unseeded static shell and the live-data bracket
@@ -602,15 +604,27 @@ export function CupBracket({ data }: { data: CupBracketData }) {
         // tile 0 (nothing matching below tile 1) makes the wrapper taller
         // and lopsided, so its own box-height/2 landed above the true
         // midpoint between the two tiles it's meant to average.
-        const x1 = aRect.right - containerRect.left;
+        //
+        // CONNECTOR_GAP insets both ends off the tile edge - a connector
+        // that touches the border reads as part of the cell rather than a
+        // distinct line feeding into it.
+        const x1 = aRect.right - containerRect.left + CONNECTOR_GAP;
         const y1 = (aRect.top + aRect.height / 2 + bRect.top + bRect.height / 2) / 2 - containerRect.top;
-        const x2 = toRect.left - containerRect.left;
+        const x2 = toRect.left - containerRect.left - CONNECTOR_GAP;
         const y2 = toRect.top + toRect.height / 2 - containerRect.top;
 
         // Straight right-angle bracket connector: out horizontally, up/
-        // down at the midpoint, in horizontally.
+        // down at the midpoint, in horizontally. When the two ends are
+        // already nearly level (a source pair's midpoint can coincidentally
+        // land within a few px of its destination), the elbow's vertical
+        // leg is too short to read as a deliberate bend - it just looks
+        // like a stray notch. Below FLAT_THRESHOLD, skip the elbow and
+        // draw one plain diagonal instead.
         const midX = x1 + (x2 - x1) / 2;
-        const d = `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
+        const d =
+          Math.abs(y2 - y1) < FLAT_THRESHOLD
+            ? `M ${x1} ${y1} L ${x2} ${y2}`
+            : `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
         return { id: `${edge.from}-${edge.to}`, d, advanced: vm.advancedByFrom.get(edge.from) ?? false };
       }).filter((p): p is { id: string; d: string; advanced: boolean } => p !== null);
 
