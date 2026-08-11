@@ -15,13 +15,18 @@ export function BlackjackHeaderAction() {
   return (
     <Link
       href={onPicksPage ? "/blackjack" : "/blackjack/picks"}
-      className="px-4 py-1.5 rounded-full text-sm font-semibold bg-gradient-to-r from-[#00ff85] to-[#04f5ff] text-[#04211a] shadow-[var(--shadow-soft)] hover:opacity-90 transition-opacity"
+      // flex items-center lives on the Link itself, not a wrapper only the
+      // "Back" state had - both states need to share one layout mechanism
+      // or their box heights (and therefore how centered the text looks)
+      // can drift apart from each other, exactly what happened when only
+      // "Back" got its own inner flex span.
+      className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold bg-gradient-to-r from-[#00ff85] to-[#04f5ff] text-[#04211a] shadow-[var(--shadow-soft)] hover:opacity-90 transition-opacity"
     >
       {onPicksPage ? (
-        // An SVG icon instead of a "←" text glyph - a character's weight
-        // and vertical position are stuck to the font's own metrics, an
-        // SVG's stroke width and box alignment aren't.
-        <span className="flex items-center gap-2">
+        <>
+          {/* An SVG icon instead of a "←" text glyph - a character's weight
+              and vertical position are stuck to the font's own metrics, an
+              SVG's stroke width and box alignment aren't. */}
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -35,7 +40,7 @@ export function BlackjackHeaderAction() {
             <path d="M19 12H5M11 18l-6-6 6-6" />
           </svg>
           Back
-        </span>
+        </>
       ) : (
         "Make Your Picks"
       )}
