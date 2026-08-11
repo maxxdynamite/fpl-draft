@@ -10,6 +10,63 @@ const REQUIRED_PICKS = 4;
 
 type ManagerOption = { entryId: number; managerName: string; teamName: string };
 
+// player.status: "a" available, "i" injured, "s" suspended, "u"
+// unavailable, "d" doubtful. Blank for "a" - most players are available
+// most of the time, and a warning label should only ever appear for the
+// exception, not the default case.
+const STATUS_LABELS: Record<string, string> = {
+  i: "Injured",
+  s: "Suspended",
+  u: "Unavailable",
+  d: "Doubtful",
+};
+
+// Renders a player's photo, falling back to a generic silhouette on load
+// failure (missing headshots are common for fringe/new-signing players on
+// the FPL photo CDN) instead of a broken-image icon. cropHeadroom
+// reproduces the grid tile's deliberate crop (see lib/players.ts) - the
+// image renders larger than its circular window and is top-anchored so the
+// visible crop clears headroom above the head; the fallback icon has no
+// such asymmetry, so it's simply centered regardless.
+function PlayerAvatar({
+  photoUrl,
+  containerClassName,
+  imageSize,
+  imageClassName,
+  fallbackClassName,
+  cropHeadroom = false,
+}: {
+  photoUrl: string;
+  containerClassName: string;
+  imageSize: number;
+  imageClassName: string;
+  fallbackClassName: string;
+  cropHeadroom?: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+  const align =
+    !failed && cropHeadroom ? "items-start justify-center pt-1" : "items-center justify-center";
+  return (
+    <span className={`flex ${align} ${containerClassName}`}>
+      {failed ? (
+        <svg viewBox="0 0 24 24" fill="currentColor" className={fallbackClassName} aria-hidden="true">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20a8 8 0 0 1 16 0" />
+        </svg>
+      ) : (
+        <Image
+          src={photoUrl}
+          alt=""
+          width={imageSize}
+          height={imageSize}
+          onError={() => setFailed(true)}
+          className={imageClassName}
+        />
+      )}
+    </span>
+  );
+}
+
 export function BlackjackPicksForm({
   managers,
   players,
@@ -132,12 +189,12 @@ export function BlackjackPicksForm({
                     onClick={() => togglePlayer(id)}
                     className="flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#00ff85] to-[#04f5ff] text-[#04211a]"
                   >
-                    <Image
-                      src={player.photoUrl}
-                      alt=""
-                      width={20}
-                      height={20}
-                      className="h-5 w-5 rounded-full object-cover object-top shrink-0"
+                    <PlayerAvatar
+                      photoUrl={player.photoUrl}
+                      containerClassName="h-5 w-5 rounded-full overflow-hidden shrink-0"
+                      imageSize={20}
+                      imageClassName="h-5 w-5 object-cover object-top"
+                      fallbackClassName="h-3.5 w-3.5 text-[#04211a]/50"
                     />
                     {player.name}
                     <span aria-hidden="true">×</span>
@@ -182,19 +239,24 @@ export function BlackjackPicksForm({
                         : "bg-white dark:bg-zinc-900 ring-black/[0.03] dark:ring-white/[0.06] hover:ring-black/[0.1] dark:hover:ring-white/[0.2] shadow-[var(--shadow-soft)]"
                   }`}
                 >
-                  <span className="h-9 w-9 rounded-full overflow-hidden shrink-0 bg-black/[0.04] dark:bg-white/[0.06] flex items-start justify-center pt-1">
-                    <Image
-                      src={player.photoUrl}
-                      alt=""
-                      width={47}
-                      height={47}
-                      className="h-[47px] w-[47px] object-cover object-top"
-                    />
-                  </span>
+                  <PlayerAvatar
+                    photoUrl={player.photoUrl}
+                    containerClassName="h-9 w-9 rounded-full shrink-0 bg-black/[0.04] dark:bg-white/[0.06] overflow-hidden"
+                    imageSize={47}
+                    imageClassName="h-[47px] w-[47px] object-cover object-top"
+                    fallbackClassName="h-5 w-5 text-zinc-400 dark:text-zinc-500"
+                    cropHeadroom
+                  />
                   <span className="min-w-0">
                     <span className="block text-xs font-bold truncate">{player.name}</span>
                     <span className="block text-[10px] text-zinc-400 dark:text-zinc-500">
-                      {player.position} · {player.goals} goals
+                      {player.position}
+                      {STATUS_LABELS[player.status] && (
+                        <span className="text-rose-500 dark:text-rose-400">
+                          {" "}
+                          · {STATUS_LABELS[player.status]}
+                        </span>
+                      )}
                     </span>
                   </span>
                 </button>
