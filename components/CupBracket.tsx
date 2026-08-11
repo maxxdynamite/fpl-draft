@@ -123,7 +123,7 @@ function buildUnseededViewModel(): ViewModel {
   // A literal single space collapses to a zero-height line box (browsers
   // drop whitespace-only text content entirely) - a non-breaking space
   // doesn't collapse. See components/CupBracket.tsx history.
-  const blankTile = (): TileContent => ({ label: " ", score: null, emphasis: "neutral", gradient: false });
+  const blankTile = (): TileContent => ({ label: " ", score: null, emphasis: "neutral", gradient: false });
   const seedTile = (seed: string, gradient: boolean): TileContent => ({
     label: seed,
     score: null,
@@ -633,7 +633,7 @@ export function CupBracket({ data }: { data: CupBracketData }) {
                 stroke={p.advanced ? "url(#cup-connector)" : "#71717a"}
                 strokeWidth={2}
                 strokeOpacity={p.advanced ? 1 : 0.3}
-                strokeLinecap="round"
+                strokeLinecap="butt"
               />
             ))}
           </svg>
