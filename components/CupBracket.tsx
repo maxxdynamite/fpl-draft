@@ -6,62 +6,55 @@ import { useLayoutEffect, useRef, useState } from "react";
 // happened yet (TBC, closer to Christmas), so this is the fixed matchup
 // shape by seed number only - no manager names, no live winner computation.
 //
-// Layout: a conventional mirrored bracket (see reference: two symmetric
-// halves converging on a centre Final), not a single left-to-right flow.
-// The left half carries seed 1's side of the draw; the right half is the
-// mirror image, carrying seed 2's side, flowing the opposite direction
-// into the same centre point. Both halves use the same fixed column
-// height with an even (justify-around) distribution, so the gap between
-// boxes doubles each round exactly the way the reference does - fewer
-// boxes in the same vertical space naturally spreads them out further.
+// Layout: one-sided, left to right (Round of 12 -> QF -> SF -> Final ->
+// Winner) - not mirrored. Every match, at every stage including Round of
+// 12, is two independent single-team tiles stacked with a small gap, all
+// identical width and height - no card ever shows two teams merged into
+// one box. A "pair" wrapper div (no border of its own) groups each pair
+// of tiles for layout and gives the outgoing connector to the next round
+// a place to originate from (its vertical centre - the midpoint between
+// the two tiles - regardless of which one ends up advancing). Every
+// column shares the same fixed height with an even (justify-around)
+// distribution, so fewer tiles in a later round naturally spread out
+// further - equal spacing without hand-tuned per-round gaps.
 //
-// From the quarter-final onward, each match is two independent
-// single-slot tiles (not one two-row card) stacked with a small gap - a
-// pair wrapper div (no border of its own) groups them for layout and
-// gives the outgoing connector to the next round a place to originate
-// from (its vertical centre, i.e. the midpoint between the two tiles).
-// Round of 12 keeps the two-row merged card, and byes keep their
-// existing standalone badge, introduced only at the QF column.
+// Connectors are plain straight right-angle lines throughout.
 //
-// Progressive styling: the brand gradient (full brightness) marks a
-// genuinely *finalised* result, not just "this round is up next" - a
-// Round of 12 fixture hasn't been played, so it stays neutral like every
-// other undecided match. Byes are the one exception: seed 1/2's place in
-// the QF is certain from the start, no game required, so their cell and
-// connector are gradient immediately.
+// Gradient: tiles that belong to the *current* stage (right now, that's
+// Round of 12 - the next matches to actually be played) are gradient-
+// bordered, plus anything already decided independent of a result (the
+// two byes - seed 1/2's place in the QF needs no game). The connector
+// leaving a bye is gradient at full brightness, since that path is
+// already certain. Round of 12's own outgoing connectors stay neutral -
+// being "the current stage" doesn't mean its results are decided yet.
+// Everything downstream (QF/SF/Final/Winner tiles and connectors) is
+// neutral until this shell is updated to reflect real results, at which
+// point the gradient moves forward one stage at a time.
 
 type Slot = string | null;
-type MatchNode = { id: string; top: Slot; bottom: Slot };
 type PairNode = { id: string; slots: [Slot, Slot] };
-// reverse: right-half edges run right-to-left (mirrored) instead of left-to-right.
-// advanced: gradient-coloured, full brightness (this result is decided) vs neutral.
-type Edge = { from: string; to: string; reverse?: boolean; advanced: boolean };
+type Edge = { from: string; to: string; advanced: boolean };
 
-const LEFT_R12: MatchNode[] = [
-  { id: "m89", top: "8", bottom: "9" },
-  { id: "m413", top: "4", bottom: "13" },
-  { id: "m512", top: "5", bottom: "12" },
-];
-const RIGHT_R12: MatchNode[] = [
-  { id: "m710", top: "7", bottom: "10" },
-  { id: "m314", top: "3", bottom: "14" },
-  { id: "m611", top: "6", bottom: "11" },
+const R12: PairNode[] = [
+  { id: "m89", slots: ["8", "9"] },
+  { id: "m413", slots: ["4", "13"] },
+  { id: "m512", slots: ["5", "12"] },
+  { id: "m710", slots: ["7", "10"] },
+  { id: "m314", slots: ["3", "14"] },
+  { id: "m611", slots: ["6", "11"] },
 ];
 
-const LEFT_QF: PairNode[] = [
+const QF: PairNode[] = [
   { id: "qf1", slots: [null, null] },
   { id: "qf2", slots: [null, null] },
-];
-const RIGHT_QF: PairNode[] = [
   { id: "qf3", slots: [null, null] },
   { id: "qf4", slots: [null, null] },
 ];
-
-const LEFT_SF: PairNode = { id: "sf1", slots: [null, null] };
-const RIGHT_SF: PairNode = { id: "sf2", slots: [null, null] };
-
+const SF: PairNode[] = [
+  { id: "sf1", slots: [null, null] },
+  { id: "sf2", slots: [null, null] },
+];
 const FINAL: PairNode = { id: "final", slots: [null, null] };
-const WINNER: MatchNode = { id: "winner", top: "Winner", bottom: null };
 
 const BYES = [
   { id: "bye1", seed: "1", feedsQF: "qf1" },
@@ -72,45 +65,47 @@ const BYES = [
 const slot = (pairId: string, i: 0 | 1) => `${pairId}-${i}`;
 
 const EDGES: Edge[] = [
-  // Left half - flows left to right into the Final's top tile.
   { from: "bye1", to: slot("qf1", 0), advanced: true },
   { from: "m89", to: slot("qf1", 1), advanced: false },
   { from: "m413", to: slot("qf2", 0), advanced: false },
   { from: "m512", to: slot("qf2", 1), advanced: false },
+  { from: "bye2", to: slot("qf3", 0), advanced: true },
+  { from: "m710", to: slot("qf3", 1), advanced: false },
+  { from: "m314", to: slot("qf4", 0), advanced: false },
+  { from: "m611", to: slot("qf4", 1), advanced: false },
   { from: "qf1", to: slot("sf1", 0), advanced: false },
   { from: "qf2", to: slot("sf1", 1), advanced: false },
+  { from: "qf3", to: slot("sf2", 0), advanced: false },
+  { from: "qf4", to: slot("sf2", 1), advanced: false },
   { from: "sf1", to: slot("final", 0), advanced: false },
-  // Right half - mirrored, flows right to left into the Final's bottom tile.
-  { from: "bye2", to: slot("qf3", 0), reverse: true, advanced: true },
-  { from: "m710", to: slot("qf3", 1), reverse: true, advanced: false },
-  { from: "m314", to: slot("qf4", 0), reverse: true, advanced: false },
-  { from: "m611", to: slot("qf4", 1), reverse: true, advanced: false },
-  { from: "qf3", to: slot("sf2", 0), reverse: true, advanced: false },
-  { from: "qf4", to: slot("sf2", 1), reverse: true, advanced: false },
-  { from: "sf2", to: slot("final", 1), reverse: true, advanced: false },
-  // Centre - Final pair to the Winner card beneath it.
+  { from: "sf2", to: slot("final", 1), advanced: false },
   { from: "final", to: "winner", advanced: false },
 ];
 
-const COLUMN_HEIGHT = 520;
-const CARD_WIDTH = "w-36";
+const COLUMN_HEIGHT = 640;
+const CARD_WIDTH = "w-40";
 
-function CardShell({
+function Tile({
+  value,
   gradient,
-  children,
   registerRef,
 }: {
+  value: Slot;
   gradient: boolean;
-  children: React.ReactNode;
   registerRef: (el: HTMLDivElement | null) => void;
 }) {
+  const content = (
+    <div className="px-3 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 truncate">
+      {value ?? " "}
+    </div>
+  );
   if (gradient) {
     return (
       <div
         ref={registerRef}
         className={`${CARD_WIDTH} shrink-0 rounded-xl bg-gradient-to-br from-[#00ff85] to-[#04f5ff] p-[1.5px]`}
       >
-        <div className="rounded-[10px] bg-white dark:bg-zinc-900 overflow-hidden">{children}</div>
+        <div className="rounded-[10px] bg-white dark:bg-zinc-900 overflow-hidden">{content}</div>
       </div>
     );
   }
@@ -119,120 +114,37 @@ function CardShell({
       ref={registerRef}
       className={`${CARD_WIDTH} shrink-0 rounded-xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden`}
     >
-      {children}
-    </div>
-  );
-}
-
-// Round of 12 / Winner only - the two-row merged card.
-function MatchCard({
-  top,
-  bottom,
-  subtle,
-  registerRef,
-}: {
-  top: Slot;
-  bottom: Slot;
-  subtle?: boolean;
-  registerRef: (el: HTMLDivElement | null) => void;
-}) {
-  const rowClass = subtle
-    ? "px-2.5 py-1.5 text-[11px] font-medium text-zinc-400 dark:text-zinc-500 truncate"
-    : "px-3 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 truncate";
-
-  return (
-    <CardShell gradient={false} registerRef={registerRef}>
-      <div className={`${rowClass} border-b border-black/[0.04] dark:border-white/[0.06]`}>
-        {top ?? " "}
-      </div>
-      <div className={rowClass}>{bottom ?? " "}</div>
-    </CardShell>
-  );
-}
-
-// QF/SF/Final - a single independent tile representing one slot.
-function SlotTile({
-  value,
-  registerRef,
-}: {
-  value: Slot;
-  registerRef: (el: HTMLDivElement | null) => void;
-}) {
-  return (
-    <CardShell gradient={false} registerRef={registerRef}>
-      <div className="px-3 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 truncate">
-        {value ?? " "}
-      </div>
-    </CardShell>
-  );
-}
-
-function ByeBadge({
-  seed,
-  registerRef,
-}: {
-  seed: string;
-  registerRef: (el: HTMLDivElement | null) => void;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-[9px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-        Bye
-      </span>
-      <CardShell gradient registerRef={registerRef}>
-        <div className="px-2.5 py-1.5 text-[11px] font-medium text-zinc-400 dark:text-zinc-500 truncate">
-          {seed}
-        </div>
-      </CardShell>
+      {content}
     </div>
   );
 }
 
 function Pair({
   pair,
+  gradient,
   registerRef,
 }: {
   pair: PairNode;
+  gradient: boolean;
   registerRef: (id: string) => (el: HTMLDivElement | null) => void;
 }) {
   return (
     <div ref={registerRef(pair.id)} className="flex flex-col gap-1.5">
-      <SlotTile value={pair.slots[0]} registerRef={registerRef(slot(pair.id, 0))} />
-      <SlotTile value={pair.slots[1]} registerRef={registerRef(slot(pair.id, 1))} />
+      <Tile value={pair.slots[0]} gradient={gradient} registerRef={registerRef(slot(pair.id, 0))} />
+      <Tile value={pair.slots[1]} gradient={gradient} registerRef={registerRef(slot(pair.id, 1))} />
     </div>
   );
 }
 
-function R12Column({
-  title,
-  matches,
-  registerRef,
-}: {
-  title: string;
-  matches: MatchNode[];
-  registerRef: (id: string) => (el: HTMLDivElement | null) => void;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-3">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-        {title}
-      </p>
-      <div className="flex flex-col justify-around" style={{ height: COLUMN_HEIGHT }}>
-        {matches.map((m) => (
-          <MatchCard key={m.id} top={m.top} bottom={m.bottom} subtle registerRef={registerRef(m.id)} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function QFColumn({
+function Column({
   title,
   pairs,
+  gradient,
   registerRef,
 }: {
   title: string;
   pairs: PairNode[];
+  gradient?: boolean;
   registerRef: (id: string) => (el: HTMLDivElement | null) => void;
 }) {
   return (
@@ -243,36 +155,20 @@ function QFColumn({
       <div className="flex flex-col justify-around" style={{ height: COLUMN_HEIGHT }}>
         {pairs.map((pair) => {
           const bye = BYES.find((b) => b.feedsQF === pair.id);
-          const pairEl = <Pair key={pair.id} pair={pair} registerRef={registerRef} />;
+          const pairEl = <Pair key={pair.id} pair={pair} gradient={gradient ?? false} registerRef={registerRef} />;
           if (!bye) return pairEl;
           return (
             <div key={pair.id} className="flex flex-col items-center gap-3">
-              <ByeBadge seed={bye.seed} registerRef={registerRef(bye.id)} />
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[9px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                  Bye
+                </span>
+                <Tile value={bye.seed} gradient registerRef={registerRef(bye.id)} />
+              </div>
               {pairEl}
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-function SFColumn({
-  title,
-  pair,
-  registerRef,
-}: {
-  title: string;
-  pair: PairNode;
-  registerRef: (id: string) => (el: HTMLDivElement | null) => void;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-3">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-        {title}
-      </p>
-      <div className="flex flex-col justify-center" style={{ height: COLUMN_HEIGHT }}>
-        <Pair pair={pair} registerRef={registerRef} />
       </div>
     </div>
   );
@@ -301,19 +197,13 @@ export function CupBracket() {
         const fromRect = fromEl.getBoundingClientRect();
         const toRect = toEl.getBoundingClientRect();
 
-        const x1 = edge.reverse
-          ? fromRect.left - containerRect.left
-          : fromRect.right - containerRect.left;
+        const x1 = fromRect.right - containerRect.left;
         const y1 = fromRect.top + fromRect.height / 2 - containerRect.top;
-
-        const x2 = edge.reverse
-          ? toRect.right - containerRect.left
-          : toRect.left - containerRect.left;
+        const x2 = toRect.left - containerRect.left;
         const y2 = toRect.top + toRect.height / 2 - containerRect.top;
 
-        // Conventional right-angle bracket connector: out horizontally,
-        // up/down at the midpoint, in horizontally - works the same for
-        // mirrored (right-to-left) edges since it's just point-to-point.
+        // Straight right-angle bracket connector: out horizontally, up/
+        // down at the midpoint, in horizontally.
         const midX = x1 + (x2 - x1) / 2;
         const d = `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
         return { id: `${edge.from}-${edge.to}`, d, advanced: edge.advanced };
@@ -367,10 +257,9 @@ export function CupBracket() {
             ))}
           </svg>
           <div className="relative flex gap-8">
-            <R12Column title="Round of 12" matches={LEFT_R12} registerRef={registerRef} />
-            <QFColumn title="Quarter-Final" pairs={LEFT_QF} registerRef={registerRef} />
-            <SFColumn title="Semi-Final" pair={LEFT_SF} registerRef={registerRef} />
-
+            <Column title="Round of 12" pairs={R12} gradient registerRef={registerRef} />
+            <Column title="Quarter-Final" pairs={QF} registerRef={registerRef} />
+            <Column title="Semi-Final" pairs={SF} registerRef={registerRef} />
             <div className="flex flex-col items-center gap-3">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                 Final
@@ -379,18 +268,15 @@ export function CupBracket() {
                 className="flex flex-col items-center justify-center gap-3"
                 style={{ height: COLUMN_HEIGHT }}
               >
-                <Pair pair={FINAL} registerRef={registerRef} />
-                <MatchCard
-                  top={WINNER.top}
-                  bottom={WINNER.bottom}
-                  registerRef={registerRef(WINNER.id)}
-                />
+                <Pair pair={FINAL} gradient={false} registerRef={registerRef} />
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[9px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                    Winner
+                  </span>
+                  <Tile value={null} gradient={false} registerRef={registerRef("winner")} />
+                </div>
               </div>
             </div>
-
-            <SFColumn title="Semi-Final" pair={RIGHT_SF} registerRef={registerRef} />
-            <QFColumn title="Quarter-Final" pairs={RIGHT_QF} registerRef={registerRef} />
-            <R12Column title="Round of 12" matches={RIGHT_R12} registerRef={registerRef} />
           </div>
         </div>
       </div>
