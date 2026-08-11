@@ -6,9 +6,10 @@ import { useLayoutEffect, useRef, useState } from "react";
 // happened yet (TBC, closer to Christmas), so this is the fixed matchup
 // shape by seed number only - no manager names, no live winner computation.
 //
-// Layout: one-sided, left to right (Round of 12 -> QF -> SF -> Final ->
-// Winner) - not mirrored. Every match, at every stage including Round of
-// 12, is two independent single-team tiles stacked with a small gap, all
+// Layout: one-sided, left to right (Round of 12 -> QF -> SF -> Final) -
+// not mirrored. No Winner cell for now. Every match, at every stage
+// including Round of 12, is two independent single-team tiles stacked
+// with a small gap, all
 // identical width and height - no card ever shows two teams merged into
 // one box. A "pair" wrapper div (no border of its own) groups each pair
 // of tiles for layout and gives the outgoing connector to the next round
@@ -27,7 +28,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 // leaving a bye is gradient at full brightness, since that path is
 // already certain. Round of 12's own outgoing connectors stay neutral -
 // being "the current stage" doesn't mean its results are decided yet.
-// Everything downstream (QF/SF/Final/Winner tiles and connectors) is
+// Everything downstream (QF/SF/Final tiles and connectors) is
 // neutral until this shell is updated to reflect real results, at which
 // point the gradient moves forward one stage at a time.
 
@@ -79,12 +80,21 @@ const EDGES: Edge[] = [
   { from: "qf4", to: slot("sf2", 1), advanced: false },
   { from: "sf1", to: slot("final", 0), advanced: false },
   { from: "sf2", to: slot("final", 1), advanced: false },
-  { from: "final", to: "winner", advanced: false },
 ];
 
 const COLUMN_HEIGHT = 640;
 const CARD_WIDTH = "w-40";
 
+// One structure for both variants - only the outer border colour differs.
+// Previously the gradient variant used an extra p-[1.5px] wrapper (the
+// "padding trick" for a gradient border) that the neutral variant, using
+// a box-shadow ring instead, didn't have - ring doesn't add to layout
+// size but padding does, so gradient tiles were ~3px taller than neutral
+// ones despite identical content. Unifying onto the same wrapper fixes
+// that. The 2px padding / 10px inner radius (12px outer - 2px) is an
+// exact match, not approximate - a mismatched radius (previously 12px
+// outer vs 10px inner over 1.5px padding, off by 0.5px) is what let
+// slivers of the gradient bleed through at the rounded corners.
 function Tile({
   value,
   gradient,
@@ -94,27 +104,23 @@ function Tile({
   gradient: boolean;
   registerRef: (el: HTMLDivElement | null) => void;
 }) {
-  const content = (
-    <div className="px-3 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 truncate">
-      {value ?? " "}
-    </div>
-  );
-  if (gradient) {
-    return (
-      <div
-        ref={registerRef}
-        className={`${CARD_WIDTH} shrink-0 rounded-xl bg-gradient-to-br from-[#00ff85] to-[#04f5ff] p-[1.5px]`}
-      >
-        <div className="rounded-[10px] bg-white dark:bg-zinc-900 overflow-hidden">{content}</div>
-      </div>
-    );
-  }
+  const borderClass = gradient
+    ? "bg-gradient-to-br from-[#00ff85] to-[#04f5ff]"
+    : "bg-black/[0.06] dark:bg-white/[0.08]";
   return (
     <div
       ref={registerRef}
-      className={`${CARD_WIDTH} shrink-0 rounded-xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden`}
+      className={`${CARD_WIDTH} shrink-0 rounded-xl ${borderClass} p-[2px] shadow-[var(--shadow-soft)]`}
     >
-      {content}
+      <div className="rounded-[10px] bg-white dark:bg-zinc-900 overflow-hidden">
+        <div className="px-3 py-[7px] text-xs font-semibold text-zinc-700 dark:text-zinc-300 truncate">
+          {/* A literal single space here collapses to a zero-height line
+              box (browsers drop whitespace-only text content entirely),
+              leaving vacant tiles shorter than ones with real text - a
+              non-breaking space doesn't collapse. */}
+          {value ?? " "}
+        </div>
+      </div>
     </div>
   );
 }
@@ -260,23 +266,7 @@ export function CupBracket() {
             <Column title="Round of 12" pairs={R12} gradient registerRef={registerRef} />
             <Column title="Quarter-Final" pairs={QF} registerRef={registerRef} />
             <Column title="Semi-Final" pairs={SF} registerRef={registerRef} />
-            <div className="flex flex-col items-center gap-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                Final
-              </p>
-              <div
-                className="flex flex-col items-center justify-center gap-3"
-                style={{ height: COLUMN_HEIGHT }}
-              >
-                <Pair pair={FINAL} gradient={false} registerRef={registerRef} />
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-[9px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                    Winner
-                  </span>
-                  <Tile value={null} gradient={false} registerRef={registerRef("winner")} />
-                </div>
-              </div>
-            </div>
+            <Column title="Final" pairs={[FINAL]} registerRef={registerRef} />
           </div>
         </div>
       </div>
