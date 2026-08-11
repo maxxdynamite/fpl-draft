@@ -618,12 +618,16 @@ export function CupBracket({ data }: { data: CupBracketData }) {
         // already nearly level (a source pair's midpoint can coincidentally
         // land within a few px of its destination), the elbow's vertical
         // leg is too short to read as a deliberate bend - it just looks
-        // like a stray notch. Below FLAT_THRESHOLD, skip the elbow and
-        // draw one plain diagonal instead.
+        // like a stray notch. Below FLAT_THRESHOLD, skip the bend entirely
+        // and snap to one dead-level horizontal line instead - a diagonal
+        // would break the "always grid-aligned" language every other
+        // connector uses, but a couple of px of visual noise is genuinely
+        // imperceptible, so treating it as flat isn't a lie.
         const midX = x1 + (x2 - x1) / 2;
+        const yFlat = (y1 + y2) / 2;
         const d =
           Math.abs(y2 - y1) < FLAT_THRESHOLD
-            ? `M ${x1} ${y1} L ${x2} ${y2}`
+            ? `M ${x1} ${yFlat} L ${x2} ${yFlat}`
             : `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
         return { id: `${edge.from}-${edge.to}`, d, advanced: vm.advancedByFrom.get(edge.from) ?? false };
       }).filter((p): p is { id: string; d: string; advanced: boolean } => p !== null);
