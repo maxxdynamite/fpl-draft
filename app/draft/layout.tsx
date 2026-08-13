@@ -41,7 +41,7 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
           // to three lines and busts the pinned h-10 height), and unlike
           // the toggle this is a nice-to-have, not something that needs
           // to always be reachable.
-          <div className="hidden sm:block ml-auto">
+          <div className="hidden sm:block">
             <DraftCountdown draftDt={draftDt} />
           </div>
         )}
