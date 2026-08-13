@@ -21,10 +21,6 @@ function ClockIcon() {
   );
 }
 
-function pad(n: number): string {
-  return n.toString().padStart(2, "0");
-}
-
 // A real ticking clock, not a coarsened "6d 14h" - hours/minutes/seconds
 // always shown and always live, with a day count prefixed only once
 // there's a full day or more left (no "0d" clutter once it drops below
@@ -36,7 +32,7 @@ function formatRemaining(ms: number): string {
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  const clock = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  const clock = `${hours}h ${minutes}m ${seconds}s`;
   return days > 0 ? `${days}d ${clock}` : clock;
 }
 
@@ -68,14 +64,17 @@ export function DraftCountdown({ draftDt }: { draftDt: string }) {
 
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold tabular-nums bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400"
+      // Same brand-gradient chip convention as the Blackjack picks/submit
+      // pills - #04211a (not pure black) is the deep near-black used
+      // against this gradient everywhere else, not a one-off here.
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold tabular-nums bg-gradient-to-r from-[#00ff85] to-[#04f5ff] text-[#04211a]"
       title={new Date(draftDt).toLocaleString(undefined, {
         dateStyle: "full",
         timeStyle: "short",
       })}
     >
       <ClockIcon />
-      Draft in {formatRemaining(target - now)}
+      Draft begins: {formatRemaining(target - now)}
     </span>
   );
 }
