@@ -6,7 +6,7 @@ export function PoundIcon({ size = 14, className }: { size?: number; className?:
     <svg width={size} height={size} viewBox="0 0 36 36" fill="currentColor" className={className}>
       <text
         x="50%"
-        y="53%"
+        y="64%"
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize="40"

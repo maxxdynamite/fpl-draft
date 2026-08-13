@@ -1,9 +1,9 @@
-import Image from "next/image";
 import type { BlackjackParticipant } from "@/lib/blackjack";
 import { BLACKJACK_TARGET } from "@/lib/blackjack";
 import { STATUS_META } from "@/lib/blackjackStatus";
 import { QualifiedBadge } from "./QualifiedBadge";
 import { SpadeIcon } from "./SpadeIcon";
+import { PlayerAvatar } from "./PlayerAvatar";
 
 export function BlackjackParticipantCard({
   participant,
@@ -108,17 +108,19 @@ export function BlackjackParticipantCard({
                         behind this circle, and a translucent fill let its
                         colour bleed through the pt-1 gap above the head,
                         which read as the circle itself changing colour. */}
-                    <div className="h-10 w-10 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-start justify-center pt-1">
-                      <Image
-                        src={player.photoUrl}
-                        alt={player.name}
-                        width={52}
-                        height={52}
-                        className={`h-[52px] w-[52px] object-cover object-top transition-opacity ${
-                          playerGreyed ? "opacity-40 grayscale" : ""
-                        }`}
-                      />
-                    </div>
+                    <PlayerAvatar
+                      photoUrl={player.photoUrl}
+                      alt={player.name}
+                      containerClassName="h-10 w-10 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800"
+                      imageSize={52}
+                      imageClassName={`h-[52px] w-[52px] object-cover object-top transition-opacity ${
+                        playerGreyed ? "opacity-40 grayscale" : ""
+                      }`}
+                      fallbackClassName={`h-5 w-5 text-zinc-400 dark:text-zinc-500 transition-opacity ${
+                        playerGreyed ? "opacity-40" : ""
+                      }`}
+                      headroomOffset="pt-1"
+                    />
                   </div>
                   {/* Name/club normally stay full-brightness even for an
                       individual player on 0 (only their photo/tally dim) -

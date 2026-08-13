@@ -14,7 +14,7 @@ export function BlackjackLeaderboard({
         BB Blackjack · target {BLACKJACK_TARGET}
       </p>
       <ul>
-        {participants.map((p, i) => {
+        {participants.map((p) => {
           const meta = STATUS_META[p.status];
           const isBust = p.status === "bust";
           return (
@@ -22,9 +22,6 @@ export function BlackjackLeaderboard({
               key={p.entryId}
               className="flex items-center gap-2 px-3 py-1.5 border-t border-black/[0.04] dark:border-white/[0.06] text-xs"
             >
-              <span className="w-5 shrink-0 tabular-nums text-zinc-400 dark:text-zinc-500 font-medium">
-                {i + 1}
-              </span>
               {/* Dot stays on meta.dotClass (black for bust) regardless of
                   the greyed-out name/score - it's the one element that
                   doesn't fade, same black as the tile's bust pill. The ring

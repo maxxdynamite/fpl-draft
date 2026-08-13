@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import type { Player, Club } from "@/lib/players";
 import type { BlackjackPicks } from "@/lib/blackjackPicks";
+import { PlayerAvatar } from "./PlayerAvatar";
 
 const REQUIRED_PICKS = 4;
 
@@ -25,52 +25,6 @@ const STATUS_LABELS: Record<string, string> = {
 // team sheet groups players, and it's how managers actually scan a club's
 // roster when picking.
 const POSITION_ORDER: Record<string, number> = { GKP: 0, DEF: 1, MID: 2, FWD: 3 };
-
-// Renders a player's photo, falling back to a generic silhouette on load
-// failure (missing headshots are common for fringe/new-signing players on
-// the FPL photo CDN) instead of a broken-image icon. headroomOffset
-// reproduces the grid tile's deliberate crop (see lib/players.ts) - the
-// image renders larger than its circular window and is top-anchored (by
-// this offset) so the visible crop clears headroom above the head; the
-// fallback icon has no such asymmetry, so it's simply centered regardless.
-function PlayerAvatar({
-  photoUrl,
-  containerClassName,
-  imageSize,
-  imageClassName,
-  fallbackClassName,
-  headroomOffset,
-}: {
-  photoUrl: string;
-  containerClassName: string;
-  imageSize: number;
-  imageClassName: string;
-  fallbackClassName: string;
-  headroomOffset?: string;
-}) {
-  const [failed, setFailed] = useState(false);
-  const align =
-    !failed && headroomOffset ? `items-start justify-center ${headroomOffset}` : "items-center justify-center";
-  return (
-    <span className={`flex ${align} ${containerClassName}`}>
-      {failed ? (
-        <svg viewBox="0 0 24 24" fill="currentColor" className={fallbackClassName} aria-hidden="true">
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 20a8 8 0 0 1 16 0" />
-        </svg>
-      ) : (
-        <Image
-          src={photoUrl}
-          alt=""
-          width={imageSize}
-          height={imageSize}
-          onError={() => setFailed(true)}
-          className={imageClassName}
-        />
-      )}
-    </span>
-  );
-}
 
 export function BlackjackPicksForm({
   managers,
@@ -155,20 +109,41 @@ export function BlackjackPicksForm({
         <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
           Who&apos;s picking?
         </label>
-        <select
-          value={selectedEntryId}
-          onChange={(e) => handleSelectParticipant(Number(e.target.value))}
-          className="mt-1.5 w-full rounded-lg px-3 py-2 text-sm font-semibold bg-black/[0.03] dark:bg-white/[0.06] text-zinc-900 dark:text-white ring-1 ring-black/[0.06] dark:ring-white/[0.1]"
-        >
-          <option value="" disabled>
-            Select your name…
-          </option>
-          {managers.map((m) => (
-            <option key={m.entryId} value={m.entryId}>
-              {m.managerName} — {m.teamName}
+        {/* relative wrapper + appearance-none - the native select arrow
+            renders flush against the box's own edge with no way to give it
+            breathing room via padding alone, so it's replaced with a
+            custom chevron that's actually positioned off the edge. */}
+        <div className="relative mt-1.5">
+          <select
+            value={selectedEntryId}
+            onChange={(e) => handleSelectParticipant(Number(e.target.value))}
+            className="w-full appearance-none rounded-lg pl-3 pr-9 py-2 text-sm font-semibold bg-black/[0.03] dark:bg-white/[0.06] text-zinc-900 dark:text-white ring-1 ring-black/[0.06] dark:ring-white/[0.1]"
+          >
+            <option value="" disabled>
+              Select your name…
             </option>
-          ))}
-        </select>
+            {managers.map((m) => (
+              <option key={m.entryId} value={m.entryId}>
+                {m.managerName} — {m.teamName}
+              </option>
+            ))}
+          </select>
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 12 12"
+            fill="none"
+            className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 rotate-180 text-zinc-400 dark:text-zinc-500"
+          >
+            <path
+              d="M2.5 7.5L6 4L9.5 7.5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
       </div>
 
       {selectedEntryId !== "" && (

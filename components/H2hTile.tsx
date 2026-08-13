@@ -1,22 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { H2hMatchup } from "@/lib/h2h";
-import { formatPl } from "@/lib/format";
-
-const TOTAL_GAMEWEEKS = 38;
+import { formatPl, plColor } from "@/lib/format";
 
 function initials(managerName: string): string {
   const parts = managerName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-function plColor(pl: number) {
-  if (pl > 0) return "text-emerald-600 dark:text-emerald-400";
-  if (pl < 0) return "text-rose-600 dark:text-rose-400";
-  return "text-zinc-400";
 }
 
 const STREAK_THRESHOLD = 3;
@@ -37,7 +29,7 @@ function StreakBadge({ streak, hide }: { streak: number; hide: boolean }) {
 
   return (
     <span
-      className={`relative isolate inline-block mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide transition-opacity duration-300 ${tierClasses} ${
+      className={`relative isolate inline-block mt-2 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide transition-opacity duration-300 ${tierClasses} ${
         show ? (hide ? "opacity-0" : "opacity-100") : "invisible"
       }`}
     >
@@ -162,35 +154,116 @@ function ChevronIcon({ flipped }: { flipped: boolean }) {
   );
 }
 
-const RIGHT_FADE_WIDTH = 24;
+// All 38 gameweeks are always rendered and scrollable - what's actually
+// *seen* is controlled entirely by the mask and the scroll position, not
+// by how much is in the DOM. The sheet always *opens* scrolled to a
+// trailing 6-week window ending at the latest played week (GW1-6 while
+// the season's still within its first 6 weeks, then rolling forward to
+// stay 6-wide) - that's the one part that has to look identical every
+// time, regardless of what gameweek the season's on. Scrolling further
+// left or right from there moves the same 6-wide unmasked window across
+// the rest of the season.
+//
+// Getting "exactly 6, never 7" right isn't something a fixed column width
+// plus an approximately-tuned mask can guarantee - the real viewport is
+// wider than "badge + 6 columns", so a right-anchored scroll alone always
+// leaves room for a 7th column (or a sliver of one) to peek in, no matter
+// how the fade is tuned. Instead, column width is *derived* from the
+// actual measured viewport width so exactly WINDOW_SIZE columns fill it
+// by construction - nothing left over for anything else to show through.
+//
+// The same reasoning applies to the *lost* gameweek on the left (the one
+// just pushed out of the window once latestGw > WINDOW_SIZE) - a mask
+// with a fixed transparent-zone width can't guarantee it's fully hidden,
+// because the lost column is exactly one dynamic columnWidth wide, and a
+// fixed pixel value has no idea how wide that is. The transparent zone is
+// solved for alongside columnWidth instead, sized to exactly cover one
+// column + its gap, so the lost week is always either fully visible (as
+// part of the 6) or fully hidden - never a partial ghost.
+const TOTAL_GAMEWEEKS = 38;
+const WINDOW_SIZE = 6;
+const BADGE_WIDTH = 32; // pinned initials badge - the transparent zone must clear at least this
+// Widened from 4px so the left fade (below) has real room to be soft
+// without touching the lost column's own body - see FADE_WIDTH. This also
+// airs out the whole strip a little, not just this one edge.
+const COLUMN_GAP = 10; // gap-2.5
+// Transition from transparent to opaque. Must stay under COLUMN_GAP: the
+// lost column's trailing edge sits only one COLUMN_GAP before the visible
+// window starts (columns are packed tight, no dedicated hiding margin), so
+// any fade wider than that gap necessarily straddles the lost column's own
+// body and leaves it partially visible - a real bug that showed up when
+// this was 16px against a 4px gap. Kept a couple px under the gap (not
+// exactly equal) as a safety margin against the sub-pixel layout rounding
+// seen during testing.
+const FADE_WIDTH = COLUMN_GAP - 2;
+// The right edge is a deliberate scroll affordance, not a hiding
+// mechanism, so it doesn't share the left side's "must be exact" constraint
+// - it can cross into the 7th column's own body while softening. Opaque
+// through the 6th column, a soft step down to PEEK_OPACITY over
+// RIGHT_STEP_WIDTH, held flat for RIGHT_PEEK_WIDTH (long enough to actually
+// read as a fixture, not a smudge), then a soft fade to fully transparent
+// over RIGHT_FADE_TAIL at the card edge.
+const RIGHT_STEP_WIDTH = 8;
+const RIGHT_PEEK_WIDTH = 18;
+const RIGHT_FADE_TAIL = 12;
+const PEEK_OPACITY = 0.3;
+const RIGHT_BUFFER = RIGHT_STEP_WIDTH + RIGHT_PEEK_WIDTH + RIGHT_FADE_TAIL;
 
 export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
   const [showAllGameweeks, setShowAllGameweeks] = useState(false);
   const { teamA, teamB, history } = matchup;
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Sane defaults before the first measurement lands, so nothing renders
+  // at 0 width for a frame.
+  const [columnWidth, setColumnWidth] = useState(32);
+  const [transparentZone, setTransparentZone] = useState(BADGE_WIDTH);
 
   const historyByGw = new Map(history.map((row) => [row.gameweek, row]));
   const latestGw =
     history.length > 0 ? Math.max(...history.map((row) => row.gameweek)) : 1;
 
-  // Jump straight to the latest played gameweek whenever the sheet opens,
-  // with enough runway past it to clear the right-edge fade entirely —
-  // otherwise the gameweek someone actually cares about seeing is either
-  // scrolled out of view (once the season is past ~GW8) or sitting faded
-  // right at the edge.
+  // Measure the real viewport and size every column so exactly WINDOW_SIZE
+  // fit within it - see the note above on why this has to be geometric,
+  // not mask-based. There are WINDOW_SIZE visible columns *plus* one lost
+  // column also needing exactly columnWidth of hiding room, so the
+  // available space is divided by WINDOW_SIZE+1, not WINDOW_SIZE - solving
+  // both column width and the mask's transparent-zone width together
+  // rather than picking one and hoping the other lines up. Re-measures on
+  // resize so it stays correct across breakpoints, not just at first mount.
+  useLayoutEffect(() => {
+    const area = scrollRef.current;
+    if (!area) return;
+    function measure() {
+      const c =
+        (area!.clientWidth - FADE_WIDTH - RIGHT_BUFFER - WINDOW_SIZE * COLUMN_GAP) /
+        (WINDOW_SIZE + 1);
+      setColumnWidth(c);
+      setTransparentZone(Math.max(BADGE_WIDTH, c + COLUMN_GAP));
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  // Jump straight to the latest played gameweek every time the sheet
+  // opens, sliding the whole strip left by exactly one column-pitch per
+  // gameweek past the initial 6-week window. Deliberately NOT computed
+  // from the target column's DOM offsetLeft/offsetWidth - those round to
+  // integer pixels, and that per-column rounding drift (measured as an
+  // 8-12px error over a handful of columns) was exactly why the "lost"
+  // column was still peeking through the left fade instead of sitting
+  // fully behind it. Shifting by a whole number of (columnWidth +
+  // COLUMN_GAP) pitches - the same float values the mask itself is built
+  // from - reproduces the scrollLeft:0 geometry exactly, just starting
+  // `shiftColumns` gameweeks later, so the pushed-out column always lands
+  // precisely at the transparent zone's edge.
   useEffect(() => {
     if (!showAllGameweeks) return;
     const area = scrollRef.current;
-    const target = area?.querySelector<HTMLDivElement>(
-      `[data-gw="${latestGw}"]`,
-    );
-    if (!area || !target) return;
-    const targetRight = target.offsetLeft + target.offsetWidth;
-    area.scrollLeft = Math.max(
-      0,
-      targetRight + RIGHT_FADE_WIDTH - area.clientWidth,
-    );
-  }, [showAllGameweeks, latestGw]);
+    if (!area) return;
+    const shiftColumns = Math.max(0, latestGw - WINDOW_SIZE);
+    area.scrollLeft = shiftColumns * (columnWidth + COLUMN_GAP);
+  }, [showAllGameweeks, latestGw, columnWidth]);
 
   return (
     <div className="relative rounded-2xl shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden">
@@ -232,42 +305,66 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
         </div>
 
         {/* Fixed-height slot shared by both states — never resizes, so
-            toggling only ever crossfades opacity inside it, nothing jumps. */}
-        <div className="relative mt-0.5 h-16">
+            toggling only ever crossfades opacity inside it, nothing jumps.
+            mt-1 (not mt-2) pulls the whole label+scores group up closer
+            to the streak badge above it. */}
+        <div className="relative mt-1 h-16">
+          {/* Anchored to a fixed spot near the top of the box, independent
+              of the numbers below it - previously this floated relative to
+              the H2H score itself, which meant nudging the scores up
+              dragged the label up with them instead of closing the gap
+              between the two. */}
+          <p
+            className={`absolute inset-x-0 top-0 text-center text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 transition-opacity duration-300 ${
+              showAllGameweeks ? "opacity-0" : "opacity-100"
+            }`}
+          >
+            Head-to-Head
+          </p>
           <div
-            className={`absolute inset-0 grid grid-cols-[1fr_auto_1fr] items-start gap-3 transition-opacity duration-300 ${
+            // items-center, not items-start - the two gameweek scores and
+            // the H2H score are one group that shares a single vertical
+            // center line. An explicit top+height band (not inset-0, and
+            // not an auto-height row - auto-height just wraps the tallest
+            // item with zero room to actually shift anything) is what
+            // lets that shared center sit close under the label instead
+            // of wherever the tallest item's own natural height puts it.
+            // top-[2px] - calibrated to the H2H score's own top edge, not
+            // the (much taller) GW scores' top edge. Centering a short
+            // line (H2H score) and a tall line (GW scores) on the same
+            // middle point unavoidably leaves more clearance above the
+            // short one - tightening against the GW scores' top left the
+            // H2H score still ~10px shy of the label above it, so this is
+            // tuned against the H2H score specifically instead; the GW
+            // scores just land wherever that puts them.
+            className={`absolute inset-x-0 top-[2px] h-[50px] grid grid-cols-[1fr_auto_1fr] items-center gap-3 transition-opacity duration-300 ${
               showAllGameweeks ? "opacity-0 pointer-events-none" : "opacity-100"
             }`}
           >
             <span className="text-4xl font-extrabold tabular-nums tracking-tight">
               {teamA.latestScore ?? 0}
             </span>
-            <div className="text-center">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                Head-to-Head
-              </p>
-              <p className="text-lg font-bold tabular-nums mt-0.5">
-                <span
-                  className={
-                    teamA.wins > teamB.wins
-                      ? "text-zinc-900 dark:text-white"
-                      : "text-zinc-500 dark:text-zinc-400"
-                  }
-                >
-                  {teamA.wins}
-                </span>
-                <span className="text-zinc-500 dark:text-zinc-400"> – </span>
-                <span
-                  className={
-                    teamB.wins > teamA.wins
-                      ? "text-zinc-900 dark:text-white"
-                      : "text-zinc-500 dark:text-zinc-400"
-                  }
-                >
-                  {teamB.wins}
-                </span>
-              </p>
-            </div>
+            <p className="text-lg font-bold tabular-nums text-center">
+              <span
+                className={
+                  teamA.wins > teamB.wins
+                    ? "text-zinc-900 dark:text-white"
+                    : "text-zinc-500 dark:text-zinc-400"
+                }
+              >
+                {teamA.wins}
+              </span>
+              <span className="text-zinc-500 dark:text-zinc-400"> – </span>
+              <span
+                className={
+                  teamB.wins > teamA.wins
+                    ? "text-zinc-900 dark:text-white"
+                    : "text-zinc-500 dark:text-zinc-400"
+                }
+              >
+                {teamB.wins}
+              </span>
+            </p>
             <span className="text-4xl font-extrabold tabular-nums tracking-tight text-right">
               {teamB.latestScore ?? 0}
             </span>
@@ -290,10 +387,49 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
 
             <div
               ref={scrollRef}
-              className="no-scrollbar h-full overflow-x-auto overflow-y-hidden -mx-4 sm:-mx-5 pl-4 sm:pl-5 [mask-image:linear-gradient(to_right,transparent,transparent_20px,black_64px,black_calc(100%-24px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,transparent_20px,black_64px,black_calc(100%-24px),transparent)]"
+              // relative - the scroll container has to be a positioned
+              // ancestor itself, otherwise the scroll-to-latest effect's
+              // target.offsetLeft resolves against a different, further-out
+              // ancestor than the one scrollLeft actually operates in.
+              // The left mask's transparent zone is `transparentZone`, not a
+              // fixed guess - it's derived from the same measured
+              // columnWidth as the columns themselves, so it's guaranteed to
+              // fully cover exactly one column + its gap (the "lost" GW),
+              // whatever the actual viewport width turns out to be. It fades
+              // to opaque over FADE_WIDTH beyond that. The right side is
+              // just a small cosmetic fade over RIGHT_BUFFER's empty space,
+              // not a hiding mechanism - column width already guarantees
+              // nothing else fits in the viewport to hide. No -mx/pl bleed
+              // to the card edges (unlike the old design) - that padding put
+              // offsetLeft (what the scroll math uses) and the mask's own
+              // pixel values in two different coordinate spaces, 16-20px
+              // apart, which was exactly why a column meant to be fully
+              // hidden was still poking through by that same margin. Right
+              // side: opaque through the 6th column, a soft step down to
+              // PEEK_OPACITY (not a hard cut - it's fine to cross into the
+              // 7th column's own body here, unlike the left side), held
+              // flat long enough to read as an actual fixture, then a soft
+              // fade to fully transparent at the card edge.
+              className="relative no-scrollbar h-full overflow-x-auto overflow-y-hidden"
+              style={{
+                maskImage: `linear-gradient(to right, transparent, transparent ${transparentZone}px, black ${transparentZone + FADE_WIDTH}px, black calc(100% - ${RIGHT_BUFFER}px), rgba(0,0,0,${PEEK_OPACITY}) calc(100% - ${RIGHT_BUFFER - RIGHT_STEP_WIDTH}px), rgba(0,0,0,${PEEK_OPACITY}) calc(100% - ${RIGHT_FADE_TAIL}px), transparent)`,
+                WebkitMaskImage: `linear-gradient(to right, transparent, transparent ${transparentZone}px, black ${transparentZone + FADE_WIDTH}px, black calc(100% - ${RIGHT_BUFFER}px), rgba(0,0,0,${PEEK_OPACITY}) calc(100% - ${RIGHT_BUFFER - RIGHT_STEP_WIDTH}px), rgba(0,0,0,${PEEK_OPACITY}) calc(100% - ${RIGHT_FADE_TAIL}px), transparent)`,
+              }}
             >
-              <div className="flex items-start gap-1 w-max">
-                <div className="flex-none w-11" aria-hidden="true" />
+              <div className="flex items-start gap-2.5 w-max">
+                {/* Matches the mask's full-opacity point exactly, so at
+                    scrollLeft:0 (GW1 visible) the first real column starts
+                    right where the mask reaches full opacity, not stranded
+                    mid-fade. Subtracts COLUMN_GAP because the flex `gap-2.5`
+                    on this row also applies between this spacer and GW1 -
+                    without the subtraction every column lands one gap later
+                    than the mask/columnWidth math assumes, which is what
+                    let the current gameweek bleed into the right fade. */}
+                <div
+                  className="flex-none"
+                  style={{ width: transparentZone + FADE_WIDTH - COLUMN_GAP }}
+                  aria-hidden="true"
+                />
                 {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
                   (gw) => {
                     const row = historyByGw.get(gw);
@@ -302,7 +438,8 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                       <div
                         key={gw}
                         data-gw={gw}
-                        className="flex-none w-8 flex flex-col items-center"
+                        style={{ width: columnWidth }}
+                        className="flex-none flex flex-col items-center"
                       >
                         <span className="h-2 mb-1.5 text-[8px] font-extrabold text-[#04211a]/60 uppercase leading-[8px]">
                           GW{gw}
@@ -325,7 +462,14 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                     );
                   },
                 )}
-                <div className="flex-none w-7" aria-hidden="true" />
+                {/* Matches RIGHT_BUFFER - ensures there's actually enough
+                    scrollable width for scrollLeft to reach the computed
+                    target without the browser clamping it early. */}
+                <div
+                  className="flex-none"
+                  style={{ width: RIGHT_BUFFER }}
+                  aria-hidden="true"
+                />
               </div>
             </div>
           </div>
