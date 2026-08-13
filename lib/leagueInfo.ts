@@ -18,6 +18,8 @@ export type LeagueDetails = {
   name: string;
   standings: StandingEntry[];
   leagueEntries: LeagueEntry[];
+  draftDt: string | null; // ISO timestamp of the scheduled snake draft
+  draftStatus: string; // "pre" before it happens, something else once it's started/done
 };
 
 // Same endpoint backs both the league name (rarely changes, cached an hour)
@@ -60,11 +62,27 @@ export async function getLeagueDetails(
     }),
   );
 
-  return { name: data.league.name, standings, leagueEntries };
+  return {
+    name: data.league.name,
+    standings,
+    leagueEntries,
+    draftDt: data.league.draft_dt ?? null,
+    draftStatus: data.league.draft_status,
+  };
 }
 
 export async function getLeagueName(): Promise<string> {
   // league name essentially never changes mid-season
   const details = await getLeagueDetails(3600);
   return details.name;
+}
+
+export async function getDraftSchedule(): Promise<{
+  draftDt: string | null;
+  draftStatus: string;
+}> {
+  // Set once when the league's created and never changes after - same
+  // caching rationale as getLeagueName.
+  const details = await getLeagueDetails(3600);
+  return { draftDt: details.draftDt, draftStatus: details.draftStatus };
 }

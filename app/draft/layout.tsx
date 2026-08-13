@@ -1,8 +1,13 @@
 import { DraftSubNav } from "@/components/DraftSubNav";
+import { DraftCountdown } from "@/components/DraftCountdown";
 import { getCurrentGameweek } from "@/lib/gameweek";
+import { getDraftSchedule } from "@/lib/leagueInfo";
 
 export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
-  const gameweek = await getCurrentGameweek();
+  const [gameweek, { draftDt, draftStatus }] = await Promise.all([
+    getCurrentGameweek(),
+    getDraftSchedule(),
+  ]);
   // Pre-season, GW_Scores has no rows yet (nothing's been synced), so
   // getCurrentGameweek() returns null - default to Gameweek 1 rather than
   // hiding the heading entirely. No status pill in that case: we don't
@@ -30,6 +35,16 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
           )}
         </div>
         <DraftSubNav />
+        {draftStatus === "pre" && draftDt && (
+          // hidden below sm - "Gameweek N" + the H2H/Cup toggle already
+          // fill the row on a phone (measured: adding this pill wraps it
+          // to three lines and busts the pinned h-10 height), and unlike
+          // the toggle this is a nice-to-have, not something that needs
+          // to always be reachable.
+          <div className="hidden sm:block ml-auto">
+            <DraftCountdown draftDt={draftDt} />
+          </div>
+        )}
       </div>
       {children}
     </main>
