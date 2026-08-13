@@ -24,16 +24,21 @@ function ClockIcon() {
 // A real ticking clock, not a coarsened "6d 14h" - hours/minutes/seconds
 // always shown and always live, with a day count prefixed only once
 // there's a full day or more left (no "0d" clutter once it drops below
-// that).
-function formatRemaining(ms: number): string {
+// that). Returned as separate value/unit segments, not a single string,
+// so the render can size the digits up against the unit letters.
+function remainingSegments(ms: number): { value: number; unit: string }[] {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  const clock = `${hours}h ${minutes}m ${seconds}s`;
-  return days > 0 ? `${days}d ${clock}` : clock;
+  const segments = [
+    { value: hours, unit: "h" },
+    { value: minutes, unit: "m" },
+    { value: seconds, unit: "s" },
+  ];
+  return days > 0 ? [{ value: days, unit: "d" }, ...segments] : segments;
 }
 
 export function DraftCountdown({ draftDt }: { draftDt: string }) {
@@ -74,7 +79,13 @@ export function DraftCountdown({ draftDt }: { draftDt: string }) {
       })}
     >
       <ClockIcon />
-      Draft begins: {formatRemaining(target - now)}
+      Draft begins:
+      {remainingSegments(target - now).map(({ value, unit }) => (
+        <span key={unit}>
+          <span className="text-sm">{value}</span>
+          {unit}
+        </span>
+      ))}
     </span>
   );
 }
