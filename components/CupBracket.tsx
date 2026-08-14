@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CupBracketData, CupMatch, CupSlot } from "@/lib/cupBracket";
 
 // Live shell: seeds come from Gameweek 12 (lib/cupBracket.ts), Round of 12
@@ -61,8 +61,14 @@ const EDGES: Edge[] = [
   { from: "sf2", to: slot("final", 1) },
 ];
 
-const COLUMN_HEIGHT = 640;
+// Column canvas heights (640 desktop, 480 mobile) live directly as literal
+// Tailwind classes at each Column call site below, not as JS constants -
+// the JIT scanner needs the actual class text in source, so a constant
+// here would just be documentation that could silently drift from what's
+// really rendered. Same reasoning applies to the mobile scroll viewport's
+// w-[332px] (= 2 * CARD_WIDTH_PX + one MOBILE_GAP_PX gap).
 const CARD_WIDTH = "w-40";
+const CARD_WIDTH_PX = 160; // must match CARD_WIDTH's actual rendered width
 const CONNECTOR_GAP = 6;
 const FLAT_THRESHOLD = 20;
 
@@ -311,8 +317,11 @@ function Tile({
       className={`${CARD_WIDTH} shrink-0 rounded-xl ${borderClass} p-[2px] shadow-[var(--shadow-soft)]`}
     >
       <div className={`relative rounded-[10px] overflow-hidden ${innerClass}`}>
+        {/* py-3 (was py-[7px]) - a noticeably taller tile, constant
+            regardless of column height/pair count; the column canvas
+            controls spacing BETWEEN tiles, never the tile's own size. */}
         <div
-          className={`relative px-3 py-[7px] text-xs flex items-center gap-2 ${isChampion ? "font-bold" : "font-semibold"} ${textClass}`}
+          className={`relative px-3 py-3 text-xs flex items-center gap-2 ${isChampion ? "font-bold" : "font-semibold"} ${textClass}`}
         >
           <span className="truncate flex-1">{content.label}</span>
           {content.score !== null && <span className="tabular-nums shrink-0">{content.score}</span>}
@@ -447,7 +456,14 @@ function Column({
   onToggle,
   registerRef,
   panelAlign,
-  height = COLUMN_HEIGHT,
+  // Plain Tailwind height classes, not a JS-computed number - this is one
+  // Column shared by both the mobile-window and desktop views (see below),
+  // so which height applies at which viewport is just CSS, no JS
+  // breakpoint detection needed. Every call site below passes this
+  // explicitly - the default is a literal class string (not built from
+  // COLUMN_HEIGHT), since Tailwind's JIT scanner needs the actual class
+  // name present in source, not a runtime-interpolated one.
+  heightClassName = "h-[640px]",
 }: {
   title: string;
   pairs: PairContent[];
@@ -455,14 +471,14 @@ function Column({
   onToggle: (id: string) => void;
   registerRef: (id: string) => (el: HTMLDivElement | null) => void;
   panelAlign: PanelAlign;
-  height?: number;
+  heightClassName?: string;
 }) {
   return (
     <div className="flex flex-col items-center gap-3">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
         {title}
       </p>
-      <div className="flex flex-col justify-around" style={{ height }}>
+      <div className={`flex flex-col justify-around ${heightClassName}`}>
         {pairs.map((pair) => (
           <MatchCard
             key={pair.id}
@@ -484,27 +500,30 @@ function Column({
 
 // ---------------------------------------------------------------------------
 
-// Mobile pages two rounds at a time instead of one - both dead space (a
-// single narrow w-40 column left almost the whole screen width empty) and
-// the pairing itself follow directly from EDGES' own topology: every
-// r12->qf edge resolves within page 0, every sf->final edge resolves
-// within page 1, so real connector lines - not just a full-width column -
-// come along for free (see the isDesktop-gated registerRef split below).
-// Only qf->sf edges span the page boundary and go undrawn, same as any
-// edge whose endpoints aren't both currently mounted.
-const MOBILE_PAGES: { titles: [string, string] }[] = [
-  { titles: ["Round of 12", "Quarter-Final"] },
-  { titles: ["Semi-Final", "Final"] },
-];
-// Per-pair pixel budget for a mobile page's column height - unlike
-// desktop's single fixed COLUMN_HEIGHT (tuned once for its tallest column,
-// Round of 12, with a full-width window's worth of room to spare), each
-// mobile page gets its own height sized to its own tallest column, so the
-// Semi-Final/Final page (2 pairs, 1 pair) isn't stretched across the same
-// tall canvas Round of 12/Quarter-Final (6 pairs, 4 pairs) needs.
-const MOBILE_HEIGHT_PER_PAIR = 70;
-const MOBILE_COLUMN_HEIGHT_FLOOR = 140;
-const MOBILE_BREAKPOINT_QUERY = "(min-width: 768px)"; // Tailwind's md
+// One shared tree (all four columns, always mounted, real connectors for
+// every edge) instead of separate desktop/mobile trees - only the
+// *viewport* around it differs: desktop scrolls it freely, mobile clips
+// it to exactly MOBILE_WINDOW_SIZE columns and slides between whole-stage
+// positions via the arrows below. A sliding window (not disjoint page
+// pairs) means every adjacent-round edge - including qf->sf, which a
+// fixed [R12+QF]/[SF+Final] split could never draw - shows up once its
+// two rounds share a window.
+const MOBILE_WINDOW_SIZE = 2;
+const TOTAL_STAGES = 4;
+const MOBILE_WINDOW_COUNT = TOTAL_STAGES - MOBILE_WINDOW_SIZE + 1; // 3
+// Gap between columns in the mobile window - tighter than desktop's
+// gap-8 since only MOBILE_WINDOW_SIZE columns need to fit a phone width,
+// not spacing meant for a full desktop window. Must match the row's own
+// gap-3 class (12px) - it's what the arrow-driven scrollLeft pitch below
+// is computed from.
+const MOBILE_GAP_PX = 12;
+// Viewport width below (w-[332px]) = MOBILE_WINDOW_SIZE * CARD_WIDTH_PX
+// (160) + (MOBILE_WINDOW_SIZE - 1) * MOBILE_GAP_PX = 2*160 + 12 = 332.
+// Column height below (h-[480px]) is sized for Round of 12 (6 pairs, the
+// tallest column) to get real breathing room between pairs at the new
+// taller tile height, not the cramped canvas a shorter fixed height would
+// force - tuned against the actual rendered result, not a guess
+// independent of it.
 
 function ChevronIcon({ direction }: { direction: "left" | "right" }) {
   return (
@@ -524,66 +543,39 @@ function ChevronIcon({ direction }: { direction: "left" | "right" }) {
   );
 }
 
-// No-op registerRef - used by whichever of {desktop tree, mobile
-// 2-column page} isn't the currently active one (per isDesktop below).
-// Both trees are always mounted (CSS hidden/block, not unmounted, so
-// layout never has to wait on a remount), but only the active one may
-// write real DOM nodes into the shared nodeRefs map - otherwise whichever
-// rendered last would silently win each id and corrupt the other's
-// connector measurements.
-const noopRegisterRef = () => () => {};
-
 export function CupBracket({ data }: { data: CupBracketData }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mobileContainerRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [paths, setPaths] = useState<{ id: string; d: string; advanced: boolean }[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  // Mobile-only paging: which pair of rounds is shown right now (0 = R12+QF,
-  // 1 = SF+Final). Desktop always shows all four at once via the tree below.
-  const [mobileStage, setMobileStage] = useState(0);
-  // null until the client's real viewport is known (avoids guessing wrong
-  // on the server and briefly drawing connectors for the tree that turns
-  // out not to match) - both trees' registerRef stay no-op until this
-  // resolves, same "wait for client" pattern as DraftCountdown's now:null.
-  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const mql = window.matchMedia(MOBILE_BREAKPOINT_QUERY);
-    const handleChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
-    // Deferred rather than an immediate setIsDesktop(mql.matches) call -
-    // keeps every state update inside a callback, not executed
-    // synchronously as part of the effect body itself (same pattern as
-    // DraftCountdown's first-tick deferral).
-    const initial = setTimeout(() => setIsDesktop(mql.matches), 0);
-    mql.addEventListener("change", handleChange);
-    return () => {
-      clearTimeout(initial);
-      mql.removeEventListener("change", handleChange);
-    };
-  }, []);
+  // Mobile-only: which whole-stage window is showing right now (0 = R12+QF,
+  // 1 = QF+SF, 2 = SF+Final). Desktop ignores this and shows all four via
+  // free scroll instead.
+  const [mobileWindowStart, setMobileWindowStart] = useState(0);
+  // An inline transform (applied below, reset to none at md+ by the
+  // .cup-mobile-track rule in globals.css), not scrollAreaRef.scrollLeft/
+  // scrollTo - measured live and confirmed scrollLeft silently refused to
+  // stick on this element (reset back to its prior value on every read,
+  // even set directly with no React involved), while a translateX driven
+  // straight from state has no such failure mode and is the standard
+  // technique for this exact "clipped viewport, arrow-paged" pattern
+  // anyway. (A Tailwind arbitrary-value utility referencing a CSS custom
+  // property - "translate x, bracket, var of dash-dash-x, close bracket" -
+  // was tried first and failed to parse under this project's Tailwind v4
+  // setup - hence plain inline style + a real CSS class instead. Spelled
+  // out in words, not the literal syntax, since Tailwind's content
+  // scanner matches class-shaped text anywhere in source, comments
+  // included, and would otherwise regenerate the same broken rule.)
+  const mobileOffsetPx = mobileWindowStart * (CARD_WIDTH_PX + MOBILE_GAP_PX);
 
   const vm = useMemo(
     () => (data.seeded ? buildSeededViewModel(data) : buildUnseededViewModel()),
     [data],
   );
-  // Each mobile page's two rounds, indexed the same as MOBILE_PAGES.
-  const mobilePagePairs: [PairContent[], PairContent[]][] = [
-    [vm.r12, vm.qf],
-    [vm.sf, [vm.final]],
-  ];
-  const mobileColumnHeight = Math.max(
-    MOBILE_COLUMN_HEIGHT_FLOOR,
-    Math.max(...mobilePagePairs[mobileStage].map((pairs) => pairs.length)) * MOBILE_HEIGHT_PER_PAIR,
-  );
 
   const registerRef = (id: string) => (el: HTMLDivElement | null) => {
     nodeRefs.current[id] = el;
   };
-  // Real refs only for whichever tree actually matches the current
-  // viewport - see noopRegisterRef's own comment for why this matters.
-  const desktopRegisterRef = isDesktop === true ? registerRef : noopRegisterRef;
-  const mobileRegisterRef = isDesktop === false ? registerRef : noopRegisterRef;
 
   const toggleExpanded = (id: string) => {
     setExpandedId((current) => (current === id ? null : id));
@@ -591,10 +583,7 @@ export function CupBracket({ data }: { data: CupBracketData }) {
 
   useLayoutEffect(() => {
     function measure() {
-      // Whichever tree currently holds the real refs (see the
-      // desktopRegisterRef/mobileRegisterRef split above) is the one whose
-      // coordinate space these paths need to be computed in.
-      const container = isDesktop ? containerRef.current : mobileContainerRef.current;
+      const container = containerRef.current;
       if (!container) return;
       const containerRect = container.getBoundingClientRect();
 
@@ -652,15 +641,14 @@ export function CupBracket({ data }: { data: CupBracketData }) {
     }
 
     measure();
-    const target = isDesktop ? containerRef.current : mobileContainerRef.current;
     const observer = new ResizeObserver(measure);
-    if (target) observer.observe(target);
+    if (containerRef.current) observer.observe(containerRef.current);
     window.addEventListener("resize", measure);
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [vm, isDesktop, mobileStage]);
+  }, [vm]);
 
   return (
     <div className="min-w-0 rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] px-4 sm:px-6 pt-2 md:pt-3 pb-3 sm:pb-6">
@@ -676,88 +664,58 @@ export function CupBracket({ data }: { data: CupBracketData }) {
           alongside), so mobile trims to pt-2/pb-3 instead, part of keeping
           the compact mobile list short enough to need no scroll of its
           own. */}
-      {/* Mobile pager - two rounds per page (see MOBILE_PAGES), each
-          rendered through the exact same Column/connector-SVG machinery
-          desktop uses, just at mobileColumnHeight (sized to this page's own
-          tallest column, not desktop's fixed COLUMN_HEIGHT) and gap-4
-          instead of gap-8 - real bracket connectors, not a plain list,
-          because both rounds on a page are simultaneously mounted with
-          real refs (mobileRegisterRef). */}
-      <div className="md:hidden">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <button
-            type="button"
-            onClick={() => setMobileStage((s) => Math.max(0, s - 1))}
-            disabled={mobileStage === 0}
-            aria-label="Previous stages"
-            className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
-          >
-            <ChevronIcon direction="left" />
-          </button>
-          <div className="flex items-center gap-1.5" aria-hidden="true">
-            {MOBILE_PAGES.map((page, i) => (
-              <span
-                key={page.titles.join("-")}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === mobileStage ? "w-4 bg-zinc-900 dark:bg-white" : "w-1.5 bg-black/[0.12] dark:bg-white/[0.15]"
-                }`}
-              />
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => setMobileStage((s) => Math.min(MOBILE_PAGES.length - 1, s + 1))}
-            disabled={mobileStage === MOBILE_PAGES.length - 1}
-            aria-label="Next stages"
-            className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
-          >
-            <ChevronIcon direction="right" />
-          </button>
-        </div>
-        <div ref={mobileContainerRef} className="relative">
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
-            <defs>
-              <linearGradient id="cup-connector-mobile" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#00ff85" />
-                <stop offset="100%" stopColor="#04f5ff" />
-              </linearGradient>
-            </defs>
-            {paths.map((p) => (
-              <path
-                key={p.id}
-                d={p.d}
-                fill="none"
-                stroke={p.advanced ? "url(#cup-connector-mobile)" : "#71717a"}
-                strokeWidth={2}
-                strokeOpacity={p.advanced ? 1 : 0.6}
-                strokeLinecap="butt"
-              />
-            ))}
-          </svg>
-          <div className="relative flex justify-between gap-4">
-            <Column
-              title={MOBILE_PAGES[mobileStage].titles[0]}
-              pairs={mobilePagePairs[mobileStage][0]}
-              expandedId={expandedId}
-              onToggle={toggleExpanded}
-              registerRef={mobileRegisterRef}
-              panelAlign="left"
-              height={mobileColumnHeight}
+      {/* Mobile-only arrow pager - slides the shared row (below) between
+          three whole-stage window positions instead of clipping a
+          separate tree. Desktop ignores this entirely (free scroll). */}
+      <div className="md:hidden flex items-center justify-between gap-3 mb-3">
+        <button
+          type="button"
+          onClick={() => setMobileWindowStart((s) => Math.max(0, s - 1))}
+          disabled={mobileWindowStart === 0}
+          aria-label="Previous stage"
+          className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
+        >
+          <ChevronIcon direction="left" />
+        </button>
+        <div className="flex items-center gap-1.5" aria-hidden="true">
+          {Array.from({ length: MOBILE_WINDOW_COUNT }, (_, i) => (
+            <span
+              key={i}
+              className={`h-1.5 rounded-full transition-all ${
+                i === mobileWindowStart ? "w-4 bg-zinc-900 dark:bg-white" : "w-1.5 bg-black/[0.12] dark:bg-white/[0.15]"
+              }`}
             />
-            <Column
-              title={MOBILE_PAGES[mobileStage].titles[1]}
-              pairs={mobilePagePairs[mobileStage][1]}
-              expandedId={expandedId}
-              onToggle={toggleExpanded}
-              registerRef={mobileRegisterRef}
-              panelAlign="right"
-              height={mobileColumnHeight}
-            />
-          </div>
+          ))}
         </div>
+        <button
+          type="button"
+          onClick={() => setMobileWindowStart((s) => Math.min(MOBILE_WINDOW_COUNT - 1, s + 1))}
+          disabled={mobileWindowStart === MOBILE_WINDOW_COUNT - 1}
+          aria-label="Next stage"
+          className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
+        >
+          <ChevronIcon direction="right" />
+        </button>
       </div>
-      <div className="hidden md:block overflow-x-auto">
-        <div ref={containerRef} className="relative min-w-max pb-2">
+      {/* w-[332px] must match MOBILE_WINDOW_WIDTH_PX (2*160 + 12) - a
+          literal value, not the constant itself, because Tailwind's JIT
+          scanner needs the actual class text in source, not a runtime
+          template. overflow-hidden (mobile) vs overflow-x-auto (desktop)
+          is what turns the exact same row into either an arrow-paged
+          window or desktop's free-scrolling tree - there's only ever one
+          tree in the DOM, so every edge always has real refs and no
+          registerRef gating is needed at all. */}
+      <div className="w-[332px] overflow-hidden md:w-auto md:overflow-x-auto">
+        {/* Inline transform moves the mobile window; the cup-mobile-track
+            class (globals.css) forces it back to a no-op at desktop
+            widths, where native overflow-x-auto scrolling (on the wrapper
+            above) does the work instead - see mobileOffsetPx's own
+            comment for why this is a transform, not scrollLeft. */}
+        <div
+          ref={containerRef}
+          className="cup-mobile-track relative min-w-max pb-2 transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(-${mobileOffsetPx}px)` }}
+        >
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none"
             aria-hidden="true"
@@ -787,38 +745,45 @@ export function CupBracket({ data }: { data: CupBracketData }) {
               />
             ))}
           </svg>
-          <div className="relative flex gap-8">
+          {/* gap-3 (mobile, matches MOBILE_GAP_PX) vs md:gap-8 (desktop,
+              unchanged). heightClassName likewise: taller/shorter per
+              breakpoint on the identical Column instances. */}
+          <div className="relative flex gap-3 md:gap-8">
             <Column
               title="Round of 12"
               pairs={vm.r12}
               expandedId={expandedId}
               onToggle={toggleExpanded}
-              registerRef={desktopRegisterRef}
+              registerRef={registerRef}
               panelAlign="left"
+              heightClassName="h-[480px] md:h-[640px]"
             />
             <Column
               title="Quarter-Final"
               pairs={vm.qf}
               expandedId={expandedId}
               onToggle={toggleExpanded}
-              registerRef={desktopRegisterRef}
+              registerRef={registerRef}
               panelAlign="center"
+              heightClassName="h-[480px] md:h-[640px]"
             />
             <Column
               title="Semi-Final"
               pairs={vm.sf}
               expandedId={expandedId}
               onToggle={toggleExpanded}
-              registerRef={desktopRegisterRef}
+              registerRef={registerRef}
               panelAlign="center"
+              heightClassName="h-[480px] md:h-[640px]"
             />
             <Column
               title="Final"
               pairs={[vm.final]}
               expandedId={expandedId}
               onToggle={toggleExpanded}
-              registerRef={desktopRegisterRef}
+              registerRef={registerRef}
               panelAlign="right"
+              heightClassName="h-[480px] md:h-[640px]"
             />
           </div>
         </div>
