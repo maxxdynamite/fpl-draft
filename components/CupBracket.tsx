@@ -289,9 +289,16 @@ function buildSeededViewModel(data: CupBracketData): ViewModel {
 function Tile({
   content,
   registerRef,
+  // Literal Tailwind classes (JIT needs the real text in source, not a
+  // template - see Column's heightClassName for the same constraint) -
+  // "py-3" everywhere except Round of 12 on mobile, which uses "py-2" to
+  // help its 6 pairs fit without shrinking any other round or touching
+  // desktop at all.
+  paddingYClassName = "py-3",
 }: {
   content: TileContent;
   registerRef: (el: HTMLDivElement | null) => void;
+  paddingYClassName?: string;
 }) {
   const isChampion = content.emphasis === "champion";
   const borderClass = content.gradient
@@ -317,11 +324,14 @@ function Tile({
       className={`${CARD_WIDTH} shrink-0 rounded-xl ${borderClass} p-[2px] shadow-[var(--shadow-soft)]`}
     >
       <div className={`relative rounded-[10px] overflow-hidden ${innerClass}`}>
-        {/* py-3 (was py-[7px]) - a noticeably taller tile, constant
-            regardless of column height/pair count; the column canvas
-            controls spacing BETWEEN tiles, never the tile's own size. */}
+        {/* paddingYClassName (was a flat py-[7px] for everyone) - a
+            noticeably taller tile by default, constant regardless of
+            column height/pair count within a given round; the column
+            canvas controls spacing BETWEEN tiles, never the tile's own
+            size. Round of 12 mobile is the one deliberate exception (see
+            the prop's own comment above). */}
         <div
-          className={`relative px-3 py-3 text-xs flex items-center gap-2 ${isChampion ? "font-bold" : "font-semibold"} ${textClass}`}
+          className={`relative px-3 ${paddingYClassName} text-xs flex items-center gap-2 ${isChampion ? "font-bold" : "font-semibold"} ${textClass}`}
         >
           <span className="truncate flex-1">{content.label}</span>
           {content.score !== null && <span className="tabular-nums shrink-0">{content.score}</span>}
@@ -403,6 +413,7 @@ function MatchCard({
   onToggle,
   registerRef,
   panelAlign,
+  tilePaddingYClassName = "py-3",
 }: {
   id: string;
   tiles: [TileContent, TileContent];
@@ -413,6 +424,7 @@ function MatchCard({
   onToggle: () => void;
   registerRef: (id: string) => (el: HTMLDivElement | null) => void;
   panelAlign: PanelAlign;
+  tilePaddingYClassName?: string;
 }) {
   const clickable = detail !== null;
   return (
@@ -441,8 +453,8 @@ function MatchCard({
             {topLabel}
           </span>
         )}
-        <Tile content={tiles[0]} registerRef={registerRef(slot(id, 0))} />
-        <Tile content={tiles[1]} registerRef={registerRef(slot(id, 1))} />
+        <Tile content={tiles[0]} registerRef={registerRef(slot(id, 0))} paddingYClassName={tilePaddingYClassName} />
+        <Tile content={tiles[1]} registerRef={registerRef(slot(id, 1))} paddingYClassName={tilePaddingYClassName} />
       </div>
       {detail && <MatchDetailPanel detail={detail} open={expanded} align={panelAlign} />}
     </div>
@@ -464,6 +476,7 @@ function Column({
   // COLUMN_HEIGHT), since Tailwind's JIT scanner needs the actual class
   // name present in source, not a runtime-interpolated one.
   heightClassName = "h-[640px]",
+  tilePaddingYClassName = "py-3",
 }: {
   title: string;
   pairs: PairContent[];
@@ -472,6 +485,7 @@ function Column({
   registerRef: (id: string) => (el: HTMLDivElement | null) => void;
   panelAlign: PanelAlign;
   heightClassName?: string;
+  tilePaddingYClassName?: string;
 }) {
   return (
     <div className="flex flex-col items-center gap-3">
@@ -491,6 +505,7 @@ function Column({
             onToggle={() => onToggle(pair.id)}
             registerRef={registerRef}
             panelAlign={panelAlign}
+            tilePaddingYClassName={tilePaddingYClassName}
           />
         ))}
       </div>
@@ -716,8 +731,12 @@ export function CupBracket({ data }: { data: CupBracketData }) {
           className="cup-mobile-track relative min-w-max pb-2 transition-transform duration-300 ease-out"
           style={{ transform: `translateX(-${mobileOffsetPx}px)` }}
         >
+          {/* hidden below md - connectors need real horizontal room to
+              read as deliberate lines rather than clutter; mobile's
+              tighter gap-3/narrower columns left them looking cramped and
+              ugly rather than helpful. Desktop is unaffected. */}
           <svg
-            className="absolute inset-0 w-full h-full pointer-events-none"
+            className="hidden md:block absolute inset-0 w-full h-full pointer-events-none"
             aria-hidden="true"
           >
             <defs>
@@ -756,7 +775,12 @@ export function CupBracket({ data }: { data: CupBracketData }) {
               onToggle={toggleExpanded}
               registerRef={registerRef}
               panelAlign="left"
-              heightClassName="h-[480px] md:h-[640px]"
+              heightClassName="h-[600px] md:h-[640px]"
+              // Round of 12 specifically, mobile only - 6 pairs is the
+              // most crowded column by far, so this is the one deliberate
+              // exception to every tile otherwise sharing one constant
+              // height. Desktop (md:) stays at the shared py-3.
+              tilePaddingYClassName="py-2 md:py-3"
             />
             <Column
               title="Quarter-Final"
@@ -765,7 +789,7 @@ export function CupBracket({ data }: { data: CupBracketData }) {
               onToggle={toggleExpanded}
               registerRef={registerRef}
               panelAlign="center"
-              heightClassName="h-[480px] md:h-[640px]"
+              heightClassName="h-[600px] md:h-[640px]"
             />
             <Column
               title="Semi-Final"
@@ -774,7 +798,7 @@ export function CupBracket({ data }: { data: CupBracketData }) {
               onToggle={toggleExpanded}
               registerRef={registerRef}
               panelAlign="center"
-              heightClassName="h-[480px] md:h-[640px]"
+              heightClassName="h-[600px] md:h-[640px]"
             />
             <Column
               title="Final"
@@ -783,7 +807,7 @@ export function CupBracket({ data }: { data: CupBracketData }) {
               onToggle={toggleExpanded}
               registerRef={registerRef}
               panelAlign="right"
-              heightClassName="h-[480px] md:h-[640px]"
+              heightClassName="h-[600px] md:h-[640px]"
             />
           </div>
         </div>
