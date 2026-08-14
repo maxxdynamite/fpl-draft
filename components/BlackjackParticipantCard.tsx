@@ -61,11 +61,14 @@ export function BlackjackParticipantCard({
             // Sitting exactly on 21 with games still to play - the
             // tensest state in the game (zero buffer, the very next goal
             // from anyone busts it). Inverts At Risk's red-text-on-neutral
-            // pill into a solid red fill with a pulsing glow - the same
+            // pill into a solid red-500 fill (same red-500 At Risk itself
+            // uses, not a different shade) with a pulsing glow - the same
             // loud, fixed-colour treatment Blackjack/Bust above get,
             // rather than the plain dot+text every other pace tier uses.
-            <span className="blackjack-edge-pulse inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-600 text-white">
-              <span className="h-1.5 w-1.5 rounded-full bg-white" />
+            // Black text/dot, not white - reads more like hazard tape on
+            // the red than a plain inverted pill.
+            <span className="blackjack-edge-pulse inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-500 text-black">
+              <span className="h-1.5 w-1.5 rounded-full bg-black" />
               {meta.label}
             </span>
           ) : (

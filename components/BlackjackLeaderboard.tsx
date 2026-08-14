@@ -17,6 +17,7 @@ export function BlackjackLeaderboard({
         {participants.map((p) => {
           const meta = STATUS_META[p.status];
           const isBust = p.status === "bust";
+          const isEdge = p.status === "edge";
           return (
             <li
               key={p.entryId}
@@ -31,9 +32,15 @@ export function BlackjackLeaderboard({
                   Translucent rather than a flat zinc shade, since a flat
                   ring-zinc-300 would be invisible against the no-picks dot
                   (same zinc-300 fill) - an opacity-based overlay darkens/
-                  lightens any fill instead of trying to match one. */}
+                  lightens any fill instead of trying to match one. "edge"
+                  additionally gets the tile's own pulsing-glow class - the
+                  same box-shadow animation, just applied to a 2px dot
+                  instead of a full pill, so the leaderboard echoes the
+                  same urgency the tile shows. */}
               <span
-                className={`h-2 w-2 shrink-0 rounded-full ring-1 ring-black/[0.12] dark:ring-white/[0.12] mr-1.5 ${meta.dotClass}`}
+                className={`h-2 w-2 shrink-0 rounded-full ring-1 ring-black/[0.12] dark:ring-white/[0.12] mr-1.5 ${meta.dotClass} ${
+                  isEdge ? "blackjack-edge-pulse" : ""
+                }`}
                 aria-hidden="true"
               />
               <span className="flex-1 flex items-center gap-1.5 min-w-0">

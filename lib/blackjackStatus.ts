@@ -34,11 +34,13 @@ export const STATUS_META: Record<
   },
   // Tile gets a fully custom pulsing red pill (see BlackjackParticipantCard)
   // - this entry is really only consumed by the leaderboard's dot marker,
-  // same as bust/blackjack/selected above.
+  // same as bust/blackjack/selected above. Same red as "at-risk" below
+  // (bg-red-500), deliberately - they're the same colour, "edge" is just
+  // the loud, filled, glowing version of it.
   edge: {
     label: "On The Edge",
-    dotClass: "bg-red-600",
-    textClass: "text-white",
+    dotClass: "bg-red-500",
+    textClass: "text-black",
   },
   blackjack: {
     label: "Blackjack",
