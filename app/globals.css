@@ -112,21 +112,6 @@ body {
   animation: cup-live-pulse 1.8s ease-in-out infinite;
 }
 
-/* Mobile-only arrow-paged window for the Cup bracket (see CupBracket.tsx)
-   - the transform itself is inline style (its offset changes with which
-   stage is active), but it must be a no-op at md+, where the same tree is
-   desktop's freely-scrolled overflow-x-auto view instead. A Tailwind
-   arbitrary-value utility referencing a CSS custom property failed to
-   parse under this project's Tailwind v4 setup (and even mentioning its
-   exact syntax in a comment regenerates the same broken rule, since
-   Tailwind's content scanner matches class-shaped text anywhere in
-   source), so the reset lives here as a plain media query instead. */
-@media (min-width: 768px) {
-  .cup-mobile-track {
-    transform: none !important;
-  }
-}
-
 /* Cup bracket champion cell - same shimmer-sweep keyframe/base as
    blackjack-shimmer above, reused on the bracket's own gradient-filled
    winner tile. See components/CupBracket.tsx. */
