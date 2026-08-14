@@ -75,7 +75,7 @@ export function TopNav() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         <Link
           href="/draft"
-          className="font-extrabold text-sm sm:text-2xl md:text-3xl tracking-tight whitespace-nowrap shrink-0"
+          className="font-extrabold text-2xl md:text-3xl tracking-tight whitespace-nowrap shrink-0"
         >
           Bad Blokes{" "}
           <span className="bg-gradient-to-r from-[#00ff85] to-[#04f5ff] bg-clip-text text-transparent">
