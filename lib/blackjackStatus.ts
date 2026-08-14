@@ -47,6 +47,17 @@ export const STATUS_META: Record<
     dotClass: "bg-gradient-to-br from-[#00ff85] to-[#04f5ff]",
     textClass: "text-[#00b368] dark:text-[#00ff85]",
   },
+  // Season over, won the pot without hitting an actual 21-goal blackjack
+  // (see findBlackjackWinner/applyWinnerStatus in lib/blackjack.ts) - same
+  // brand gradient as "blackjack" above, deliberately, since it's still a
+  // real win worth celebrating. Tile gets a fully custom static gradient
+  // pill (see BlackjackParticipantCard) - this entry is really only
+  // consumed by the leaderboard's dot marker.
+  winner: {
+    label: "Winner",
+    dotClass: "bg-gradient-to-br from-[#00ff85] to-[#04f5ff]",
+    textClass: "text-[#00b368] dark:text-[#00ff85]",
+  },
   // Season over, never reached 21 - a final result, not a "keep chasing"
   // pace read. One shade more saturated than "no-picks" above (a
   // submitted, played-out season should read as more "real" than never

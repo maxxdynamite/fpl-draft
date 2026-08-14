@@ -1,7 +1,7 @@
 import { getManagers } from "./managers";
 import { getStandings } from "./standings";
 import { getGwScores } from "./gwScores";
-import { getBlackjackLeaderboard, TOTAL_GAMEWEEKS } from "./blackjack";
+import { findBlackjackWinner, getBlackjackLeaderboard, TOTAL_GAMEWEEKS } from "./blackjack";
 import { getPlayersData } from "./players";
 import { getLiveGameweek } from "./liveGwScores";
 import { resolveCupBracket, ROUND_GAMEWEEKS } from "./cupBracket";
@@ -122,13 +122,19 @@ export function motwSotwRule(
 }
 
 // 3. Blackjack pot - £10 entry each (14 managers = £140), winner takes all,
-// only once the real Premier League season is actually finished. A busted
-// total (>21) can never win the pot even if it's numerically the highest,
-// matching the card game's own rule. Ties broken by lower entryId, same
-// precedent as the Cup's seeding tie-break. Pairwise: every other
-// participant owes the winner their £10 entry (the winner's own entry
-// cancels out against their own share of the pot, so it never appears as a
-// debt to themselves).
+// only once the real Premier League season is actually finished. Winner
+// is findBlackjackWinner (lib/blackjack.ts) - highest total among
+// everyone who isn't bust, so a busted total (>21, or 21 without every
+// pick scoring) can never win even if it's numerically the highest,
+// matching the card game's own rule, and the winner doesn't need to have
+// hit an actual 21-goal blackjack, just the best surviving total. Same
+// function also decides whose on-screen status becomes "winner" instead
+// of "fell-short" - both must agree on the exact same person, which is
+// why there's one shared implementation rather than two that could
+// drift. Ties broken by lower entryId, same precedent as the Cup's
+// seeding tie-break. Pairwise: every other participant owes the winner
+// their £10 entry (the winner's own entry cancels out against their own
+// share of the pot, so it never appears as a debt to themselves).
 export function blackjackPotRule(
   participants: { entryId: number; totalGoals: number; status: string }[],
   seasonOver: boolean,
@@ -136,18 +142,8 @@ export function blackjackPotRule(
 ): MoneyEvent[] {
   if (!seasonOver || participants.length === 0) return [];
 
-  const contenders = participants.filter((p) => p.status !== "bust");
-  if (contenders.length === 0) return [];
-
-  let winner = contenders[0];
-  for (const p of contenders) {
-    if (
-      p.totalGoals > winner.totalGoals ||
-      (p.totalGoals === winner.totalGoals && p.entryId < winner.entryId)
-    ) {
-      winner = p;
-    }
-  }
+  const winner = findBlackjackWinner(participants);
+  if (!winner) return [];
 
   const to = managersByEntry.get(winner.entryId);
   if (!to) return [];

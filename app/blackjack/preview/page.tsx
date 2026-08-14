@@ -1,6 +1,7 @@
 import { BlackjackLeaderboard } from "@/components/BlackjackLeaderboard";
 import { BlackjackParticipantCard } from "@/components/BlackjackParticipantCard";
 import {
+  applyWinnerStatus,
   computeStatus,
   TOTAL_GAMEWEEKS,
   type BlackjackParticipant,
@@ -63,6 +64,27 @@ function buildParticipant(
     status: players ? computeStatus(totalGoals, allScored, gameweek) : "no-picks",
   };
 }
+
+// gameweek: TOTAL_GAMEWEEKS - won the pot with the best surviving total,
+// without ever hitting an actual 21-goal blackjack (e.g. everyone else
+// busted or fell short first). Computed via applyWinnerStatus, the same
+// function the real leaderboard calls, rather than hand-set - built and
+// processed on its own so it's an honest demonstration of "this
+// participant was the best of the group it was actually compared
+// against", not just a hardcoded label.
+const winnerScenario = buildParticipant(
+  16,
+  "Winner (no blackjack)",
+  "20 goals, best surviving total, season over",
+  [
+    player(411, "Haaland", "MCI", 15, "FWD", 223094, 8),
+    player(154, "Palmer", "CHE", 6, "MID", 244851, 6),
+    player(248, "Beto", "EVE", 9, "FWD", 486385, 4),
+    player(426, "B.Fernandes", "MUN", 16, "MID", 141746, 2),
+  ],
+  TOTAL_GAMEWEEKS,
+);
+applyWinnerStatus([winnerScenario], TOTAL_GAMEWEEKS);
 
 const scenarios: BlackjackParticipant[] = [
   buildParticipant(1, "No picks yet", "Hasn't submitted", null),
@@ -142,6 +164,8 @@ const scenarios: BlackjackParticipant[] = [
     ],
     TOTAL_GAMEWEEKS,
   ),
+
+  winnerScenario,
 
   // gameweek: 2 - inside the grace period (GW1-3), too little of the
   // season played for the pace ladder to mean anything yet. Reads as

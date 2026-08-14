@@ -36,6 +36,17 @@ export function BlackjackParticipantCard({
               <SpadeIcon size={10} />
               {meta.label}
             </span>
+          ) : participant.status === "winner" ? (
+            // Won the pot without an actual 21-goal blackjack (see
+            // applyWinnerStatus, lib/blackjack.ts) - same gradient fill as
+            // Blackjack above (still a real win, still worth the brand
+            // treatment), but static: no shimmer sweep, and a plain black
+            // dot instead of the spade, since this isn't literally a
+            // blackjack hand.
+            <span className="relative inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-gradient-to-br from-[#00ff85] to-[#04f5ff] text-[#04211a]">
+              <span className="h-1.5 w-1.5 rounded-full bg-black" />
+              {meta.label}
+            </span>
           ) : isBust ? (
             // Solid black fill, not the neutral wrapper every other status
             // uses - a distinct "this hand is dead" treatment. Dot is white

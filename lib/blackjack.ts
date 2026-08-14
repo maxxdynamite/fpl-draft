@@ -33,6 +33,7 @@ export type BlackjackStatus =
   | "bust"
   | "edge"
   | "blackjack"
+  | "winner"
   | "fell-short"
   | "at-risk"
   | "over-target"
@@ -116,6 +117,46 @@ export function computeStatus(
   return "at-risk";
 }
 
+// The actual Blackjack pot winner: highest totalGoals among everyone who
+// isn't bust, ties broken by lower entryId. Shared between here (to know
+// whose status becomes "winner" below) and lib/money.ts's blackjackPotRule
+// (who actually gets paid) - both need to agree on exactly the same
+// person, so there's one implementation, not two that could drift.
+export function findBlackjackWinner<T extends { entryId: number; totalGoals: number; status: string }>(
+  participants: T[],
+): T | null {
+  const contenders = participants.filter((p) => p.status !== "bust");
+  if (contenders.length === 0) return null;
+
+  let winner = contenders[0];
+  for (const p of contenders) {
+    if (p.totalGoals > winner.totalGoals || (p.totalGoals === winner.totalGoals && p.entryId < winner.entryId)) {
+      winner = p;
+    }
+  }
+  return winner;
+}
+
+// Once the season's over, the pot winner is real regardless of how they
+// got there - if they reached it any way other than an actual 21-goal
+// blackjack (e.g. everyone else busted or fell short, and 18 goals turned
+// out to be the best total), their status upgrades from "fell-short" to
+// "winner" instead. A real blackjack winner (status "blackjack" already)
+// is left alone - they don't need upgrading, they already have the best
+// possible result. Mutates the given array's entries in place, since
+// every caller (getBlackjackLeaderboard below, the dev preview page)
+// already owns the array it's passing in.
+export function applyWinnerStatus(
+  participants: BlackjackParticipant[],
+  currentGameweek: number,
+): void {
+  if (currentGameweek < TOTAL_GAMEWEEKS) return;
+  const winner = findBlackjackWinner(participants);
+  if (winner && winner.status === "fell-short") {
+    winner.status = "winner";
+  }
+}
+
 // Combines manager identity, submitted picks, and live player goal counts
 // into a per-participant result, ranked by total goals (leaderboard order).
 export async function getBlackjackLeaderboard(): Promise<BlackjackParticipant[]> {
@@ -151,6 +192,8 @@ export async function getBlackjackLeaderboard(): Promise<BlackjackParticipant[]>
         : "no-picks",
     };
   });
+
+  applyWinnerStatus(participants, currentGameweek);
 
   return participants.sort((a, b) => b.totalGoals - a.totalGoals);
 }
