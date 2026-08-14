@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CupBracketData, CupMatch, CupSlot } from "@/lib/cupBracket";
 
 // Live shell: seeds come from Gameweek 12 (lib/cupBracket.ts), Round of 12
@@ -419,7 +419,13 @@ function MatchCard({
         tabIndex={clickable ? 0 : undefined}
         onClick={clickable ? onToggle : undefined}
         onKeyDown={clickable ? onKeyActivate(onToggle) : undefined}
-        className={`flex flex-col gap-1.5 ${clickable ? "cursor-pointer" : ""}`}
+        // gap-1 (was 1.5) - shared with the desktop tree, harmless there
+        // since its connector math measures whatever the real rendered
+        // gap turns out to be rather than assuming a fixed value; on
+        // mobile's compact list, shaving a couple px per pair across up
+        // to 6 pairs (Round of 12) is part of fitting one screen with no
+        // scroll.
+        className={`flex flex-col gap-1 ${clickable ? "cursor-pointer" : ""}`}
       >
         {topLabel && (
           <span className="text-[9px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 text-center">
@@ -477,10 +483,6 @@ function Column({
 // ---------------------------------------------------------------------------
 
 const STAGE_TITLES = ["Round of 12", "Quarter-Final", "Semi-Final", "Final"];
-// Matches CARD_WIDTH (w-40 = 160px) + the tree row's own gap-8 (32px) - the
-// exact distance one arrow press moves the mobile viewport so it lands on
-// the next column, not a fixed guess independent of the real layout.
-const STAGE_PITCH_PX = 160 + 32;
 
 function ChevronIcon({ direction }: { direction: "left" | "right" }) {
   return (
@@ -500,26 +502,31 @@ function ChevronIcon({ direction }: { direction: "left" | "right" }) {
   );
 }
 
+// No-op registerRef for the mobile compact list - MatchCard always calls
+// registerRef for its own connector positioning, but the compact list has
+// no connectors to position (only one round's cards ever render at once,
+// so there's nothing for a connector to run between). Writing into the
+// real nodeRefs map here would let whichever of the desktop tree/mobile
+// list rendered last silently win the ref and corrupt the other's
+// connector measurements - a shared no-op sidesteps that entirely.
+const noopRegisterRef = () => () => {};
+
 export function CupBracket({ data }: { data: CupBracketData }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [paths, setPaths] = useState<{ id: string; d: string; advanced: boolean }[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  // Mobile-only paging through the same four columns desktop shows all at
-  // once - arrows are the sole way to move (no free swipe/scroll to fight
-  // with), so this index is the one source of truth for scroll position,
-  // not something read back from a scroll event.
+  // Mobile-only paging: which single round's cards are shown right now.
+  // Desktop always shows all four at once via the tree below.
   const [activeStage, setActiveStage] = useState(0);
-
-  useEffect(() => {
-    scrollAreaRef.current?.scrollTo({ left: activeStage * STAGE_PITCH_PX, behavior: "smooth" });
-  }, [activeStage]);
 
   const vm = useMemo(
     () => (data.seeded ? buildSeededViewModel(data) : buildUnseededViewModel()),
     [data],
   );
+  // Indexed the same as STAGE_TITLES - what the mobile compact list renders
+  // for the currently active stage.
+  const stagePairs = [vm.r12, vm.qf, vm.sf, [vm.final]];
 
   const registerRef = (id: string) => (el: HTMLDivElement | null) => {
     nodeRefs.current[id] = el;
@@ -599,46 +606,68 @@ export function CupBracket({ data }: { data: CupBracketData }) {
   }, [vm]);
 
   return (
-    <div className="min-w-0 rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] px-4 sm:px-6 pt-3 pb-4 sm:pb-6">
+    <div className="min-w-0 rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] px-4 sm:px-6 pt-2 md:pt-3 pb-3 sm:pb-6">
       {/* min-w-0 is required, not decorative - as a CSS grid item this
           card defaults to min-width:auto, which would let it grow to fit
           the bracket's full intrinsic width instead of respecting the
           grid's 1fr track, and overflow-x-auto below would never actually
           activate (whole page gets horizontal scroll instead). Top padding
-          is pt-3 (not the same p-4/p-6 as the sides/bottom) specifically to
-          match the sidebar leaderboard's own pt-3 above its title, so the
-          two title rows land on the same line. */}
-      {/* Mobile-only pager - the tree below is the exact same markup at
-          every breakpoint, just clipped to one column's width (CARD_WIDTH,
-          overflow-hidden instead of md's free overflow-x-auto) and moved
-          by these arrows instead of native scroll/swipe. */}
-      <div className="md:hidden flex items-center justify-between gap-3 mb-2">
-        <button
-          type="button"
-          onClick={() => setActiveStage((s) => Math.max(0, s - 1))}
-          disabled={activeStage === 0}
-          aria-label="Previous stage"
-          className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
-        >
-          <ChevronIcon direction="left" />
-        </button>
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          {STAGE_TITLES[activeStage]}
-        </p>
-        <button
-          type="button"
-          onClick={() => setActiveStage((s) => Math.min(STAGE_TITLES.length - 1, s + 1))}
-          disabled={activeStage === STAGE_TITLES.length - 1}
-          aria-label="Next stage"
-          className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
-        >
-          <ChevronIcon direction="right" />
-        </button>
+          is pt-3 at md and up (not the same p-4/p-6 as the sides/bottom)
+          specifically to match the sidebar leaderboard's own pt-3 above its
+          title, so the two title rows land on the same line - that pairing
+          is desktop-only (the sidebar stacks below on mobile, not
+          alongside), so mobile trims to pt-2/pb-3 instead, part of keeping
+          the compact mobile list short enough to need no scroll of its
+          own. */}
+      {/* Mobile-only pager - unlike the desktop tree, this shows one
+          round's cards at a time, packed to their natural height instead
+          of spread across COLUMN_HEIGHT's fixed canvas (that height only
+          exists to keep connector endpoints aligned across columns, which
+          doesn't apply here since only one round is ever on screen). That's
+          what keeps this compact enough to need no vertical scroll of its
+          own on a real phone screen. */}
+      <div className="md:hidden">
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <button
+            type="button"
+            onClick={() => setActiveStage((s) => Math.max(0, s - 1))}
+            disabled={activeStage === 0}
+            aria-label="Previous stage"
+            className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
+          >
+            <ChevronIcon direction="left" />
+          </button>
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            {STAGE_TITLES[activeStage]}
+          </p>
+          <button
+            type="button"
+            onClick={() => setActiveStage((s) => Math.min(STAGE_TITLES.length - 1, s + 1))}
+            disabled={activeStage === STAGE_TITLES.length - 1}
+            aria-label="Next stage"
+            className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
+          >
+            <ChevronIcon direction="right" />
+          </button>
+        </div>
+        <div className="flex flex-col gap-2">
+          {stagePairs[activeStage].map((pair) => (
+            <MatchCard
+              key={pair.id}
+              id={pair.id}
+              tiles={pair.tiles}
+              topLabel={pair.topLabel}
+              live={pair.live}
+              detail={pair.detail}
+              expanded={expandedId === pair.id}
+              onToggle={() => toggleExpanded(pair.id)}
+              registerRef={noopRegisterRef}
+              panelAlign="center"
+            />
+          ))}
+        </div>
       </div>
-      <div
-        ref={scrollAreaRef}
-        className="w-40 overflow-hidden md:w-auto md:overflow-x-auto scroll-smooth"
-      >
+      <div className="hidden md:block overflow-x-auto">
         <div ref={containerRef} className="relative min-w-max pb-2">
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none"
