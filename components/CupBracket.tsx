@@ -26,9 +26,10 @@ import type { CupBracketData, CupMatch, CupSlot } from "@/lib/cupBracket";
 // itself at the seam.
 //
 // Connectors are straight right-angle lines, full-brightness gradient once
-// their source match is decided, neutral otherwise. Desktop only - see
-// MobileBracket below for why mobile drops drawn connectors entirely in
-// favour of a different layout strategy.
+// their source match is decided, neutral otherwise. Desktop only (hidden
+// below md) - mobile has no room for them to read as deliberate lines
+// rather than clutter, and relies on alignment alone (next paragraph) to
+// show what feeds what.
 //
 // Gradient follows each team through the bracket, not "whichever round is
 // current": a tile is gradient whenever a real team occupies it AND that
@@ -44,15 +45,22 @@ import type { CupBracketData, CupMatch, CupSlot } from "@/lib/cupBracket";
 // measurement/connector-drawing logic never needs to branch on whether the
 // bracket is seeded, only each tile's *content* does.
 //
-// Mobile: no drawn connectors at all (see MobileBracket) - instead, all
-// four rounds render as one continuous CSS grid the user pans through by
-// hand, where every cell downstream of Round of 12 spans and centres
-// across exactly the rows its own source match(es) occupy, so proximity/
-// alignment (not a drawn line) is what shows which cell a winner advances
-// into. Which source(s) feed which destination is derived from EDGES
-// itself (computeGroupSizes/computeRowSpans), not hardcoded, so the
-// qf1/qf3 bye asymmetry (one real Round of 12 source instead of two)
-// falls out automatically rather than needing special-casing.
+// One shared tree for both breakpoints (only the connector SVG and the
+// column gap differ by viewport) - every pair, in every round after Round
+// of 12, gets a per-pair vertical nudge (translateY, computed in the
+// alignment effect below) so it sits centred on the *average of its own
+// immediate sources' real rendered centres*, cascading round by round
+// (QF aligns to Round of 12, SF aligns to QF's now-aligned centres, Final
+// aligns to SF's). This is deliberately real DOM measurement, the same
+// technique the connector paths already use, rather than a CSS-only
+// layout trick: an earlier CSS Grid version that sized each downstream
+// cell by *spanning* the full row-range under its sources centred it
+// against the whole depth of that subtree instead of against its sources'
+// own visual centres, which reads as "not quite aligned with the ties
+// above it" once a subtree gets lopsided (exactly the qf1/qf3 bye case).
+// Which pair(s) feed which is derived from EDGES itself
+// (computeGroupSizes), not hardcoded, so that asymmetry falls out
+// automatically rather than needing special-casing.
 
 type Edge = { from: string; to: string };
 
@@ -420,6 +428,12 @@ function MatchCard({
   panelAlign: PanelAlign;
 }) {
   const clickable = detail !== null;
+  // The alignment effect (CupBracket) writes this element's translateY
+  // directly via nodeRefs, not through a React-controlled style prop -
+  // it needs to reset-then-remeasure-then-reapply synchronously within a
+  // single pass to get the pre-nudge ("natural") position right every
+  // time, and a React state round-trip in between is exactly what made an
+  // earlier version of this compound its own error on every recompute.
   return (
     <div ref={registerRef(id)} className="relative">
       {live && (
@@ -488,16 +502,6 @@ function Column({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Mobile: one continuous bracket, no connectors, no shared refs with the
-// desktop tree below (MatchCard still needs a registerRef, but mobile's
-// own instances are never measured, so they pass this no-op rather than
-// colliding with desktop's real refs for the same ids).
-
-function noopRegisterRef() {
-  return () => {};
-}
-
 // For each pair in toPairs, how many pairs in fromPairs feed it, in
 // display order - derived from EDGES rather than hardcoded, so the bye
 // asymmetry (qf1/qf3 each have only one real Round of 12 source, qf2/qf4
@@ -506,108 +510,6 @@ function computeGroupSizes(fromPairs: PairContent[], toPairs: PairContent[]): nu
   const fromIds = new Set(fromPairs.map((p) => p.id));
   return toPairs.map(
     (toPair) => EDGES.filter((e) => fromIds.has(e.from) && e.to.startsWith(`${toPair.id}-`)).length,
-  );
-}
-
-type RowSpan = { row: number; span: number };
-
-// Where each pair sits on a shared grid of Round-of-12-sized "leaf" rows -
-// one map per round, keyed by pair id. Round of 12 itself is the base
-// case: pair i simply owns leaf row i+1, span 1. Every later round's pair
-// spans exactly the union of the leaf rows its own sources span, in
-// display order - e.g. qf1 (fed only by m89, a bye covering its other
-// slot) spans row 1 only; qf2 (fed by m413 AND m512) spans rows 2-3; sf1
-// (fed by qf1 AND qf2) spans rows 1-3, the union of both. Because
-// computeGroupSizes already guarantees each round's groups are
-// contiguous, non-overlapping runs of the previous round in display
-// order, a running cursor is all that's needed - no interval math. This
-// is what lets one continuous grid (MobileBracket) position every round
-// correctly relative to Round of 12 without ever computing a pixel value.
-function computeRowSpans(allRounds: { pairs: PairContent[] }[]): Map<string, RowSpan>[] {
-  const spans: Map<string, RowSpan>[] = [
-    new Map(allRounds[0].pairs.map((p, i) => [p.id, { row: i + 1, span: 1 }])),
-  ];
-
-  for (let r = 1; r < allRounds.length; r++) {
-    const prevPairs = allRounds[r - 1].pairs;
-    const prevSpans = spans[r - 1];
-    const groupSizes = computeGroupSizes(prevPairs, allRounds[r].pairs);
-    const thisSpans = new Map<string, RowSpan>();
-    let prevCursor = 0;
-    let rowCursor = 1;
-    allRounds[r].pairs.forEach((pair, i) => {
-      const group = prevPairs.slice(prevCursor, prevCursor + groupSizes[i]);
-      const span = group.reduce((sum, p) => sum + prevSpans.get(p.id)!.span, 0);
-      thisSpans.set(pair.id, { row: rowCursor, span });
-      rowCursor += span;
-      prevCursor += groupSizes[i];
-    });
-    spans.push(thisSpans);
-  }
-  return spans;
-}
-
-// The whole bracket, all four rounds, as one continuous grid the user
-// pans through by hand (native touch scroll - no snapping, no "pages",
-// nothing to swap out) rather than a fixed viewport swapping between
-// discrete windows. Row tracks are sized by Round of 12 alone (6 leaf
-// rows, one per pair) - every other round's cells span and centre across
-// the union of leaf rows their own sources occupy (computeRowSpans), so
-// the grid's total height never depends on which rounds happen to be
-// scrolled into view, and proximity/alignment (not a drawn line) is what
-// shows which cell a winner advances into.
-function MobileBracket({
-  allRounds,
-  expandedId,
-  onToggle,
-}: {
-  allRounds: { title: string; pairs: PairContent[] }[];
-  expandedId: string | null;
-  onToggle: (id: string) => void;
-}) {
-  const rowSpans = computeRowSpans(allRounds);
-  const leafRowCount = allRounds[0].pairs.length;
-
-  return (
-    <div className="overflow-x-auto">
-      <div
-        className="grid items-center gap-x-8 gap-y-3 min-w-max pb-2"
-        style={{
-          gridTemplateColumns: `repeat(${allRounds.length}, auto)`,
-          gridTemplateRows: `auto repeat(${leafRowCount}, auto)`,
-        }}
-      >
-        {allRounds.map((round, colIndex) => (
-          <p
-            key={`title-${round.title}`}
-            style={{ gridColumn: colIndex + 1, gridRow: 1 }}
-            className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 text-center"
-          >
-            {round.title}
-          </p>
-        ))}
-        {allRounds.map((round, colIndex) =>
-          round.pairs.map((pair) => {
-            const { row, span } = rowSpans[colIndex].get(pair.id)!;
-            return (
-              <div key={pair.id} style={{ gridColumn: colIndex + 1, gridRow: `${row + 1} / span ${span}` }}>
-                <MatchCard
-                  id={pair.id}
-                  tiles={pair.tiles}
-                  topLabel={pair.topLabel}
-                  live={pair.live}
-                  detail={pair.detail}
-                  expanded={expandedId === pair.id}
-                  onToggle={() => onToggle(pair.id)}
-                  registerRef={noopRegisterRef}
-                  panelAlign={colIndex === 0 ? "left" : colIndex === allRounds.length - 1 ? "right" : "center"}
-                />
-              </div>
-            );
-          }),
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -622,12 +524,15 @@ export function CupBracket({ data }: { data: CupBracketData }) {
     [data],
   );
 
-  const allRounds = [
-    { title: "Round of 12", pairs: vm.r12 },
-    { title: "Quarter-Final", pairs: vm.qf },
-    { title: "Semi-Final", pairs: vm.sf },
-    { title: "Final", pairs: [vm.final] },
-  ];
+  const allRounds = useMemo(
+    () => [
+      { title: "Round of 12", pairs: vm.r12 },
+      { title: "Quarter-Final", pairs: vm.qf },
+      { title: "Semi-Final", pairs: vm.sf },
+      { title: "Final", pairs: [vm.final] },
+    ],
+    [vm],
+  );
 
   const registerRef = (id: string) => (el: HTMLDivElement | null) => {
     nodeRefs.current[id] = el;
@@ -638,6 +543,71 @@ export function CupBracket({ data }: { data: CupBracketData }) {
   };
 
   useLayoutEffect(() => {
+    // Every pair after Round of 12 gets a direct (non-React-controlled)
+    // translateY on the exact element registerRef already tracks, nudging
+    // it to sit centred on the average of its own immediate sources' real
+    // rendered centres - cascading round by round, so SF aligns to QF's
+    // now-corrected centres rather than QF's pre-alignment ones, and Final
+    // to SF's. Round of 12 itself never moves (it's the anchor).
+    //
+    // This writes to the DOM directly, not through React state: an
+    // earlier version stored offsets in state and recovered each pair's
+    // "natural" (pre-nudge) position on every recompute by subtracting
+    // whatever offset was already applied - measured minus applied. That
+    // only holds if "applied" and the actual painted transform agree, but
+    // ResizeObserver can fire again (e.g. web font finishing load) before
+    // React has re-rendered and the browser has painted the *previous*
+    // computation's transform - subtracting a not-yet-painted offset from
+    // a still-old measurement compounds the error every time it happens
+    // (confirmed live: the same pair's offset came out roughly 2x too
+    // large across two reloads). Resetting transforms to none and
+    // re-measuring synchronously, every time, has no such failure mode -
+    // "natural" is never a derived value, only ever a fresh measurement.
+    function applyAlignment() {
+      for (let r = 1; r < allRounds.length; r++) {
+        allRounds[r].pairs.forEach((pair) => {
+          const el = nodeRefs.current[pair.id];
+          if (el) el.style.transform = "";
+        });
+      }
+
+      function centerOf(id: string): number | null {
+        const tileA = nodeRefs.current[slot(id, 0)];
+        const tileB = nodeRefs.current[slot(id, 1)];
+        if (!tileA || !tileB) return null;
+        const aRect = tileA.getBoundingClientRect();
+        const bRect = tileB.getBoundingClientRect();
+        return (aRect.top + aRect.height / 2 + bRect.top + bRect.height / 2) / 2;
+      }
+
+      // Each round's *aligned* centre (after its own nudge is applied),
+      // not its natural one - this is what makes the next round cascade
+      // off corrected positions. Round of 12 has no nudge, so its own
+      // measured centre already is its aligned one.
+      const alignedCenter: Record<string, number> = {};
+      allRounds[0].pairs.forEach((p) => {
+        const c = centerOf(p.id);
+        if (c !== null) alignedCenter[p.id] = c;
+      });
+
+      for (let r = 1; r < allRounds.length; r++) {
+        const prevPairs = allRounds[r - 1].pairs;
+        const groupSizes = computeGroupSizes(prevPairs, allRounds[r].pairs);
+        let cursor = 0;
+        allRounds[r].pairs.forEach((pair, i) => {
+          const group = prevPairs.slice(cursor, cursor + groupSizes[i]);
+          cursor += groupSizes[i];
+          const sourceCenters = group.map((p) => alignedCenter[p.id]).filter((c): c is number => c !== undefined);
+          const natural = centerOf(pair.id);
+          if (natural === null || sourceCenters.length === 0) return;
+          const target = sourceCenters.reduce((a, b) => a + b, 0) / sourceCenters.length;
+          alignedCenter[pair.id] = target;
+          const el = nodeRefs.current[pair.id];
+          if (el) el.style.transform = `translateY(${target - natural}px)`;
+        });
+      }
+    }
+
     function measure() {
       const container = containerRef.current;
       if (!container) return;
@@ -696,15 +666,20 @@ export function CupBracket({ data }: { data: CupBracketData }) {
       setPaths(next);
     }
 
-    measure();
-    const observer = new ResizeObserver(measure);
+    function run() {
+      applyAlignment();
+      measure();
+    }
+
+    run();
+    const observer = new ResizeObserver(run);
     if (containerRef.current) observer.observe(containerRef.current);
-    window.addEventListener("resize", measure);
+    window.addEventListener("resize", run);
     return () => {
       observer.disconnect();
-      window.removeEventListener("resize", measure);
+      window.removeEventListener("resize", run);
     };
-  }, [vm]);
+  }, [vm, allRounds]);
 
   return (
     <div className="min-w-0 rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] px-4 sm:px-6 pt-2 md:pt-3 pb-3 sm:pb-6">
@@ -718,19 +693,19 @@ export function CupBracket({ data }: { data: CupBracketData }) {
           title, so the two title rows land on the same line - that pairing
           is desktop-only (the sidebar stacks below on mobile, not
           alongside), so mobile trims to pt-2/pb-3 instead. */}
-      {/* Mobile-only: one continuous bracket (MobileBracket) - a
-          completely separate layout from desktop's tree below, not a
-          clipped/scrolled view of it (no connectors to draw, no shared
-          refs needed). */}
-      <div className="md:hidden">
-        <MobileBracket allRounds={allRounds} expandedId={expandedId} onToggle={toggleExpanded} />
-      </div>
-      {/* Desktop-only: the full four-column tree, freely scrollable, with
-          drawn connectors - unchanged from before this round of mobile
-          work. */}
-      <div className="hidden md:block overflow-x-auto">
+      {/* One tree at every breakpoint - overflow-x-auto is what turns it
+          into either mobile's hand-panned strip or desktop's free scroll,
+          nothing else differs structurally. */}
+      <div className="overflow-x-auto">
         <div ref={containerRef} className="relative min-w-max pb-2">
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
+          {/* hidden below md - connectors need real horizontal room to
+              read as deliberate lines rather than clutter; the alignment
+              effect above is what conveys the same relationship on
+              mobile instead. */}
+          <svg
+            className="hidden md:block absolute inset-0 w-full h-full pointer-events-none"
+            aria-hidden="true"
+          >
             <defs>
               <linearGradient id="cup-connector" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor="#00ff85" />
