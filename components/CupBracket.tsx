@@ -27,8 +27,8 @@ import type { CupBracketData, CupMatch, CupSlot } from "@/lib/cupBracket";
 //
 // Connectors are straight right-angle lines, full-brightness gradient once
 // their source match is decided, neutral otherwise. Desktop only - see
-// MobileBracketPair below for why mobile drops drawn connectors entirely
-// in favour of a different layout strategy.
+// MobileBracket below for why mobile drops drawn connectors entirely in
+// favour of a different layout strategy.
 //
 // Gradient follows each team through the bracket, not "whichever round is
 // current": a tile is gradient whenever a real team occupies it AND that
@@ -44,15 +44,15 @@ import type { CupBracketData, CupMatch, CupSlot } from "@/lib/cupBracket";
 // measurement/connector-drawing logic never needs to branch on whether the
 // bracket is seeded, only each tile's *content* does.
 //
-// Mobile: no drawn connectors at all (see MobileBracketPair) - instead,
-// each pair of adjacent rounds is shown two-up in a CSS grid where a
-// round's source match(es) sit directly beside the single destination cell
-// they feed, tight together as a cluster with looser spacing between
-// clusters (proximity substitutes for a drawn line). Which source(s) feed
-// which destination is derived from EDGES itself (computeGroupSizes), not
-// hardcoded, so the qf1/qf3 bye asymmetry (one real Round of 12 source
-// instead of two) falls out automatically rather than needing special-
-// casing.
+// Mobile: no drawn connectors at all (see MobileBracket) - instead, all
+// four rounds render as one continuous CSS grid the user pans through by
+// hand, where every cell downstream of Round of 12 spans and centres
+// across exactly the rows its own source match(es) occupy, so proximity/
+// alignment (not a drawn line) is what shows which cell a winner advances
+// into. Which source(s) feed which destination is derived from EDGES
+// itself (computeGroupSizes/computeRowSpans), not hardcoded, so the
+// qf1/qf3 bye asymmetry (one real Round of 12 source instead of two)
+// falls out automatically rather than needing special-casing.
 
 type Edge = { from: string; to: string };
 
@@ -73,12 +73,6 @@ const EDGES: Edge[] = [
   { from: "sf2", to: slot("final", 1) },
 ];
 
-// Column canvas height (desktop only - mobile no longer uses a fixed
-// canvas, see MobileBracketPair) lives directly as a literal Tailwind
-// class at each Column call site below, not as a JS constant - the JIT
-// scanner needs the actual class text in source, so a constant here would
-// just be documentation that could silently drift from what's really
-// rendered.
 const CARD_WIDTH = "w-40";
 const CONNECTOR_GAP = 6;
 const FLAT_THRESHOLD = 20;
@@ -300,16 +294,9 @@ function buildSeededViewModel(data: CupBracketData): ViewModel {
 function Tile({
   content,
   registerRef,
-  // Literal Tailwind classes (JIT needs the real text in source, not a
-  // template - see Column's heightClassName for the same constraint) -
-  // "py-3" everywhere except Round of 12 on mobile, which uses "py-2" to
-  // help its 6 pairs fit without shrinking any other round or touching
-  // desktop at all.
-  paddingYClassName = "py-3",
 }: {
   content: TileContent;
   registerRef: (el: HTMLDivElement | null) => void;
-  paddingYClassName?: string;
 }) {
   const isChampion = content.emphasis === "champion";
   const borderClass = content.gradient
@@ -335,14 +322,11 @@ function Tile({
       className={`${CARD_WIDTH} shrink-0 rounded-xl ${borderClass} p-[2px] shadow-[var(--shadow-soft)]`}
     >
       <div className={`relative rounded-[10px] overflow-hidden ${innerClass}`}>
-        {/* paddingYClassName (was a flat py-[7px] for everyone) - a
-            noticeably taller tile by default, constant regardless of
-            column height/pair count within a given round; the column
-            canvas controls spacing BETWEEN tiles, never the tile's own
-            size. Round of 12 mobile is the one deliberate exception (see
-            the prop's own comment above). */}
+        {/* One standard height everywhere (was a flat py-[7px] before
+            that) - constant regardless of round or breakpoint, never
+            shrunk to fit more pairs in less space. */}
         <div
-          className={`relative px-3 ${paddingYClassName} text-xs flex items-center gap-2 ${isChampion ? "font-bold" : "font-semibold"} ${textClass}`}
+          className={`relative px-3 py-3 text-xs flex items-center gap-2 ${isChampion ? "font-bold" : "font-semibold"} ${textClass}`}
         >
           <span className="truncate flex-1">{content.label}</span>
           {content.score !== null && <span className="tabular-nums shrink-0">{content.score}</span>}
@@ -424,7 +408,6 @@ function MatchCard({
   onToggle,
   registerRef,
   panelAlign,
-  tilePaddingYClassName = "py-3",
 }: {
   id: string;
   tiles: [TileContent, TileContent];
@@ -435,7 +418,6 @@ function MatchCard({
   onToggle: () => void;
   registerRef: (id: string) => (el: HTMLDivElement | null) => void;
   panelAlign: PanelAlign;
-  tilePaddingYClassName?: string;
 }) {
   const clickable = detail !== null;
   return (
@@ -451,12 +433,6 @@ function MatchCard({
         tabIndex={clickable ? 0 : undefined}
         onClick={clickable ? onToggle : undefined}
         onKeyDown={clickable ? onKeyActivate(onToggle) : undefined}
-        // gap-1 (was 1.5) - shared with the desktop tree, harmless there
-        // since its connector math measures whatever the real rendered
-        // gap turns out to be rather than assuming a fixed value; on
-        // mobile's compact list, shaving a couple px per pair across up
-        // to 6 pairs (Round of 12) is part of fitting one screen with no
-        // scroll.
         className={`flex flex-col gap-1 ${clickable ? "cursor-pointer" : ""}`}
       >
         {topLabel && (
@@ -464,8 +440,8 @@ function MatchCard({
             {topLabel}
           </span>
         )}
-        <Tile content={tiles[0]} registerRef={registerRef(slot(id, 0))} paddingYClassName={tilePaddingYClassName} />
-        <Tile content={tiles[1]} registerRef={registerRef(slot(id, 1))} paddingYClassName={tilePaddingYClassName} />
+        <Tile content={tiles[0]} registerRef={registerRef(slot(id, 0))} />
+        <Tile content={tiles[1]} registerRef={registerRef(slot(id, 1))} />
       </div>
       {detail && <MatchDetailPanel detail={detail} open={expanded} align={panelAlign} />}
     </div>
@@ -479,15 +455,6 @@ function Column({
   onToggle,
   registerRef,
   panelAlign,
-  // Plain Tailwind height classes, not a JS-computed number - this is one
-  // Column shared by both the mobile-window and desktop views (see below),
-  // so which height applies at which viewport is just CSS, no JS
-  // breakpoint detection needed. Every call site below passes this
-  // explicitly - the default is a literal class string (not built from
-  // COLUMN_HEIGHT), since Tailwind's JIT scanner needs the actual class
-  // name present in source, not a runtime-interpolated one.
-  heightClassName = "h-[640px]",
-  tilePaddingYClassName = "py-3",
 }: {
   title: string;
   pairs: PairContent[];
@@ -495,15 +462,13 @@ function Column({
   onToggle: (id: string) => void;
   registerRef: (id: string) => (el: HTMLDivElement | null) => void;
   panelAlign: PanelAlign;
-  heightClassName?: string;
-  tilePaddingYClassName?: string;
 }) {
   return (
     <div className="flex flex-col items-center gap-3">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
         {title}
       </p>
-      <div className={`flex flex-col justify-around ${heightClassName}`}>
+      <div className="flex flex-col justify-around h-[640px]">
         {pairs.map((pair) => (
           <MatchCard
             key={pair.id}
@@ -516,7 +481,6 @@ function Column({
             onToggle={() => onToggle(pair.id)}
             registerRef={registerRef}
             panelAlign={panelAlign}
-            tilePaddingYClassName={tilePaddingYClassName}
           />
         ))}
       </div>
@@ -525,10 +489,10 @@ function Column({
 }
 
 // ---------------------------------------------------------------------------
-// Mobile: separate two-round-at-a-time grid, no connectors, no shared refs
-// with the desktop tree below (MatchCard still needs a registerRef, but
-// mobile's own instances are never measured, so they pass this no-op
-// rather than colliding with desktop's real refs for the same ids).
+// Mobile: one continuous bracket, no connectors, no shared refs with the
+// desktop tree below (MatchCard still needs a registerRef, but mobile's
+// own instances are never measured, so they pass this no-op rather than
+// colliding with desktop's real refs for the same ids).
 
 function noopRegisterRef() {
   return () => {};
@@ -545,55 +509,89 @@ function computeGroupSizes(fromPairs: PairContent[], toPairs: PairContent[]): nu
   );
 }
 
-// Whole-stage window shown together: one round's source matches (left,
-// clustered by which destination they feed) beside the next round's
-// destination cells (right, one per cluster, vertically centred against
-// it). A CSS grid - not fixed pixel heights - does the alignment: each row
-// auto-sizes to the taller of its two cells (a cluster of 2 stacked
-// matches vs. a single, possibly "Bye"-labelled, destination card), and
-// both cells stretch/centre within that row automatically.
-function MobileBracketPair({
-  fromRound,
-  toRound,
+type RowSpan = { row: number; span: number };
+
+// Where each pair sits on a shared grid of Round-of-12-sized "leaf" rows -
+// one map per round, keyed by pair id. Round of 12 itself is the base
+// case: pair i simply owns leaf row i+1, span 1. Every later round's pair
+// spans exactly the union of the leaf rows its own sources span, in
+// display order - e.g. qf1 (fed only by m89, a bye covering its other
+// slot) spans row 1 only; qf2 (fed by m413 AND m512) spans rows 2-3; sf1
+// (fed by qf1 AND qf2) spans rows 1-3, the union of both. Because
+// computeGroupSizes already guarantees each round's groups are
+// contiguous, non-overlapping runs of the previous round in display
+// order, a running cursor is all that's needed - no interval math. This
+// is what lets one continuous grid (MobileBracket) position every round
+// correctly relative to Round of 12 without ever computing a pixel value.
+function computeRowSpans(allRounds: { pairs: PairContent[] }[]): Map<string, RowSpan>[] {
+  const spans: Map<string, RowSpan>[] = [
+    new Map(allRounds[0].pairs.map((p, i) => [p.id, { row: i + 1, span: 1 }])),
+  ];
+
+  for (let r = 1; r < allRounds.length; r++) {
+    const prevPairs = allRounds[r - 1].pairs;
+    const prevSpans = spans[r - 1];
+    const groupSizes = computeGroupSizes(prevPairs, allRounds[r].pairs);
+    const thisSpans = new Map<string, RowSpan>();
+    let prevCursor = 0;
+    let rowCursor = 1;
+    allRounds[r].pairs.forEach((pair, i) => {
+      const group = prevPairs.slice(prevCursor, prevCursor + groupSizes[i]);
+      const span = group.reduce((sum, p) => sum + prevSpans.get(p.id)!.span, 0);
+      thisSpans.set(pair.id, { row: rowCursor, span });
+      rowCursor += span;
+      prevCursor += groupSizes[i];
+    });
+    spans.push(thisSpans);
+  }
+  return spans;
+}
+
+// The whole bracket, all four rounds, as one continuous grid the user
+// pans through by hand (native touch scroll - no snapping, no "pages",
+// nothing to swap out) rather than a fixed viewport swapping between
+// discrete windows. Row tracks are sized by Round of 12 alone (6 leaf
+// rows, one per pair) - every other round's cells span and centre across
+// the union of leaf rows their own sources occupy (computeRowSpans), so
+// the grid's total height never depends on which rounds happen to be
+// scrolled into view, and proximity/alignment (not a drawn line) is what
+// shows which cell a winner advances into.
+function MobileBracket({
+  allRounds,
   expandedId,
   onToggle,
-  fromTilePaddingYClassName = "py-3",
 }: {
-  fromRound: { title: string; pairs: PairContent[] };
-  toRound: { title: string; pairs: PairContent[] };
+  allRounds: { title: string; pairs: PairContent[] }[];
   expandedId: string | null;
   onToggle: (id: string) => void;
-  fromTilePaddingYClassName?: string;
 }) {
-  const groupSizes = computeGroupSizes(fromRound.pairs, toRound.pairs);
-  const groups: PairContent[][] = [];
-  let cursor = 0;
-  for (const size of groupSizes) {
-    groups.push(fromRound.pairs.slice(cursor, cursor + size));
-    cursor += size;
-  }
+  const rowSpans = computeRowSpans(allRounds);
+  const leafRowCount = allRounds[0].pairs.length;
 
   return (
-    <div className="w-[332px]">
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-          {fromRound.title}
-        </p>
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-          {toRound.title}
-        </p>
-      </div>
-      {/* gap-y-5 between clusters vs. gap-1.5 within one (below) - the
-          spacing differential is what reads as grouping, standing in for
-          the connector line mobile no longer draws. */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-5">
-        {groups.flatMap((group, i) => {
-          const toPair = toRound.pairs[i];
-          return [
-            <div key={`from-${toPair.id}`} className="flex flex-col justify-center gap-1.5">
-              {group.map((pair) => (
+    <div className="overflow-x-auto">
+      <div
+        className="grid items-center gap-x-8 gap-y-3 min-w-max pb-2"
+        style={{
+          gridTemplateColumns: `repeat(${allRounds.length}, auto)`,
+          gridTemplateRows: `auto repeat(${leafRowCount}, auto)`,
+        }}
+      >
+        {allRounds.map((round, colIndex) => (
+          <p
+            key={`title-${round.title}`}
+            style={{ gridColumn: colIndex + 1, gridRow: 1 }}
+            className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 text-center"
+          >
+            {round.title}
+          </p>
+        ))}
+        {allRounds.map((round, colIndex) =>
+          round.pairs.map((pair) => {
+            const { row, span } = rowSpans[colIndex].get(pair.id)!;
+            return (
+              <div key={pair.id} style={{ gridColumn: colIndex + 1, gridRow: `${row + 1} / span ${span}` }}>
                 <MatchCard
-                  key={pair.id}
                   id={pair.id}
                   tiles={pair.tiles}
                   topLabel={pair.topLabel}
@@ -602,55 +600,14 @@ function MobileBracketPair({
                   expanded={expandedId === pair.id}
                   onToggle={() => onToggle(pair.id)}
                   registerRef={noopRegisterRef}
-                  panelAlign="left"
-                  tilePaddingYClassName={fromTilePaddingYClassName}
+                  panelAlign={colIndex === 0 ? "left" : colIndex === allRounds.length - 1 ? "right" : "center"}
                 />
-              ))}
-            </div>,
-            <div key={`to-${toPair.id}`} className="flex flex-col justify-center">
-              <MatchCard
-                id={toPair.id}
-                tiles={toPair.tiles}
-                topLabel={toPair.topLabel}
-                live={toPair.live}
-                detail={toPair.detail}
-                expanded={expandedId === toPair.id}
-                onToggle={() => onToggle(toPair.id)}
-                registerRef={noopRegisterRef}
-                panelAlign="right"
-              />
-            </div>,
-          ];
-        })}
+              </div>
+            );
+          }),
+        )}
       </div>
     </div>
-  );
-}
-
-// Mobile: three whole-stage window pages (0 = R12+QF, 1 = QF+SF, 2 =
-// SF+Final), swiped between directly (native touch scrolling + CSS scroll-
-// snap - not a custom drag handler) with the arrows/dots below as an
-// alternative, non-touch way to move between the same pages. Desktop
-// ignores all of this entirely (free scroll over all four columns at
-// once, below).
-const TOTAL_STAGES = 4;
-const MOBILE_WINDOW_COUNT = TOTAL_STAGES - 1; // 3 adjacent-round pairs
-
-function ChevronIcon({ direction }: { direction: "left" | "right" }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={direction === "left" ? "rotate-180" : ""}
-    >
-      <path d="M9 6l6 6-6 6" />
-    </svg>
   );
 }
 
@@ -659,40 +616,6 @@ export function CupBracket({ data }: { data: CupBracketData }) {
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [paths, setPaths] = useState<{ id: string; d: string; advanced: boolean }[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  // Mobile-only: which adjacent-round pair is currently snapped into view
-  // (0 = R12+QF, 1 = QF+SF, 2 = SF+Final) - kept in sync with the real
-  // scroll position (handleMobileScroll) so it reflects a manual swipe
-  // just as well as an arrow tap, and drives the dots/arrow disabled
-  // state either way. Desktop ignores this and shows all four via free
-  // scroll instead.
-  const [mobileWindowStart, setMobileWindowStart] = useState(0);
-  const mobileScrollRef = useRef<HTMLDivElement>(null);
-  const mobilePageRefs = useRef<(HTMLDivElement | null)[]>([]);
-  // Explicit height on the scroll container itself, tracking whichever
-  // page is currently in view (see effect below) - without this, a flex
-  // row's height defaults to its tallest child (Round of 12 + QF, by far
-  // the most crowded page), leaving a block of dead space under every
-  // shorter page (QF+SF, SF+Final) the whole time it's in view instead of
-  // just while it's off-screen mid-swipe.
-  const [mobileCarouselHeight, setMobileCarouselHeight] = useState<number | null>(null);
-
-  const scrollToMobilePage = (index: number) => {
-    const clamped = Math.max(0, Math.min(MOBILE_WINDOW_COUNT - 1, index));
-    mobilePageRefs.current[clamped]?.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
-  };
-
-  // Fires continuously while swiping (native touch scroll) and during an
-  // arrow tap's smooth scrollIntoView alike - both just move scrollLeft,
-  // so one handler covers both input methods. clientWidth is a live
-  // measurement of the actual rendered page width, not the w-[332px]
-  // literal - correct even if that literal and the real viewport ever
-  // drift apart.
-  const handleMobileScroll = () => {
-    const el = mobileScrollRef.current;
-    if (!el || el.clientWidth === 0) return;
-    const index = Math.round(el.scrollLeft / el.clientWidth);
-    setMobileWindowStart((current) => (current === index ? current : index));
-  };
 
   const vm = useMemo(
     () => (data.seeded ? buildSeededViewModel(data) : buildUnseededViewModel()),
@@ -705,24 +628,6 @@ export function CupBracket({ data }: { data: CupBracketData }) {
     { title: "Semi-Final", pairs: vm.sf },
     { title: "Final", pairs: [vm.final] },
   ];
-
-  // Re-measures the current page's real height (not a guess) whenever
-  // which page is showing changes, and again if that page's own content
-  // reflows (ResizeObserver). scrollHeight, not offsetHeight - a detail
-  // panel is an absolutely-positioned descendant, so it never grows its
-  // MatchCard's own static-flow box; scrollHeight is what actually
-  // captures that overflow once one's open. ResizeObserver alone won't
-  // catch that open/close, though - it fires on the page element's own
-  // content-box, which an absolutely-positioned child never changes -
-  // hence expandedId as an explicit dependency below.
-  useLayoutEffect(() => {
-    const page = mobilePageRefs.current[mobileWindowStart];
-    if (!page) return;
-    setMobileCarouselHeight(page.scrollHeight);
-    const observer = new ResizeObserver(() => setMobileCarouselHeight(page.scrollHeight));
-    observer.observe(page);
-    return () => observer.disconnect();
-  }, [mobileWindowStart, vm, expandedId]);
 
   const registerRef = (id: string) => (el: HTMLDivElement | null) => {
     nodeRefs.current[id] = el;
@@ -812,83 +717,13 @@ export function CupBracket({ data }: { data: CupBracketData }) {
           specifically to match the sidebar leaderboard's own pt-3 above its
           title, so the two title rows land on the same line - that pairing
           is desktop-only (the sidebar stacks below on mobile, not
-          alongside), so mobile trims to pt-2/pb-3 instead, part of keeping
-          the compact mobile list short enough to need no scroll of its
-          own. */}
-      {/* Mobile-only: swipeable carousel of the same two-round grid
-          (MobileBracketPair) - a completely separate layout from
-          desktop's tree below, not a clipped/scrolled view of it (no
-          connectors to draw, no shared refs needed). */}
+          alongside), so mobile trims to pt-2/pb-3 instead. */}
+      {/* Mobile-only: one continuous bracket (MobileBracket) - a
+          completely separate layout from desktop's tree below, not a
+          clipped/scrolled view of it (no connectors to draw, no shared
+          refs needed). */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <button
-            type="button"
-            onClick={() => scrollToMobilePage(mobileWindowStart - 1)}
-            disabled={mobileWindowStart === 0}
-            aria-label="Previous stage"
-            className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
-          >
-            <ChevronIcon direction="left" />
-          </button>
-          <div className="flex items-center gap-1.5" aria-hidden="true">
-            {Array.from({ length: MOBILE_WINDOW_COUNT }, (_, i) => (
-              <span
-                key={i}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === mobileWindowStart ? "w-4 bg-zinc-900 dark:bg-white" : "w-1.5 bg-black/[0.12] dark:bg-white/[0.15]"
-                }`}
-              />
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => scrollToMobilePage(mobileWindowStart + 1)}
-            disabled={mobileWindowStart === MOBILE_WINDOW_COUNT - 1}
-            aria-label="Next stage"
-            className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
-          >
-            <ChevronIcon direction="right" />
-          </button>
-        </div>
-        {/* snap-x + snap-start on each w-[332px] page (exactly matching
-            the scroll viewport's own w-[332px]) means one full swipe
-            lands exactly one page over, no partial/mid-page rest position
-            possible. no-scrollbar (globals.css) hides the native
-            scrollbar track without disabling touch scrolling itself. */}
-        <div
-          ref={mobileScrollRef}
-          onScroll={handleMobileScroll}
-          // items-start, not the flex default (stretch) - stretch would
-          // force every page to match the container's own explicit
-          // height, which is itself read FROM a page's height below -
-          // that circular dependency is what silently pinned every page
-          // at whichever height got set first, no matter which page was
-          // actually current.
-          className="flex items-start overflow-x-auto snap-x snap-mandatory no-scrollbar w-[332px] transition-[height] duration-300 ease-out"
-          style={mobileCarouselHeight !== null ? { height: mobileCarouselHeight } : undefined}
-        >
-          {allRounds.slice(0, MOBILE_WINDOW_COUNT).map((fromRound, i) => (
-            <div
-              key={fromRound.title}
-              ref={(el) => {
-                mobilePageRefs.current[i] = el;
-              }}
-              className="w-[332px] shrink-0 snap-start"
-            >
-              <MobileBracketPair
-                fromRound={fromRound}
-                toRound={allRounds[i + 1]}
-                expandedId={expandedId}
-                onToggle={toggleExpanded}
-                // Round of 12 specifically - 6 pairs is the most crowded
-                // round by far, so this is the one deliberate exception
-                // to every tile otherwise sharing one constant height.
-                // Only ever the "from" side (page 0), never "to".
-                fromTilePaddingYClassName={i === 0 ? "py-2" : "py-3"}
-              />
-            </div>
-          ))}
-        </div>
+        <MobileBracket allRounds={allRounds} expandedId={expandedId} onToggle={toggleExpanded} />
       </div>
       {/* Desktop-only: the full four-column tree, freely scrollable, with
           drawn connectors - unchanged from before this round of mobile
