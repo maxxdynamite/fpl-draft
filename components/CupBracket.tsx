@@ -33,10 +33,12 @@ import type { CupBracketData, CupMatch, CupSlot } from "@/lib/cupBracket";
 // so the live view keeps the small "Bye" topLabel above the row instead.
 //
 // Connectors are straight right-angle lines, full-brightness gradient once
-// their source match is decided, neutral otherwise. Desktop only (hidden
-// below md) - mobile has no room for them to read as deliberate lines
-// rather than clutter, and relies on alignment alone (next paragraph) to
-// show what feeds what.
+// their source match is decided, neutral otherwise. Shown at every
+// breakpoint - they only ever looked like clutter on mobile back when it
+// had its own cramped gap and uneven justify-around spacing; now that
+// both breakpoints share this tree with real measured alignment (next
+// paragraph), they're short and mostly flat everywhere, reinforcing the
+// alignment rather than fighting it.
 //
 // Gradient follows each team through the bracket, not "whichever round is
 // current": a tile is gradient whenever a real team occupies it AND that
@@ -52,9 +54,9 @@ import type { CupBracketData, CupMatch, CupSlot } from "@/lib/cupBracket";
 // measurement/connector-drawing logic never needs to branch on whether the
 // bracket is seeded, only each tile's *content* does.
 //
-// One shared tree for both breakpoints (only the connector SVG and the
-// column gap differ by viewport) - every pair, in every round after Round
-// of 12, gets a per-pair vertical nudge (translateY, computed in the
+// One shared tree for both breakpoints, structurally identical at every
+// viewport - every pair, in every round after Round of 12, gets a per-pair
+// vertical nudge (translateY, computed in the
 // alignment effect below) so it sits centred on the *average of its own
 // immediate sources' real rendered centres*, cascading round by round
 // (QF aligns to Round of 12, SF aligns to QF's now-aligned centres, Final
@@ -721,14 +723,13 @@ export function CupBracket({ data }: { data: CupBracketData }) {
           nothing else differs structurally. */}
       <div className="overflow-x-auto">
         <div ref={containerRef} className="relative min-w-max pb-2">
-          {/* hidden below md - connectors need real horizontal room to
-              read as deliberate lines rather than clutter; the alignment
-              effect above is what conveys the same relationship on
-              mobile instead. */}
-          <svg
-            className="hidden md:block absolute inset-0 w-full h-full pointer-events-none"
-            aria-hidden="true"
-          >
+          {/* Shown at every breakpoint - was desktop-only while mobile
+              still used its own cramped gap and uneven justify-around
+              spacing (connectors read as clutter there). Both breakpoints
+              now share this tree with real measured alignment (the effect
+              above), so connectors are short and mostly flat everywhere,
+              not just on desktop. */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
             <defs>
               <linearGradient id="cup-connector" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor="#00ff85" />
