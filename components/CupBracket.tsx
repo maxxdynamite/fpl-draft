@@ -17,13 +17,19 @@ import type { CupBracketData, CupMatch, CupSlot } from "@/lib/cupBracket";
 // a fixed height with even (justify-around) distribution.
 //
 // Byes: seed 1/2 don't get a separate standalone tile - they simply ARE one
-// of qf1/qf3's two slots (a "Bye" label sits above that specific tile
-// instead). An earlier version duplicated the bye into its own boxed cell
-// wired to qf1/qf3 by a connector, which was really just a line between two
-// cells showing the same team - that connector is what produced a stray
-// green fragment poking out (a real, sub-pixel-length path segment between
-// two adjacent same-content boxes) and let the gradient border overlap
-// itself at the seam.
+// of qf1/qf3's two slots. An earlier version duplicated the bye into its
+// own boxed cell wired to qf1/qf3 by a connector, which was really just a
+// line between two cells showing the same team - that connector is what
+// produced a stray green fragment poking out (a real, sub-pixel-length
+// path segment between two adjacent same-content boxes) and let the
+// gradient border overlap itself at the seam.
+//
+// Pre-season, the pairing's *other* slot has nothing real to show (no
+// seed plays into it) - rather than leaving it blank, it's given a "Bye"
+// tile of its own, brand-gradient text (buildUnseededViewModel). Once
+// seeded, that same slot holds a genuine value instead ("Winner 8v9",
+// then a real team once decided) - there's no free cell left to redirect,
+// so the live view keeps the small "Bye" topLabel above the row instead.
 //
 // Connectors are straight right-angle lines, full-brightness gradient once
 // their source match is decided, neutral otherwise. Desktop only (hidden
@@ -93,7 +99,11 @@ const FLAT_THRESHOLD = 20;
 type TileContent = {
   label: string;
   score: number | null;
-  emphasis: "neutral" | "winner" | "loser" | "champion";
+  // "bye" is its own emphasis, not just a neutral tile with a topLabel
+  // above it - see buildUnseededViewModel for why: it's the pair's other,
+  // otherwise-blank slot, given real (if non-competitive) content instead
+  // of empty space.
+  emphasis: "neutral" | "winner" | "loser" | "champion" | "bye";
   gradient: boolean;
 };
 
@@ -171,14 +181,19 @@ function buildUnseededViewModel(): ViewModel {
     detail: null,
   });
 
+  const byeTile = (): TileContent => ({ label: "Bye", score: null, emphasis: "bye", gradient: false });
+
   const qf = UNSEEDED_QF_IDS.map(blankPair);
-  // Seed 1's bye lives directly in qf1's own first slot, seed 2's in qf3's.
+  // Seed 1's bye lives directly in qf1's own first slot, seed 2's in
+  // qf3's - the pair's other slot (otherwise just blank, since nothing
+  // plays into it) is given the "Bye" tile itself rather than a topLabel
+  // floating above the row.
   const qf1 = qf.find((p) => p.id === "qf1")!;
   qf1.tiles[0] = seedTile("1");
-  qf1.topLabel = "Bye";
+  qf1.tiles[1] = byeTile();
   const qf3 = qf.find((p) => p.id === "qf3")!;
   qf3.tiles[0] = seedTile("2");
-  qf3.topLabel = "Bye";
+  qf3.tiles[1] = byeTile();
 
   const sf = UNSEEDED_SF_IDS.map(blankPair);
   const final = blankPair("final");
@@ -317,13 +332,19 @@ function Tile({
   const innerClass = isChampion
     ? "bg-gradient-to-br from-[#00ff85] to-[#04f5ff] cup-champion-shimmer"
     : "bg-white dark:bg-zinc-900";
+  // Same brand gradient as the champion cell and the "Weekly" wordmark
+  // (bg-clip-text, not a filled cell) - direction is left-to-right here
+  // rather than champion's br, matching the horizontal wordmark it's
+  // echoing rather than the diagonal fill.
   const textClass = isChampion
     ? "text-[#04211a]"
-    : content.emphasis === "winner"
-      ? "text-zinc-900 dark:text-white"
-      : content.emphasis === "loser"
-        ? "text-zinc-900 dark:text-white opacity-45"
-        : "text-zinc-700 dark:text-zinc-300";
+    : content.emphasis === "bye"
+      ? "bg-gradient-to-r from-[#00ff85] to-[#04f5ff] bg-clip-text text-transparent"
+      : content.emphasis === "winner"
+        ? "text-zinc-900 dark:text-white"
+        : content.emphasis === "loser"
+          ? "text-zinc-900 dark:text-white opacity-45"
+          : "text-zinc-700 dark:text-zinc-300";
   return (
     <div
       ref={registerRef}
