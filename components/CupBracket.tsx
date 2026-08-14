@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CupBracketData, CupMatch, CupSlot } from "@/lib/cupBracket";
 
 // Live shell: seeds come from Gameweek 12 (lib/cupBracket.ts), Round of 12
@@ -68,8 +68,8 @@ const FLAT_THRESHOLD = 20;
 
 // ---------------------------------------------------------------------------
 // View model: both the unseeded static shell and the live-data bracket
-// reduce to this same shape, so Tile/MatchCard/Column/StackedBracket below
-// never need to know which mode produced them.
+// reduce to this same shape, so Tile/MatchCard/Column below never need to
+// know which mode produced them.
 
 type TileContent = {
   label: string;
@@ -474,101 +474,47 @@ function Column({
   );
 }
 
-// ---- small-screen fallback --------------------------------------------------
-// No SVG/refs - pure stacked list grouped by round, sharing the same view
-// model (and therefore the same status/winner colours) as the desktop tree.
-
-function StackedStatusPill({ status }: { status: PairContent["status"] }) {
-  const label = status === "live" ? "Live" : status === "completed" ? "Final" : "Upcoming";
-  const cls =
-    status === "live"
-      ? "bg-[#00ff85]/15 text-[#00825a] dark:text-[#00ff85]"
-      : status === "completed"
-        ? "bg-black/[0.06] dark:bg-white/[0.08] text-zinc-600 dark:text-zinc-300"
-        : "bg-black/[0.04] dark:bg-white/[0.05] text-zinc-400 dark:text-zinc-500";
-  return (
-    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide ${cls}`}>
-      {label}
-    </span>
-  );
-}
-
-function StackedRow({ tile, badge }: { tile: TileContent; badge?: string | null }) {
-  if (tile.emphasis === "champion") {
-    return (
-      <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-[#00ff85] to-[#04f5ff] cup-champion-shimmer px-2 py-1 flex items-center gap-2">
-        <span className="relative truncate flex-1 text-sm font-bold text-[#04211a]">{tile.label}</span>
-        {tile.score !== null && (
-          <span className="relative tabular-nums shrink-0 text-sm font-bold text-[#04211a]">{tile.score}</span>
-        )}
-      </div>
-    );
-  }
-  const textClass =
-    tile.emphasis === "winner"
-      ? "text-zinc-900 dark:text-white"
-      : tile.emphasis === "loser"
-        ? "text-zinc-900 dark:text-white opacity-45"
-        : "text-zinc-700 dark:text-zinc-300";
-  return (
-    <div className={`flex items-center gap-2 text-sm font-semibold ${textClass}`}>
-      {badge && (
-        <span className="shrink-0 text-[9px] font-semibold uppercase text-zinc-400 dark:text-zinc-500">
-          {badge}
-        </span>
-      )}
-      <span className="truncate flex-1">{tile.label}</span>
-      {tile.score !== null && <span className="tabular-nums shrink-0">{tile.score}</span>}
-    </div>
-  );
-}
-
-function StackedMatch({ pair }: { pair: PairContent }) {
-  return (
-    <div className="rounded-xl bg-black/[0.02] dark:bg-white/[0.03] px-3 py-2.5 flex flex-col gap-1.5">
-      <div className="flex items-center justify-between">
-        <StackedStatusPill status={pair.status} />
-        {pair.live && <span className="cup-live h-1.5 w-1.5 rounded-full bg-[#00ff85]" aria-hidden="true" />}
-      </div>
-      <StackedRow tile={pair.tiles[0]} badge={pair.topLabel} />
-      <StackedRow tile={pair.tiles[1]} />
-    </div>
-  );
-}
-
-function StackedRound({ title, pairs }: { title: string; pairs: PairContent[] }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-        {title}
-      </p>
-      <div className="flex flex-col gap-2">
-        {pairs.map((pair) => (
-          <StackedMatch key={pair.id} pair={pair} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function StackedBracket({ vm }: { vm: ViewModel }) {
-  return (
-    <div className="flex flex-col gap-5">
-      <StackedRound title="Round of 12" pairs={vm.r12} />
-      <StackedRound title="Quarter-Final" pairs={vm.qf} />
-      <StackedRound title="Semi-Final" pairs={vm.sf} />
-      <StackedRound title="Final" pairs={[vm.final]} />
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
+
+const STAGE_TITLES = ["Round of 12", "Quarter-Final", "Semi-Final", "Final"];
+// Matches CARD_WIDTH (w-40 = 160px) + the tree row's own gap-8 (32px) - the
+// exact distance one arrow press moves the mobile viewport so it lands on
+// the next column, not a fixed guess independent of the real layout.
+const STAGE_PITCH_PX = 160 + 32;
+
+function ChevronIcon({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={direction === "left" ? "rotate-180" : ""}
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
 
 export function CupBracket({ data }: { data: CupBracketData }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [paths, setPaths] = useState<{ id: string; d: string; advanced: boolean }[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Mobile-only paging through the same four columns desktop shows all at
+  // once - arrows are the sole way to move (no free swipe/scroll to fight
+  // with), so this index is the one source of truth for scroll position,
+  // not something read back from a scroll event.
+  const [activeStage, setActiveStage] = useState(0);
+
+  useEffect(() => {
+    scrollAreaRef.current?.scrollTo({ left: activeStage * STAGE_PITCH_PX, behavior: "smooth" });
+  }, [activeStage]);
 
   const vm = useMemo(
     () => (data.seeded ? buildSeededViewModel(data) : buildUnseededViewModel()),
@@ -662,7 +608,37 @@ export function CupBracket({ data }: { data: CupBracketData }) {
           is pt-3 (not the same p-4/p-6 as the sides/bottom) specifically to
           match the sidebar leaderboard's own pt-3 above its title, so the
           two title rows land on the same line. */}
-      <div className="hidden md:block overflow-x-auto">
+      {/* Mobile-only pager - the tree below is the exact same markup at
+          every breakpoint, just clipped to one column's width (CARD_WIDTH,
+          overflow-hidden instead of md's free overflow-x-auto) and moved
+          by these arrows instead of native scroll/swipe. */}
+      <div className="md:hidden flex items-center justify-between gap-3 mb-2">
+        <button
+          type="button"
+          onClick={() => setActiveStage((s) => Math.max(0, s - 1))}
+          disabled={activeStage === 0}
+          aria-label="Previous stage"
+          className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
+        >
+          <ChevronIcon direction="left" />
+        </button>
+        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          {STAGE_TITLES[activeStage]}
+        </p>
+        <button
+          type="button"
+          onClick={() => setActiveStage((s) => Math.min(STAGE_TITLES.length - 1, s + 1))}
+          disabled={activeStage === STAGE_TITLES.length - 1}
+          aria-label="Next stage"
+          className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
+        >
+          <ChevronIcon direction="right" />
+        </button>
+      </div>
+      <div
+        ref={scrollAreaRef}
+        className="w-40 overflow-hidden md:w-auto md:overflow-x-auto scroll-smooth"
+      >
         <div ref={containerRef} className="relative min-w-max pb-2">
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none"
@@ -728,9 +704,6 @@ export function CupBracket({ data }: { data: CupBracketData }) {
             />
           </div>
         </div>
-      </div>
-      <div className="md:hidden">
-        <StackedBracket vm={vm} />
       </div>
     </div>
   );
