@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CupBracketData, CupMatch, CupSlot } from "@/lib/cupBracket";
 
 // Live shell: seeds come from Gameweek 12 (lib/cupBracket.ts), Round of 12
@@ -447,6 +447,7 @@ function Column({
   onToggle,
   registerRef,
   panelAlign,
+  height = COLUMN_HEIGHT,
 }: {
   title: string;
   pairs: PairContent[];
@@ -454,13 +455,14 @@ function Column({
   onToggle: (id: string) => void;
   registerRef: (id: string) => (el: HTMLDivElement | null) => void;
   panelAlign: PanelAlign;
+  height?: number;
 }) {
   return (
     <div className="flex flex-col items-center gap-3">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
         {title}
       </p>
-      <div className="flex flex-col justify-around" style={{ height: COLUMN_HEIGHT }}>
+      <div className="flex flex-col justify-around" style={{ height }}>
         {pairs.map((pair) => (
           <MatchCard
             key={pair.id}
@@ -482,7 +484,27 @@ function Column({
 
 // ---------------------------------------------------------------------------
 
-const STAGE_TITLES = ["Round of 12", "Quarter-Final", "Semi-Final", "Final"];
+// Mobile pages two rounds at a time instead of one - both dead space (a
+// single narrow w-40 column left almost the whole screen width empty) and
+// the pairing itself follow directly from EDGES' own topology: every
+// r12->qf edge resolves within page 0, every sf->final edge resolves
+// within page 1, so real connector lines - not just a full-width column -
+// come along for free (see the isDesktop-gated registerRef split below).
+// Only qf->sf edges span the page boundary and go undrawn, same as any
+// edge whose endpoints aren't both currently mounted.
+const MOBILE_PAGES: { titles: [string, string] }[] = [
+  { titles: ["Round of 12", "Quarter-Final"] },
+  { titles: ["Semi-Final", "Final"] },
+];
+// Per-pair pixel budget for a mobile page's column height - unlike
+// desktop's single fixed COLUMN_HEIGHT (tuned once for its tallest column,
+// Round of 12, with a full-width window's worth of room to spare), each
+// mobile page gets its own height sized to its own tallest column, so the
+// Semi-Final/Final page (2 pairs, 1 pair) isn't stretched across the same
+// tall canvas Round of 12/Quarter-Final (6 pairs, 4 pairs) needs.
+const MOBILE_HEIGHT_PER_PAIR = 70;
+const MOBILE_COLUMN_HEIGHT_FLOOR = 140;
+const MOBILE_BREAKPOINT_QUERY = "(min-width: 768px)"; // Tailwind's md
 
 function ChevronIcon({ direction }: { direction: "left" | "right" }) {
   return (
@@ -502,35 +524,66 @@ function ChevronIcon({ direction }: { direction: "left" | "right" }) {
   );
 }
 
-// No-op registerRef for the mobile compact list - MatchCard always calls
-// registerRef for its own connector positioning, but the compact list has
-// no connectors to position (only one round's cards ever render at once,
-// so there's nothing for a connector to run between). Writing into the
-// real nodeRefs map here would let whichever of the desktop tree/mobile
-// list rendered last silently win the ref and corrupt the other's
-// connector measurements - a shared no-op sidesteps that entirely.
+// No-op registerRef - used by whichever of {desktop tree, mobile
+// 2-column page} isn't the currently active one (per isDesktop below).
+// Both trees are always mounted (CSS hidden/block, not unmounted, so
+// layout never has to wait on a remount), but only the active one may
+// write real DOM nodes into the shared nodeRefs map - otherwise whichever
+// rendered last would silently win each id and corrupt the other's
+// connector measurements.
 const noopRegisterRef = () => () => {};
 
 export function CupBracket({ data }: { data: CupBracketData }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const mobileContainerRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [paths, setPaths] = useState<{ id: string; d: string; advanced: boolean }[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  // Mobile-only paging: which single round's cards are shown right now.
-  // Desktop always shows all four at once via the tree below.
-  const [activeStage, setActiveStage] = useState(0);
+  // Mobile-only paging: which pair of rounds is shown right now (0 = R12+QF,
+  // 1 = SF+Final). Desktop always shows all four at once via the tree below.
+  const [mobileStage, setMobileStage] = useState(0);
+  // null until the client's real viewport is known (avoids guessing wrong
+  // on the server and briefly drawing connectors for the tree that turns
+  // out not to match) - both trees' registerRef stay no-op until this
+  // resolves, same "wait for client" pattern as DraftCountdown's now:null.
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const mql = window.matchMedia(MOBILE_BREAKPOINT_QUERY);
+    const handleChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    // Deferred rather than an immediate setIsDesktop(mql.matches) call -
+    // keeps every state update inside a callback, not executed
+    // synchronously as part of the effect body itself (same pattern as
+    // DraftCountdown's first-tick deferral).
+    const initial = setTimeout(() => setIsDesktop(mql.matches), 0);
+    mql.addEventListener("change", handleChange);
+    return () => {
+      clearTimeout(initial);
+      mql.removeEventListener("change", handleChange);
+    };
+  }, []);
 
   const vm = useMemo(
     () => (data.seeded ? buildSeededViewModel(data) : buildUnseededViewModel()),
     [data],
   );
-  // Indexed the same as STAGE_TITLES - what the mobile compact list renders
-  // for the currently active stage.
-  const stagePairs = [vm.r12, vm.qf, vm.sf, [vm.final]];
+  // Each mobile page's two rounds, indexed the same as MOBILE_PAGES.
+  const mobilePagePairs: [PairContent[], PairContent[]][] = [
+    [vm.r12, vm.qf],
+    [vm.sf, [vm.final]],
+  ];
+  const mobileColumnHeight = Math.max(
+    MOBILE_COLUMN_HEIGHT_FLOOR,
+    Math.max(...mobilePagePairs[mobileStage].map((pairs) => pairs.length)) * MOBILE_HEIGHT_PER_PAIR,
+  );
 
   const registerRef = (id: string) => (el: HTMLDivElement | null) => {
     nodeRefs.current[id] = el;
   };
+  // Real refs only for whichever tree actually matches the current
+  // viewport - see noopRegisterRef's own comment for why this matters.
+  const desktopRegisterRef = isDesktop === true ? registerRef : noopRegisterRef;
+  const mobileRegisterRef = isDesktop === false ? registerRef : noopRegisterRef;
 
   const toggleExpanded = (id: string) => {
     setExpandedId((current) => (current === id ? null : id));
@@ -538,7 +591,10 @@ export function CupBracket({ data }: { data: CupBracketData }) {
 
   useLayoutEffect(() => {
     function measure() {
-      const container = containerRef.current;
+      // Whichever tree currently holds the real refs (see the
+      // desktopRegisterRef/mobileRegisterRef split above) is the one whose
+      // coordinate space these paths need to be computed in.
+      const container = isDesktop ? containerRef.current : mobileContainerRef.current;
       if (!container) return;
       const containerRect = container.getBoundingClientRect();
 
@@ -596,14 +652,15 @@ export function CupBracket({ data }: { data: CupBracketData }) {
     }
 
     measure();
+    const target = isDesktop ? containerRef.current : mobileContainerRef.current;
     const observer = new ResizeObserver(measure);
-    if (containerRef.current) observer.observe(containerRef.current);
+    if (target) observer.observe(target);
     window.addEventListener("resize", measure);
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [vm]);
+  }, [vm, isDesktop, mobileStage]);
 
   return (
     <div className="min-w-0 rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] px-4 sm:px-6 pt-2 md:pt-3 pb-3 sm:pb-6">
@@ -619,52 +676,84 @@ export function CupBracket({ data }: { data: CupBracketData }) {
           alongside), so mobile trims to pt-2/pb-3 instead, part of keeping
           the compact mobile list short enough to need no scroll of its
           own. */}
-      {/* Mobile-only pager - unlike the desktop tree, this shows one
-          round's cards at a time, packed to their natural height instead
-          of spread across COLUMN_HEIGHT's fixed canvas (that height only
-          exists to keep connector endpoints aligned across columns, which
-          doesn't apply here since only one round is ever on screen). That's
-          what keeps this compact enough to need no vertical scroll of its
-          own on a real phone screen. */}
+      {/* Mobile pager - two rounds per page (see MOBILE_PAGES), each
+          rendered through the exact same Column/connector-SVG machinery
+          desktop uses, just at mobileColumnHeight (sized to this page's own
+          tallest column, not desktop's fixed COLUMN_HEIGHT) and gap-4
+          instead of gap-8 - real bracket connectors, not a plain list,
+          because both rounds on a page are simultaneously mounted with
+          real refs (mobileRegisterRef). */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between gap-3 mb-2">
+        <div className="flex items-center justify-between gap-3 mb-3">
           <button
             type="button"
-            onClick={() => setActiveStage((s) => Math.max(0, s - 1))}
-            disabled={activeStage === 0}
-            aria-label="Previous stage"
+            onClick={() => setMobileStage((s) => Math.max(0, s - 1))}
+            disabled={mobileStage === 0}
+            aria-label="Previous stages"
             className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
           >
             <ChevronIcon direction="left" />
           </button>
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            {STAGE_TITLES[activeStage]}
-          </p>
+          <div className="flex items-center gap-1.5" aria-hidden="true">
+            {MOBILE_PAGES.map((page, i) => (
+              <span
+                key={page.titles.join("-")}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === mobileStage ? "w-4 bg-zinc-900 dark:bg-white" : "w-1.5 bg-black/[0.12] dark:bg-white/[0.15]"
+                }`}
+              />
+            ))}
+          </div>
           <button
             type="button"
-            onClick={() => setActiveStage((s) => Math.min(STAGE_TITLES.length - 1, s + 1))}
-            disabled={activeStage === STAGE_TITLES.length - 1}
-            aria-label="Next stage"
+            onClick={() => setMobileStage((s) => Math.min(MOBILE_PAGES.length - 1, s + 1))}
+            disabled={mobileStage === MOBILE_PAGES.length - 1}
+            aria-label="Next stages"
             className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
           >
             <ChevronIcon direction="right" />
           </button>
         </div>
-        <div className="flex flex-col gap-2">
-          {stagePairs[activeStage].map((pair) => (
-            <MatchCard
-              key={pair.id}
-              id={pair.id}
-              tiles={pair.tiles}
-              topLabel={pair.topLabel}
-              live={pair.live}
-              detail={pair.detail}
-              expanded={expandedId === pair.id}
-              onToggle={() => toggleExpanded(pair.id)}
-              registerRef={noopRegisterRef}
-              panelAlign="center"
+        <div ref={mobileContainerRef} className="relative">
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
+            <defs>
+              <linearGradient id="cup-connector-mobile" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#00ff85" />
+                <stop offset="100%" stopColor="#04f5ff" />
+              </linearGradient>
+            </defs>
+            {paths.map((p) => (
+              <path
+                key={p.id}
+                d={p.d}
+                fill="none"
+                stroke={p.advanced ? "url(#cup-connector-mobile)" : "#71717a"}
+                strokeWidth={2}
+                strokeOpacity={p.advanced ? 1 : 0.6}
+                strokeLinecap="butt"
+              />
+            ))}
+          </svg>
+          <div className="relative flex justify-between gap-4">
+            <Column
+              title={MOBILE_PAGES[mobileStage].titles[0]}
+              pairs={mobilePagePairs[mobileStage][0]}
+              expandedId={expandedId}
+              onToggle={toggleExpanded}
+              registerRef={mobileRegisterRef}
+              panelAlign="left"
+              height={mobileColumnHeight}
             />
-          ))}
+            <Column
+              title={MOBILE_PAGES[mobileStage].titles[1]}
+              pairs={mobilePagePairs[mobileStage][1]}
+              expandedId={expandedId}
+              onToggle={toggleExpanded}
+              registerRef={mobileRegisterRef}
+              panelAlign="right"
+              height={mobileColumnHeight}
+            />
+          </div>
         </div>
       </div>
       <div className="hidden md:block overflow-x-auto">
@@ -704,7 +793,7 @@ export function CupBracket({ data }: { data: CupBracketData }) {
               pairs={vm.r12}
               expandedId={expandedId}
               onToggle={toggleExpanded}
-              registerRef={registerRef}
+              registerRef={desktopRegisterRef}
               panelAlign="left"
             />
             <Column
@@ -712,7 +801,7 @@ export function CupBracket({ data }: { data: CupBracketData }) {
               pairs={vm.qf}
               expandedId={expandedId}
               onToggle={toggleExpanded}
-              registerRef={registerRef}
+              registerRef={desktopRegisterRef}
               panelAlign="center"
             />
             <Column
@@ -720,7 +809,7 @@ export function CupBracket({ data }: { data: CupBracketData }) {
               pairs={vm.sf}
               expandedId={expandedId}
               onToggle={toggleExpanded}
-              registerRef={registerRef}
+              registerRef={desktopRegisterRef}
               panelAlign="center"
             />
             <Column
@@ -728,7 +817,7 @@ export function CupBracket({ data }: { data: CupBracketData }) {
               pairs={[vm.final]}
               expandedId={expandedId}
               onToggle={toggleExpanded}
-              registerRef={registerRef}
+              registerRef={desktopRegisterRef}
               panelAlign="right"
             />
           </div>
