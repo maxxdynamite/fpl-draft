@@ -627,9 +627,12 @@ function MobileBracketPair({
   );
 }
 
-// Mobile pager: three whole-stage window positions (0 = R12+QF, 1 = QF+SF,
-// 2 = SF+Final). Desktop ignores this entirely (free scroll over all four
-// columns at once, below).
+// Mobile: three whole-stage window pages (0 = R12+QF, 1 = QF+SF, 2 =
+// SF+Final), swiped between directly (native touch scrolling + CSS scroll-
+// snap - not a custom drag handler) with the arrows/dots below as an
+// alternative, non-touch way to move between the same pages. Desktop
+// ignores all of this entirely (free scroll over all four columns at
+// once, below).
 const TOTAL_STAGES = 4;
 const MOBILE_WINDOW_COUNT = TOTAL_STAGES - 1; // 3 adjacent-round pairs
 
@@ -656,10 +659,40 @@ export function CupBracket({ data }: { data: CupBracketData }) {
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [paths, setPaths] = useState<{ id: string; d: string; advanced: boolean }[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  // Mobile-only: which adjacent-round pair is showing right now (0 =
-  // R12+QF, 1 = QF+SF, 2 = SF+Final). Desktop ignores this and shows all
-  // four via free scroll instead.
+  // Mobile-only: which adjacent-round pair is currently snapped into view
+  // (0 = R12+QF, 1 = QF+SF, 2 = SF+Final) - kept in sync with the real
+  // scroll position (handleMobileScroll) so it reflects a manual swipe
+  // just as well as an arrow tap, and drives the dots/arrow disabled
+  // state either way. Desktop ignores this and shows all four via free
+  // scroll instead.
   const [mobileWindowStart, setMobileWindowStart] = useState(0);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const mobilePageRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // Explicit height on the scroll container itself, tracking whichever
+  // page is currently in view (see effect below) - without this, a flex
+  // row's height defaults to its tallest child (Round of 12 + QF, by far
+  // the most crowded page), leaving a block of dead space under every
+  // shorter page (QF+SF, SF+Final) the whole time it's in view instead of
+  // just while it's off-screen mid-swipe.
+  const [mobileCarouselHeight, setMobileCarouselHeight] = useState<number | null>(null);
+
+  const scrollToMobilePage = (index: number) => {
+    const clamped = Math.max(0, Math.min(MOBILE_WINDOW_COUNT - 1, index));
+    mobilePageRefs.current[clamped]?.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+  };
+
+  // Fires continuously while swiping (native touch scroll) and during an
+  // arrow tap's smooth scrollIntoView alike - both just move scrollLeft,
+  // so one handler covers both input methods. clientWidth is a live
+  // measurement of the actual rendered page width, not the w-[332px]
+  // literal - correct even if that literal and the real viewport ever
+  // drift apart.
+  const handleMobileScroll = () => {
+    const el = mobileScrollRef.current;
+    if (!el || el.clientWidth === 0) return;
+    const index = Math.round(el.scrollLeft / el.clientWidth);
+    setMobileWindowStart((current) => (current === index ? current : index));
+  };
 
   const vm = useMemo(
     () => (data.seeded ? buildSeededViewModel(data) : buildUnseededViewModel()),
@@ -672,6 +705,24 @@ export function CupBracket({ data }: { data: CupBracketData }) {
     { title: "Semi-Final", pairs: vm.sf },
     { title: "Final", pairs: [vm.final] },
   ];
+
+  // Re-measures the current page's real height (not a guess) whenever
+  // which page is showing changes, and again if that page's own content
+  // reflows (ResizeObserver). scrollHeight, not offsetHeight - a detail
+  // panel is an absolutely-positioned descendant, so it never grows its
+  // MatchCard's own static-flow box; scrollHeight is what actually
+  // captures that overflow once one's open. ResizeObserver alone won't
+  // catch that open/close, though - it fires on the page element's own
+  // content-box, which an absolutely-positioned child never changes -
+  // hence expandedId as an explicit dependency below.
+  useLayoutEffect(() => {
+    const page = mobilePageRefs.current[mobileWindowStart];
+    if (!page) return;
+    setMobileCarouselHeight(page.scrollHeight);
+    const observer = new ResizeObserver(() => setMobileCarouselHeight(page.scrollHeight));
+    observer.observe(page);
+    return () => observer.disconnect();
+  }, [mobileWindowStart, vm, expandedId]);
 
   const registerRef = (id: string) => (el: HTMLDivElement | null) => {
     nodeRefs.current[id] = el;
@@ -764,15 +815,15 @@ export function CupBracket({ data }: { data: CupBracketData }) {
           alongside), so mobile trims to pt-2/pb-3 instead, part of keeping
           the compact mobile list short enough to need no scroll of its
           own. */}
-      {/* Mobile-only: arrow pager + the two-round grid (MobileBracketPair) -
-          a completely separate layout from desktop's tree below, not a
-          clipped/scrolled view of it (no connectors to draw, no shared
-          refs needed). */}
+      {/* Mobile-only: swipeable carousel of the same two-round grid
+          (MobileBracketPair) - a completely separate layout from
+          desktop's tree below, not a clipped/scrolled view of it (no
+          connectors to draw, no shared refs needed). */}
       <div className="md:hidden">
         <div className="flex items-center justify-between gap-3 mb-3">
           <button
             type="button"
-            onClick={() => setMobileWindowStart((s) => Math.max(0, s - 1))}
+            onClick={() => scrollToMobilePage(mobileWindowStart - 1)}
             disabled={mobileWindowStart === 0}
             aria-label="Previous stage"
             className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
@@ -791,7 +842,7 @@ export function CupBracket({ data }: { data: CupBracketData }) {
           </div>
           <button
             type="button"
-            onClick={() => setMobileWindowStart((s) => Math.min(MOBILE_WINDOW_COUNT - 1, s + 1))}
+            onClick={() => scrollToMobilePage(mobileWindowStart + 1)}
             disabled={mobileWindowStart === MOBILE_WINDOW_COUNT - 1}
             aria-label="Next stage"
             className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 disabled:opacity-30"
@@ -799,17 +850,45 @@ export function CupBracket({ data }: { data: CupBracketData }) {
             <ChevronIcon direction="right" />
           </button>
         </div>
-        <MobileBracketPair
-          fromRound={allRounds[mobileWindowStart]}
-          toRound={allRounds[mobileWindowStart + 1]}
-          expandedId={expandedId}
-          onToggle={toggleExpanded}
-          // Round of 12 specifically - 6 pairs is the most crowded round
-          // by far, so this is the one deliberate exception to every tile
-          // otherwise sharing one constant height. Only ever the "from"
-          // side (window position 0), never "to".
-          fromTilePaddingYClassName={mobileWindowStart === 0 ? "py-2" : "py-3"}
-        />
+        {/* snap-x + snap-start on each w-[332px] page (exactly matching
+            the scroll viewport's own w-[332px]) means one full swipe
+            lands exactly one page over, no partial/mid-page rest position
+            possible. no-scrollbar (globals.css) hides the native
+            scrollbar track without disabling touch scrolling itself. */}
+        <div
+          ref={mobileScrollRef}
+          onScroll={handleMobileScroll}
+          // items-start, not the flex default (stretch) - stretch would
+          // force every page to match the container's own explicit
+          // height, which is itself read FROM a page's height below -
+          // that circular dependency is what silently pinned every page
+          // at whichever height got set first, no matter which page was
+          // actually current.
+          className="flex items-start overflow-x-auto snap-x snap-mandatory no-scrollbar w-[332px] transition-[height] duration-300 ease-out"
+          style={mobileCarouselHeight !== null ? { height: mobileCarouselHeight } : undefined}
+        >
+          {allRounds.slice(0, MOBILE_WINDOW_COUNT).map((fromRound, i) => (
+            <div
+              key={fromRound.title}
+              ref={(el) => {
+                mobilePageRefs.current[i] = el;
+              }}
+              className="w-[332px] shrink-0 snap-start"
+            >
+              <MobileBracketPair
+                fromRound={fromRound}
+                toRound={allRounds[i + 1]}
+                expandedId={expandedId}
+                onToggle={toggleExpanded}
+                // Round of 12 specifically - 6 pairs is the most crowded
+                // round by far, so this is the one deliberate exception
+                // to every tile otherwise sharing one constant height.
+                // Only ever the "from" side (page 0), never "to".
+                fromTilePaddingYClassName={i === 0 ? "py-2" : "py-3"}
+              />
+            </div>
+          ))}
+        </div>
       </div>
       {/* Desktop-only: the full four-column tree, freely scrollable, with
           drawn connectors - unchanged from before this round of mobile
