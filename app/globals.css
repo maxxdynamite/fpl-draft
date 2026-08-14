@@ -112,6 +112,18 @@ body {
   animation: cup-live-pulse 1.8s ease-in-out infinite;
 }
 
+/* Same pulse timing/shape as pulse-glow/cup-live-pulse above, just red -
+   the Blackjack "on the edge" pill (sitting exactly on 21 with games
+   still to play, zero buffer before a bust) is deliberately the most
+   visually aggressive state in the game. See BlackjackParticipantCard. */
+@keyframes blackjack-edge-pulse {
+  0%, 100% { box-shadow: 0 0 8px 2px rgba(239, 68, 68, 0.5); }
+  50% { box-shadow: 0 0 18px 6px rgba(239, 68, 68, 0.95); }
+}
+.blackjack-edge-pulse {
+  animation: blackjack-edge-pulse 1.2s ease-in-out infinite;
+}
+
 /* Cup bracket champion cell - same shimmer-sweep keyframe/base as
    blackjack-shimmer above, reused on the bracket's own gradient-filled
    winner tile. See components/CupBracket.tsx. */
@@ -131,7 +143,8 @@ body {
   .streak-t3-shimmer::after,
   .blackjack-shimmer::after,
   .cup-live,
-  .cup-champion-shimmer::after {
+  .cup-champion-shimmer::after,
+  .blackjack-edge-pulse {
     animation: none;
   }
 }

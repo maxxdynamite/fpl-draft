@@ -2,6 +2,7 @@ import { BlackjackLeaderboard } from "@/components/BlackjackLeaderboard";
 import { BlackjackParticipantCard } from "@/components/BlackjackParticipantCard";
 import {
   computeStatus,
+  TOTAL_GAMEWEEKS,
   type BlackjackParticipant,
 } from "@/lib/blackjack";
 import type { Player } from "@/lib/players";
@@ -15,7 +16,12 @@ import type { Player } from "@/lib/players";
 
 // Mid-season gameweek so every pace band (at-risk/over-target/on-target/
 // under-target/miles-off) is actually reachable - pre-season everything
-// would trivially read "over target".
+// would trivially read "over target". The terminal/edge-of-season states
+// (blackjack, fell-short) aren't reachable here though - totalGoals===21
+// at this gameweek reads as "edge", not "blackjack", and totalGoals<21
+// reads as a pace band, not "fell-short" - those scenarios pass their own
+// gameweek: TOTAL_GAMEWEEKS override instead. Same for "early-days",
+// which needs a gameweek inside the grace period.
 const PREVIEW_GAMEWEEK = 15;
 
 function player(
@@ -83,19 +89,75 @@ const scenarios: BlackjackParticipant[] = [
     player(55, "Watkins", "AVL", 2, "FWD", 178301, 2),
   ]),
 
-  buildParticipant(3, "Blackjack — real win", "21 goals, all 4 scored", [
+  // gameweek: TOTAL_GAMEWEEKS - 21 goals, all scored, only reads as the
+  // real final "blackjack" win once the season is actually over. At the
+  // default mid-season PREVIEW_GAMEWEEK the exact same picks read as
+  // "edge" instead (see scenario 13 below).
+  buildParticipant(
+    3,
+    "Blackjack — real win",
+    "21 goals, all 4 scored, season over",
+    [
+      player(165, "João Pedro", "CHE", 6, "FWD", 475168, 9),
+      player(480, "Gibbs-White", "NFO", 18, "MID", 222531, 6),
+      player(25, "Gyökeres", "ARS", 1, "FWD", 224117, 4),
+      player(346, "Calvert-Lewin", "LEE", 13, "FWD", 177815, 2),
+    ],
+    TOTAL_GAMEWEEKS,
+  ),
+
+  // 21 goals with one pick still on 0 is a dead end regardless of
+  // gameweek (see computeStatus) - reads as "bust" here at GW15 already,
+  // not just once the season ends. That's also what excludes it from
+  // Blackjack pot eligibility (lib/money.ts, app/money/page.tsx both key
+  // off status !== "bust").
+  buildParticipant(4, "21, unqualified — reads as Bust", "Hit the number, one pick on 0", [
+    player(78, "Kroupi.Jr", "BOU", 3, "MID", 560262, 10),
+    player(136, "Welbeck", "CHE", 6, "FWD", 50175, 7),
+    player(223, "Mateta", "CRY", 8, "FWD", 231747, 4),
+    player(3, "Meslier", "ARS", 1, "GKP", 437495, 0),
+  ]),
+
+  // Same picks as scenario 3, but at the default mid-season gameweek -
+  // sitting exactly on 21 with games still to play, zero buffer before a
+  // bust. The tensest state in the game (see computeStatus's "edge" case).
+  buildParticipant(13, "On the edge", "21 goals, all 4 scored, season not over", [
     player(165, "João Pedro", "CHE", 6, "FWD", 475168, 9),
     player(480, "Gibbs-White", "NFO", 18, "MID", 222531, 6),
     player(25, "Gyökeres", "ARS", 1, "FWD", 224117, 4),
     player(346, "Calvert-Lewin", "LEE", 13, "FWD", 177815, 2),
   ]),
 
-  buildParticipant(4, "21 but NOT qualified", "Hit the number, one pick on 0", [
-    player(78, "Kroupi.Jr", "BOU", 3, "MID", 560262, 10),
-    player(136, "Welbeck", "CHE", 6, "FWD", 50175, 7),
-    player(223, "Mateta", "CRY", 8, "FWD", 231747, 4),
-    player(3, "Meslier", "ARS", 1, "GKP", 437495, 0),
-  ]),
+  // gameweek: TOTAL_GAMEWEEKS - season over, never reached 21. A final
+  // result, not a pace band to keep chasing.
+  buildParticipant(
+    14,
+    "Fell short",
+    "18 goals, season over",
+    [
+      player(428, "Cunha", "MUN", 16, "MID", 430871, 6),
+      player(208, "Sarr", "CRY", 8, "MID", 232185, 5),
+      player(248, "Beto", "EVE", 9, "FWD", 486385, 4),
+      player(426, "B.Fernandes", "MUN", 16, "MID", 141746, 3),
+    ],
+    TOTAL_GAMEWEEKS,
+  ),
+
+  // gameweek: 2 - inside the grace period (GW1-3), too little of the
+  // season played for the pace ladder to mean anything yet. Reads as
+  // "early-days" regardless of totalGoals, not a noisy pace band.
+  buildParticipant(
+    15,
+    "Early days",
+    "1 goal, gameweek 2 - too soon to read pace",
+    [
+      player(25, "Gyökeres", "ARS", 1, "FWD", 224117, 1),
+      player(12, "Saka", "ARS", 1, "MID", 223340, 0),
+      player(14, "Eze", "ARS", 1, "MID", 232413, 0),
+      player(455, "Gabriel", "ARS", 1, "DEF", 172780, 0),
+    ],
+    2,
+  ),
 
   // 14 goals against an ~8.3 expected pace at GW15 is > pace+4, i.e. "At
   // Risk" (too fast a pace risks overshooting past 21).
@@ -155,7 +217,9 @@ export default function BlackjackPreviewPage() {
     <div>
       <p className="text-sm text-zinc-400 dark:text-zinc-500 -mt-2 mb-5">
         Style preview: every status combination with real player photos, at
-        gameweek {PREVIEW_GAMEWEEK} of 38. Not linked from the real app.
+        gameweek {PREVIEW_GAMEWEEK} of {TOTAL_GAMEWEEKS} unless a scenario
+        overrides it (pre-season, early-days, and end-of-season states need
+        their own gameweek to be reachable). Not linked from the real app.
       </p>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 items-start">
         <div className="grid gap-4 sm:grid-cols-2">

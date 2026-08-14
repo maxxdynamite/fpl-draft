@@ -40,7 +40,10 @@ export function BlackjackParticipantCard({
             // Solid black fill, not the neutral wrapper every other status
             // uses - a distinct "this hand is dead" treatment. Dot is white
             // (not a colour from STATUS_META) so it reads against the
-            // black fill instead of disappearing into it.
+            // black fill instead of disappearing into it. Two triggers
+            // land here: totalGoals > 21, and totalGoals === 21 without
+            // every pick having scored (see computeStatus) - both are
+            // dead ends, so both get the same "hand is over" treatment.
             <span className="inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-black text-white">
               <span className="h-1.5 w-1.5 rounded-full bg-white" />
               {meta.label}
@@ -52,6 +55,17 @@ export function BlackjackParticipantCard({
             // mode, where a plain white-on-white pill would vanish.
             <span className="inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-white text-black ring-1 ring-zinc-200 dark:ring-zinc-700">
               <span className="h-1.5 w-1.5 rounded-full bg-black" />
+              {meta.label}
+            </span>
+          ) : participant.status === "edge" ? (
+            // Sitting exactly on 21 with games still to play - the
+            // tensest state in the game (zero buffer, the very next goal
+            // from anyone busts it). Inverts At Risk's red-text-on-neutral
+            // pill into a solid red fill with a pulsing glow - the same
+            // loud, fixed-colour treatment Blackjack/Bust above get,
+            // rather than the plain dot+text every other pace tier uses.
+            <span className="blackjack-edge-pulse inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-600 text-white">
+              <span className="h-1.5 w-1.5 rounded-full bg-white" />
               {meta.label}
             </span>
           ) : (

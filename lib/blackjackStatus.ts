@@ -16,6 +16,15 @@ export const STATUS_META: Record<
     dotClass: "bg-white",
     textClass: "text-zinc-900 dark:text-white",
   },
+  // GW1-3, picks in but too little of the season played for the pace
+  // ladder to mean anything yet (see GRACE_PERIOD_GAMEWEEKS in
+  // lib/blackjack.ts). Deliberately the same green as "on-target" below -
+  // this isn't a warning, it's "you're fine, just too early to call".
+  "early-days": {
+    label: "Early Days",
+    dotClass: "bg-green-500",
+    textClass: "text-green-600 dark:text-green-400",
+  },
   // True black, not near-black - low contrast on dark cards is an accepted
   // trade-off rather than a bug to fix.
   bust: {
@@ -23,10 +32,29 @@ export const STATUS_META: Record<
     dotClass: "bg-black",
     textClass: "text-black",
   },
+  // Tile gets a fully custom pulsing red pill (see BlackjackParticipantCard)
+  // - this entry is really only consumed by the leaderboard's dot marker,
+  // same as bust/blackjack/selected above.
+  edge: {
+    label: "On The Edge",
+    dotClass: "bg-red-600",
+    textClass: "text-white",
+  },
   blackjack: {
     label: "Blackjack",
     dotClass: "bg-gradient-to-br from-[#00ff85] to-[#04f5ff]",
     textClass: "text-[#00b368] dark:text-[#00ff85]",
+  },
+  // Season over, never reached 21 - a final result, not a "keep chasing"
+  // pace read. One shade more saturated than "no-picks" above (a
+  // submitted, played-out season should read as more "real" than never
+  // having picked at all) but deliberately not bust's punitive black -
+  // finishing short isn't disqualifying the way busting or missing
+  // qualification is.
+  "fell-short": {
+    label: "Fell Short",
+    dotClass: "bg-zinc-400 dark:bg-zinc-500",
+    textClass: "text-zinc-500 dark:text-zinc-400",
   },
   "at-risk": {
     label: "At Risk",
