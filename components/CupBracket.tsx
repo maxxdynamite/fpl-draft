@@ -24,11 +24,12 @@ import type { CupBracketData, CupMatch, CupSlot } from "@/lib/cupBracket";
 // path segment between two adjacent same-content boxes) and let the
 // gradient border overlap itself at the seam.
 //
-// Pre-season, the pairing's *other* slot has nothing real to show (no
-// seed plays into it) - rather than leaving it blank, it's given a "Bye"
-// tile of its own, brand-gradient text (buildUnseededViewModel). Once
-// seeded, that same slot holds a genuine value instead ("Winner 8v9",
-// then a real team once decided) - there's no free cell left to redirect,
+// Pre-season, "Bye" sits right-aligned in that same tile (rightLabel, the
+// same slot a score would occupy), brand-gradient text, rather than a
+// separate cell or a topLabel floating above the row - the pairing's
+// other slot stays genuinely blank, since nothing plays into it. Once
+// seeded, that other slot holds a real value instead ("Winner 8v9", then
+// a real team once decided) - there's nowhere left to put a rightLabel,
 // so the live view keeps the small "Bye" topLabel above the row instead.
 //
 // Connectors are straight right-angle lines, full-brightness gradient once
@@ -99,11 +100,11 @@ const FLAT_THRESHOLD = 20;
 type TileContent = {
   label: string;
   score: number | null;
-  // "bye" is its own emphasis, not just a neutral tile with a topLabel
-  // above it - see buildUnseededViewModel for why: it's the pair's other,
-  // otherwise-blank slot, given real (if non-competitive) content instead
-  // of empty space.
-  emphasis: "neutral" | "winner" | "loser" | "champion" | "bye";
+  // Right-aligned status word, e.g. "Bye" - distinct from score (always
+  // numeric, tabular) and rendered in the brand gradient. Same slot a
+  // score would occupy, but never both at once in practice.
+  rightLabel?: string | null;
+  emphasis: "neutral" | "winner" | "loser" | "champion";
   gradient: boolean;
 };
 
@@ -181,19 +182,16 @@ function buildUnseededViewModel(): ViewModel {
     detail: null,
   });
 
-  const byeTile = (): TileContent => ({ label: "Bye", score: null, emphasis: "bye", gradient: false });
-
   const qf = UNSEEDED_QF_IDS.map(blankPair);
   // Seed 1's bye lives directly in qf1's own first slot, seed 2's in
-  // qf3's - the pair's other slot (otherwise just blank, since nothing
-  // plays into it) is given the "Bye" tile itself rather than a topLabel
-  // floating above the row.
+  // qf3's - "Bye" itself sits right-aligned in that same tile (rightLabel),
+  // the same slot a score would occupy, rather than a separate cell or a
+  // topLabel floating above the row. The pair's other slot stays blank -
+  // nothing plays into it.
   const qf1 = qf.find((p) => p.id === "qf1")!;
-  qf1.tiles[0] = seedTile("1");
-  qf1.tiles[1] = byeTile();
+  qf1.tiles[0] = { ...seedTile("1"), rightLabel: "Bye" };
   const qf3 = qf.find((p) => p.id === "qf3")!;
-  qf3.tiles[0] = seedTile("2");
-  qf3.tiles[1] = byeTile();
+  qf3.tiles[0] = { ...seedTile("2"), rightLabel: "Bye" };
 
   const sf = UNSEEDED_SF_IDS.map(blankPair);
   const final = blankPair("final");
@@ -332,19 +330,13 @@ function Tile({
   const innerClass = isChampion
     ? "bg-gradient-to-br from-[#00ff85] to-[#04f5ff] cup-champion-shimmer"
     : "bg-white dark:bg-zinc-900";
-  // Same brand gradient as the champion cell and the "Weekly" wordmark
-  // (bg-clip-text, not a filled cell) - direction is left-to-right here
-  // rather than champion's br, matching the horizontal wordmark it's
-  // echoing rather than the diagonal fill.
   const textClass = isChampion
     ? "text-[#04211a]"
-    : content.emphasis === "bye"
-      ? "bg-gradient-to-r from-[#00ff85] to-[#04f5ff] bg-clip-text text-transparent"
-      : content.emphasis === "winner"
-        ? "text-zinc-900 dark:text-white"
-        : content.emphasis === "loser"
-          ? "text-zinc-900 dark:text-white opacity-45"
-          : "text-zinc-700 dark:text-zinc-300";
+    : content.emphasis === "winner"
+      ? "text-zinc-900 dark:text-white"
+      : content.emphasis === "loser"
+        ? "text-zinc-900 dark:text-white opacity-45"
+        : "text-zinc-700 dark:text-zinc-300";
   return (
     <div
       ref={registerRef}
@@ -359,6 +351,16 @@ function Tile({
         >
           <span className="truncate flex-1">{content.label}</span>
           {content.score !== null && <span className="tabular-nums shrink-0">{content.score}</span>}
+          {/* shrink-0, not flex-1 like the label - bg-clip-text needs a
+              box sized to the text itself, not stretched to fill the
+              row, or the gradient spans mostly-empty space and the
+              glyphs only ever land on its "from" end (reads as flat
+              green, not a gradient at all). */}
+          {content.rightLabel != null && (
+            <span className="shrink-0 bg-gradient-to-r from-[#00ff85] to-[#04f5ff] bg-clip-text text-transparent">
+              {content.rightLabel}
+            </span>
+          )}
         </div>
       </div>
     </div>
