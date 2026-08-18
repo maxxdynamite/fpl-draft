@@ -8,6 +8,13 @@ export type LiveGwEntry = {
 export type LiveGameweek = {
   eventNumber: number;
   finished: boolean;
+  // Every fixture in this gameweek has been played to full-time, but FPL's
+  // official lockdown (`finished` above) hasn't happened yet - bonus points
+  // and defensive contribution points can still move. Distinct from
+  // `finished` per-fixture too: FPL's own fixtures API tracks
+  // finished_provisional (full-time) separately from finished (checked and
+  // locked), which is exactly this gap.
+  allMatchesPlayed: boolean;
   entries: LiveGwEntry[];
 };
 
@@ -28,7 +35,12 @@ export async function getLiveGameweek(): Promise<LiveGameweek | null> {
   const eventNumber: number | null = game.current_event ?? null;
   if (!eventNumber) return null; // pre-season / between gameweeks - not an error
 
-  const details = await getLeagueDetails(60);
+  const [details, fixturesRes] = await Promise.all([
+    getLeagueDetails(60),
+    fetch(`https://fantasy.premierleague.com/api/fixtures/?event=${eventNumber}`, {
+      next: { revalidate: 60 },
+    }),
+  ]);
   const entryIdByLeagueEntry = new Map(
     details.leagueEntries.map((le) => [le.id, le.entryId]),
   );
@@ -41,9 +53,16 @@ export async function getLiveGameweek(): Promise<LiveGameweek | null> {
     })
     .filter((e): e is LiveGwEntry => e !== null);
 
+  const fixtures: Array<{ finished_provisional: boolean }> = fixturesRes.ok
+    ? await fixturesRes.json()
+    : [];
+  const allMatchesPlayed =
+    fixtures.length > 0 && fixtures.every((f) => f.finished_provisional);
+
   return {
     eventNumber,
     finished: Boolean(game.current_event_finished),
+    allMatchesPlayed,
     entries,
   };
 }

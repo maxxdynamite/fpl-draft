@@ -22,8 +22,18 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
     liveGameweek !== null &&
     (gameweek === null || liveGameweek.eventNumber >= gameweek.number);
   const gameweekNumber = useLive ? liveGameweek!.eventNumber : (gameweek?.number ?? 1);
-  const gameweekFinished = useLive ? liveGameweek!.finished : gameweek?.finished;
   const showStatus = useLive || gameweek !== null;
+  // Sheet-only path only ever reaches this branch for an already-finished,
+  // synced gameweek (see syncCurrentGameweek's finished-only guard), so
+  // "Provisional" - the gap between full-time and FPL's official lockdown -
+  // only ever applies while reading the live feed.
+  const status = !showStatus
+    ? null
+    : !useLive || liveGameweek!.finished
+      ? "Complete"
+      : liveGameweek!.allMatchesPlayed
+        ? "Provisional"
+        : "Live";
 
   return (
     <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-4 sm:pb-6">
@@ -39,9 +49,9 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
               Gameweek {gameweekNumber}
             </h1>
-            {showStatus && (
+            {status && (
               <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">
-                {gameweekFinished ? "Complete" : "Live"}
+                {status}
               </span>
             )}
           </div>
