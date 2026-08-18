@@ -193,6 +193,12 @@ function dryRunPrompt() {
 
 // One-click setup for the daily automatic pull — safe to re-run, clears
 // any previous trigger for this function first so it never stacks duplicates.
+// Timed for just after FPL's gameweek lockdown (09:00 UK, as of the rule
+// change extending it from "1hr after full time") so the daily pull reliably
+// lands on finalised bonus points/defensive contribution data instead of
+// provisional numbers. Apps Script triggers aren't exact-to-the-minute
+// though - nearMinute just biases it close to :05, actual fire time can
+// land within roughly a 15min window either side.
 function installDailyTrigger() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'syncCurrentGameweek') {
@@ -202,9 +208,10 @@ function installDailyTrigger() {
   ScriptApp.newTrigger('syncCurrentGameweek')
     .timeBased()
     .everyDays(1)
-    .atHour(7)
+    .atHour(9)
+    .nearMinute(5)
     .create();
-  SpreadsheetApp.getUi().alert('Daily automatic sync installed — will run once a day around 7am.');
+  SpreadsheetApp.getUi().alert('Daily automatic sync installed — will run once a day around 9:05am.');
 }
 
 // Makes the sheet readable via link (view-only) so the web app can pull
