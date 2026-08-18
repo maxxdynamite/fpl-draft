@@ -1,19 +1,29 @@
 import { DraftSubNav } from "@/components/DraftSubNav";
 import { DraftCountdown } from "@/components/DraftCountdown";
 import { getCurrentGameweek } from "@/lib/gameweek";
+import { getLiveGameweek } from "@/lib/liveGwScores";
 import { getDraftSchedule } from "@/lib/leagueInfo";
 
 export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
-  const [gameweek, { draftDt, draftStatus }] = await Promise.all([
+  const [gameweek, liveGameweek, { draftDt, draftStatus }] = await Promise.all([
     getCurrentGameweek(),
+    getLiveGameweek(),
     getDraftSchedule(),
   ]);
-  // Pre-season, GW_Scores has no rows yet (nothing's been synced), so
-  // getCurrentGameweek() returns null - default to Gameweek 1 rather than
-  // hiding the heading entirely. No status pill in that case: we don't
-  // have real finished/in-progress data to show, and guessing would be
-  // misleading before a ball's even been kicked.
-  const gameweekNumber = gameweek?.number ?? 1;
+  // getCurrentGameweek() only ever reports a gameweek once it's finished
+  // and synced to the sheet (syncCurrentGameweek skips writing live ones -
+  // H2H/streaks shouldn't reflect a result bonus points could still flip),
+  // so it lags a full gameweek behind reality while the next one's being
+  // played. The live feed fills that gap - preferred whenever it's
+  // reporting a gameweek at least as recent as the sheet's. Pre-season,
+  // both are null/absent - default to Gameweek 1 with no status pill
+  // rather than guessing before a ball's been kicked.
+  const useLive =
+    liveGameweek !== null &&
+    (gameweek === null || liveGameweek.eventNumber >= gameweek.number);
+  const gameweekNumber = useLive ? liveGameweek!.eventNumber : (gameweek?.number ?? 1);
+  const gameweekFinished = useLive ? liveGameweek!.finished : gameweek?.finished;
+  const showStatus = useLive || gameweek !== null;
 
   return (
     <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-4 sm:pb-6">
@@ -29,9 +39,9 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
               Gameweek {gameweekNumber}
             </h1>
-            {gameweek && (
+            {showStatus && (
               <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">
-                {gameweek.finished ? "Complete" : "In Progress"}
+                {gameweekFinished ? "Complete" : "Live"}
               </span>
             )}
           </div>
