@@ -85,6 +85,9 @@ function dryRun() {
 // rows in GW_Scores (updates existing rows for that gameweek in place,
 // inserts new ones for entries not yet present). Safe to run repeatedly
 // through a gameweek's spread-out fixtures — never creates duplicates.
+// Only writes once that gameweek is finished (locked by FPL) - H2H
+// streaks/history built on this sheet shouldn't reflect a result that
+// bonus points or defensive contribution points could still flip.
 function syncCurrentGameweek() {
   // League details carry both the score-relevant standings and each
   // manager's current team_name/manager_name, so fetch it once up front and
@@ -99,6 +102,13 @@ function syncCurrentGameweek() {
     throw new Error(
       'No gameweek is currently live yet (next_event: ' + game.next_event + ').' +
       ' Manager names were still synced: ' + nameResult.updated + ' updated.'
+    );
+  }
+
+  if (!game.current_event_finished) {
+    throw new Error(
+      'Gameweek ' + eventNumber + ' is still live, not finished yet - skipping score sync' +
+      ' until it locks. Manager names were still synced: ' + nameResult.updated + ' updated.'
     );
   }
 
