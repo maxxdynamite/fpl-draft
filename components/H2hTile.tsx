@@ -54,6 +54,7 @@ function StatRow({ label, value }: { label: string; value: string }) {
 
 function PlayerStatsMenu({
   align,
+  open,
   draftPosition,
   overallRank,
   totalPoints,
@@ -61,6 +62,7 @@ function PlayerStatsMenu({
   sotwCount,
 }: {
   align: "left" | "right";
+  open: boolean;
   draftPosition: number | null;
   overallRank: number | null;
   totalPoints: number | null;
@@ -69,7 +71,9 @@ function PlayerStatsMenu({
 }) {
   return (
     <div
-      className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} mt-1.5 z-30 w-44 rounded-lg bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.06] dark:ring-white/[0.1] p-2.5 text-xs opacity-0 invisible pointer-events-none transition-all duration-150 group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto`}
+      className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} mt-1.5 z-30 w-44 rounded-lg bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.06] dark:ring-white/[0.1] p-2.5 text-xs transition-all duration-150 group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto ${
+        open ? "opacity-100 visible pointer-events-auto" : "opacity-0 invisible pointer-events-none"
+      }`}
     >
       <StatRow label="Draft Order" value={draftPosition?.toString() ?? "TBD"} />
       <StatRow label="Overall Rank" value={overallRank?.toString() ?? "–"} />
@@ -103,18 +107,36 @@ function SideHeader({
   motwCount: number | null;
   sotwCount: number | null;
 }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Hover already opens this menu via CSS group-hover, which touch
+  // browsers don't reliably trigger on tap - this adds an explicit
+  // click/tap toggle on top, closed by tapping anywhere outside.
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(e: PointerEvent) {
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
   return (
     <div className={align === "right" ? "text-right" : "text-left"}>
-      <div className="group relative cursor-default">
-        <p
-          className={`font-bold text-sm leading-tight truncate transition-colors duration-300 ${
-            dark ? "text-[#04211a]" : "text-zinc-900 dark:text-white"
-          }`}
+      <div ref={containerRef} className="group relative cursor-default">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className={`block w-full appearance-none bg-transparent border-0 p-0 font-bold text-sm leading-tight truncate transition-colors duration-300 ${
+            align === "right" ? "text-right" : "text-left"
+          } ${dark ? "text-[#04211a]" : "text-zinc-900 dark:text-white"}`}
         >
           {managerName}
-        </p>
+        </button>
         <PlayerStatsMenu
           align={align}
+          open={open}
           draftPosition={draftPosition}
           overallRank={overallRank}
           totalPoints={totalPoints}
