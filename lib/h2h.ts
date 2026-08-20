@@ -2,6 +2,7 @@ import { getManagers } from "./managers";
 import { getStandings } from "./standings";
 import { getGwScores } from "./gwScores";
 import { getDraftOrder } from "./draftOrder";
+import { getPlayersData } from "./players";
 
 export type H2hSide = {
   entryId: number;
@@ -17,6 +18,9 @@ export type H2hSide = {
   motwCount: number | null;
   sotwCount: number | null;
   draftPosition: number | null;
+  // Set once at draft time and never changes after - shown in the H2H
+  // stats menu as a permanent record of round 1, not a live value.
+  firstPick: string | null;
 };
 
 export type GwHistoryRow = {
@@ -48,15 +52,17 @@ export type H2hMatchup = {
 // relationship once (lower entry_id first) rather than twice, and attaches
 // the full gameweek-by-gameweek score history between the two of them.
 export async function getH2hMatchups(): Promise<H2hMatchup[]> {
-  const [managers, standings, gwScores, draftOrder] = await Promise.all([
+  const [managers, standings, gwScores, draftOrder, { players }] = await Promise.all([
     getManagers(),
     getStandings(),
     getGwScores(),
     getDraftOrder(),
+    getPlayersData(),
   ]);
 
   const standingsByEntry = new Map(standings.map((s) => [s.entryId, s]));
   const managersByEntry = new Map(managers.map((m) => [m.entryId, m]));
+  const playerNameById = new Map(players.map((p) => [p.id, p.name]));
 
   const scoresByEntry = new Map<number, typeof gwScores>();
   for (const row of gwScores) {
@@ -70,6 +76,7 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
     const standing = standingsByEntry.get(entryId);
     const rows = scoresByEntry.get(entryId) ?? [];
     const latest = rows[rows.length - 1];
+    const draft = draftOrder.get(entryId);
 
     return {
       entryId,
@@ -84,7 +91,8 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
       totalPoints: standing?.totalPoints ?? null,
       motwCount: standing?.motwCount ?? null,
       sotwCount: standing?.sotwCount ?? null,
-      draftPosition: draftOrder.get(entryId) ?? null,
+      draftPosition: draft?.position ?? null,
+      firstPick: draft ? (playerNameById.get(draft.firstPickElementId) ?? null) : null,
     };
   }
 

@@ -56,6 +56,7 @@ function PlayerStatsMenu({
   align,
   open,
   draftPosition,
+  firstPick,
   overallRank,
   totalPoints,
   motwCount,
@@ -64,6 +65,7 @@ function PlayerStatsMenu({
   align: "left" | "right";
   open: boolean;
   draftPosition: number | null;
+  firstPick: string | null;
   overallRank: number | null;
   totalPoints: number | null;
   motwCount: number | null;
@@ -76,6 +78,7 @@ function PlayerStatsMenu({
       }`}
     >
       <StatRow label="Draft Order" value={draftPosition?.toString() ?? "TBD"} />
+      <StatRow label="First Pick" value={firstPick ?? "TBD"} />
       <StatRow label="Overall Rank" value={overallRank?.toString() ?? "–"} />
       <StatRow label="Total Points" value={totalPoints?.toString() ?? "–"} />
       <StatRow label="MOTW" value={motwCount?.toString() ?? "–"} />
@@ -91,6 +94,7 @@ function SideHeader({
   streak,
   dark,
   draftPosition,
+  firstPick,
   overallRank,
   totalPoints,
   motwCount,
@@ -102,6 +106,7 @@ function SideHeader({
   streak: number;
   dark: boolean;
   draftPosition: number | null;
+  firstPick: string | null;
   overallRank: number | null;
   totalPoints: number | null;
   motwCount: number | null;
@@ -138,6 +143,7 @@ function SideHeader({
           align={align}
           open={open}
           draftPosition={draftPosition}
+          firstPick={firstPick}
           overallRank={overallRank}
           totalPoints={totalPoints}
           motwCount={motwCount}
@@ -307,6 +313,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
             streak={teamA.streak}
             dark={showAllGameweeks}
             draftPosition={teamA.draftPosition}
+            firstPick={teamA.firstPick}
             overallRank={teamA.overallRank}
             totalPoints={teamA.totalPoints}
             motwCount={teamA.motwCount}
@@ -319,6 +326,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
             streak={teamB.streak}
             dark={showAllGameweeks}
             draftPosition={teamB.draftPosition}
+            firstPick={teamB.firstPick}
             overallRank={teamB.overallRank}
             totalPoints={teamB.totalPoints}
             motwCount={teamB.motwCount}
