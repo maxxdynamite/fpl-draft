@@ -43,7 +43,7 @@ function StreakBadge({ streak, hide }: { streak: number; hide: boolean }) {
 
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-1 first:pt-0 last:pb-0">
+    <div className="flex items-center justify-between gap-2 py-0.5 first:pt-0 last:pb-0">
       <span className="text-zinc-400 dark:text-zinc-500">{label}</span>
       <span className="font-semibold tabular-nums text-zinc-900 dark:text-white">
         {value}
@@ -73,7 +73,7 @@ function PlayerStatsMenu({
 }) {
   return (
     <div
-      className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} mt-1.5 z-30 w-44 rounded-lg bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.06] dark:ring-white/[0.1] p-2.5 text-xs transition-all duration-150 group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto ${
+      className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} mt-1.5 z-30 w-40 rounded-lg bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.06] dark:ring-white/[0.1] p-2 text-[11px] transition-all duration-150 group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto ${
         open ? "opacity-100 visible pointer-events-auto" : "opacity-0 invisible pointer-events-none"
       }`}
     >
