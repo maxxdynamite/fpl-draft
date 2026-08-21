@@ -50,15 +50,12 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
               Gameweek {gameweekNumber}
             </h1>
             {status && (
-              // Same size as the h1 and sharing its baseline (the parent's
-              // items-baseline already aligns them correctly on its own -
-              // an earlier version added a manual vertical offset here to
-              // push it "lower," which just knocked it off that baseline
-              // and looked broken instead). Medium weight, not regular -
-              // still enough contrast against the h1's bold to read as
-              // subordinate, but regular's thinner strokes made the two
-              // baselines look uneven even though they're pixel-identical.
-              <span className="text-2xl font-medium text-zinc-400 dark:text-zinc-500">
+              // Shares the h1's bold weight (matching stroke thickness -
+              // no more optical baseline-unevenness from a lighter weight
+              // next to bold) but a smaller size and muted colour for the
+              // hierarchy cue instead. Parent's items-baseline handles
+              // alignment on its own; no manual offset needed.
+              <span className="text-lg font-bold text-zinc-400 dark:text-zinc-500">
                 {status}
               </span>
             )}
