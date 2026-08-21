@@ -50,11 +50,13 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
               Gameweek {gameweekNumber}
             </h1>
             {status && (
-              // Same size as the h1, but regular weight + muted colour +
-              // a slight downward nudge off the shared baseline - reads as
-              // subordinate to "Gameweek N" through weight/colour/position
-              // rather than a size difference.
-              <span className="relative top-1 text-2xl font-normal text-zinc-400 dark:text-zinc-500">
+              // Same size as the h1 and sharing its baseline (the parent's
+              // items-baseline already aligns them correctly on its own -
+              // an earlier version added a manual vertical offset here to
+              // push it "lower," which just knocked it off that baseline
+              // and looked broken instead). Regular weight + muted colour
+              // alone is enough to read as subordinate to "Gameweek N".
+              <span className="text-2xl font-normal text-zinc-400 dark:text-zinc-500">
                 {status}
               </span>
             )}
