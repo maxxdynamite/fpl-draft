@@ -50,8 +50,36 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
               Gameweek {gameweekNumber}
             </h1>
             {status && (
-              <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">
-                {status}
+              <span className="inline-flex items-center gap-1.5">
+                {/* Reuses the Cup bracket's live-match dot (see
+                    globals.css .cup-live / CupBracket.tsx) rather than a
+                    new pattern - same brand green pulse means the same
+                    thing everywhere in the app. Provisional gets a static
+                    amber dot: distinct from both Live's urgency and
+                    Complete's plain, settled text. */}
+                {status === "Live" && (
+                  <span
+                    className="cup-live h-1.5 w-1.5 rounded-full bg-[#00ff85]"
+                    aria-hidden="true"
+                  />
+                )}
+                {status === "Provisional" && (
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-[#ffc23d]"
+                    aria-hidden="true"
+                  />
+                )}
+                <span
+                  className={`text-sm font-semibold ${
+                    status === "Live"
+                      ? "text-[#00c766] dark:text-[#00ff85]"
+                      : status === "Provisional"
+                        ? "text-[#b8860b] dark:text-[#ffc23d]"
+                        : "text-zinc-400 dark:text-zinc-500"
+                  }`}
+                >
+                  {status}
+                </span>
               </span>
             )}
           </div>
