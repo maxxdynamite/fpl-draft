@@ -54,9 +54,11 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
               // items-baseline already aligns them correctly on its own -
               // an earlier version added a manual vertical offset here to
               // push it "lower," which just knocked it off that baseline
-              // and looked broken instead). Regular weight + muted colour
-              // alone is enough to read as subordinate to "Gameweek N".
-              <span className="text-2xl font-normal text-zinc-400 dark:text-zinc-500">
+              // and looked broken instead). Medium weight, not regular -
+              // still enough contrast against the h1's bold to read as
+              // subordinate, but regular's thinner strokes made the two
+              // baselines look uneven even though they're pixel-identical.
+              <span className="text-2xl font-medium text-zinc-400 dark:text-zinc-500">
                 {status}
               </span>
             )}
