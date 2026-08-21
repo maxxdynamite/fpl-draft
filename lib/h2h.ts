@@ -3,6 +3,7 @@ import { getStandings } from "./standings";
 import { getGwScores } from "./gwScores";
 import { getDraftOrder } from "./draftOrder";
 import { getPlayersData } from "./players";
+import { getLiveGameweek } from "./liveGwScores";
 
 export type H2hSide = {
   entryId: number;
@@ -52,17 +53,21 @@ export type H2hMatchup = {
 // relationship once (lower entry_id first) rather than twice, and attaches
 // the full gameweek-by-gameweek score history between the two of them.
 export async function getH2hMatchups(): Promise<H2hMatchup[]> {
-  const [managers, standings, gwScores, draftOrder, { players }] = await Promise.all([
+  const [managers, standings, gwScores, draftOrder, { players }, liveGameweek] = await Promise.all([
     getManagers(),
     getStandings(),
     getGwScores(),
     getDraftOrder(),
     getPlayersData(),
+    getLiveGameweek(),
   ]);
 
   const standingsByEntry = new Map(standings.map((s) => [s.entryId, s]));
   const managersByEntry = new Map(managers.map((m) => [m.entryId, m]));
   const playerNameById = new Map(players.map((p) => [p.id, p.name]));
+  const liveEventTotalByEntry = new Map(
+    liveGameweek?.entries.map((e) => [e.entryId, e.eventTotal]) ?? [],
+  );
 
   const scoresByEntry = new Map<number, typeof gwScores>();
   for (const row of gwScores) {
@@ -78,14 +83,27 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
     const latest = rows[rows.length - 1];
     const draft = draftOrder.get(entryId);
 
+    // The headline score is the only thing that goes live mid-gameweek -
+    // wins/streak/history stay sheet-only (see syncCurrentGameweek's
+    // finished-only guard) since those shouldn't reflect a result bonus
+    // points could still flip. Prefer the live gameweek whenever it's at
+    // least as recent as the last synced row, so the number people are
+    // actually looking at during play isn't stuck showing last week's.
+    const useLiveScore =
+      liveGameweek !== null && (latest === undefined || liveGameweek.eventNumber >= latest.gameweek);
+    const latestGameweek = useLiveScore ? liveGameweek!.eventNumber : (latest?.gameweek ?? null);
+    const latestScore = useLiveScore
+      ? (liveEventTotalByEntry.get(entryId) ?? 0)
+      : (latest?.eventTotal ?? null);
+
     return {
       entryId,
       teamName: manager?.teamName ?? "Unknown",
       managerName: manager?.managerName ?? "Unknown",
       wins: standing?.h2hWins ?? 0,
       pl: standing?.pl ?? 0,
-      latestGameweek: latest?.gameweek ?? null,
-      latestScore: latest?.eventTotal ?? null,
+      latestGameweek,
+      latestScore,
       streak,
       overallRank: standing?.rank ?? null,
       totalPoints: standing?.totalPoints ?? null,
