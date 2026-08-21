@@ -55,7 +55,7 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
               // next to bold) but a smaller size and muted colour for the
               // hierarchy cue instead. Parent's items-baseline handles
               // alignment on its own; no manual offset needed.
-              <span className="text-base font-bold uppercase text-zinc-400 dark:text-zinc-500">
+              <span className="text-sm font-bold uppercase text-zinc-400 dark:text-zinc-500">
                 {status}
               </span>
             )}
