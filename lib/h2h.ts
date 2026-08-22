@@ -132,10 +132,29 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
       bScore: row.rivalEventTotal,
     }));
 
+    // Streak stays sheet-only (see buildSide's comment above) - the "All
+    // Gameweeks" strip people actually scroll through should still show
+    // the live gameweek's score, same reasoning as the headline number.
+    // Appended, not merged in place: only relevant while the sheet hasn't
+    // synced this gameweek yet, so there's never a synced row to collide
+    // with.
+    const lastSyncedGw = history[history.length - 1]?.gameweek;
+    const displayHistory: GwHistoryRow[] =
+      liveGameweek !== null && (lastSyncedGw === undefined || liveGameweek.eventNumber > lastSyncedGw)
+        ? [
+            ...history,
+            {
+              gameweek: liveGameweek.eventNumber,
+              aScore: liveEventTotalByEntry.get(manager.entryId) ?? 0,
+              bScore: liveEventTotalByEntry.get(rival.entryId) ?? 0,
+            },
+          ]
+        : history;
+
     matchups.push({
       teamA: buildSide(manager.entryId, computeStreak(history, "a")),
       teamB: buildSide(rival.entryId, computeStreak(history, "b")),
-      history,
+      history: displayHistory,
     });
   }
 
