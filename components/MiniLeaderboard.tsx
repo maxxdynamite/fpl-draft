@@ -14,15 +14,41 @@ export async function MiniLeaderboard() {
     getLiveGameweek(),
   ]);
 
-  const overallRows: LeaderboardRow[] = standings.map((s) => ({
-    entryId: s.entryId,
-    teamName: s.teamName,
-    value: s.totalPoints,
-    rank: s.rank,
-  }));
-
   const syncedLatestGw =
     gwScores.length > 0 ? Math.max(...gwScores.map((r) => r.gameweek)) : null;
+
+  // Only add live GW points on top of totalPoints if that gameweek isn't
+  // already baked into totalPoints via the daily sync - strict >, not >=
+  // (unlike useLive below, which is comparing "which source describes
+  // this GW" not "is this GW already summed into a different value").
+  // Equal means the sheet's already synced it into totalPoints; adding it
+  // again here would double-count.
+  const canOverlayLiveOnOverall =
+    liveGameweek !== null &&
+    (syncedLatestGw === null || liveGameweek.eventNumber > syncedLatestGw);
+
+  const overallRows: LeaderboardRow[] = canOverlayLiveOnOverall
+    ? (() => {
+        const livePointsByEntry = new Map(
+          liveGameweek!.entries.map((e) => [e.entryId, e.eventTotal]),
+        );
+        return standings
+          .map((s) => ({
+            entryId: s.entryId,
+            teamName: s.teamName,
+            value: s.totalPoints + (livePointsByEntry.get(s.entryId) ?? 0),
+            // no rank here on purpose - LeaderboardToggle falls back to
+            // array index (row.rank ?? i + 1), so the sort below is what
+            // actually drives the displayed position number.
+          }))
+          .sort((a, b) => b.value - a.value);
+      })()
+    : standings.map((s) => ({
+        entryId: s.entryId,
+        teamName: s.teamName,
+        value: s.totalPoints,
+        rank: s.rank,
+      }));
 
   // Same live-preferred pattern as the H2H headline score: the "Gameweek"
   // toggle is a live, in-progress number people check mid-round, not a
