@@ -38,6 +38,12 @@ export function PlayerAvatar({
           <path d="M4 20a8 8 0 0 1 16 0" />
         </svg>
       ) : (
+        // unoptimized - the FPL photo CDN already serves a fixed,
+        // reasonably-sized image, so Vercel's optimizer isn't earning its
+        // keep here. With ~600 players rendered at multiple sizes across
+        // the Blackjack picker, every unique photo+size pair was burning a
+        // transformation off the Hobby plan's monthly quota for no real
+        // benefit.
         <Image
           src={photoUrl}
           alt={alt}
@@ -45,6 +51,7 @@ export function PlayerAvatar({
           height={imageSize}
           onError={() => setFailed(true)}
           className={imageClassName}
+          unoptimized
         />
       )}
     </span>
