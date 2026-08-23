@@ -116,7 +116,12 @@ export function BlackjackParticipantCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 mt-4">
+      {/* mt-[19.5px], not mt-4 (16px) - the extra 3.5px brings the card's
+          total height to an even 194px, matching the Draft H2H tile
+          exactly (same p-4 sm:p-5 padding on both, but H2H's separate
+          fixed-height score block adds a few px this card's header+score
+          row doesn't have on its own). */}
+      <div className="grid grid-cols-4 gap-2 mt-[19.5px]">
         {participant.players
           ? participant.players.map((player) => {
               const hasntScored = player.goals === 0;
