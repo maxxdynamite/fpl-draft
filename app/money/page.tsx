@@ -3,6 +3,7 @@ import { getStandings } from "@/lib/standings";
 import { getGwScores } from "@/lib/gwScores";
 import { getBlackjackLeaderboard } from "@/lib/blackjack";
 import { getPlayersData } from "@/lib/players";
+import { getPlGameweekStatus } from "@/lib/plGameweekStatus";
 import { getLiveGameweek } from "@/lib/liveGwScores";
 import { resolveCupBracket } from "@/lib/cupBracket";
 import { getH2hMatchups } from "@/lib/h2h";
@@ -14,18 +15,30 @@ import { TotalMoneyTile, type TotalRow } from "@/components/TotalMoneyTile";
 const DRAFT_ENTRY = 20;
 const CUP_ENTRY = 10;
 const BLACKJACK_ENTRY = 10;
+// Adjust each season if the real Premier League calendar ever changes -
+// same convention as lib/pickingWindow.ts's hardcoded transfer window dates.
+const FINAL_GAMEWEEK = 38;
 
 export default async function MoneyPage() {
-  const [managers, standings, gwScores, blackjackParticipants, { currentGameweek }, liveGameweek, matchups] =
-    await Promise.all([
-      getManagers(),
-      getStandings(),
-      getGwScores(),
-      getBlackjackLeaderboard(),
-      getPlayersData(),
-      getLiveGameweek(),
-      getH2hMatchups(),
-    ]);
+  const [
+    managers,
+    standings,
+    gwScores,
+    blackjackParticipants,
+    { currentGameweek },
+    plStatus,
+    liveGameweek,
+    matchups,
+  ] = await Promise.all([
+    getManagers(),
+    getStandings(),
+    getGwScores(),
+    getBlackjackLeaderboard(),
+    getPlayersData(),
+    getPlGameweekStatus(),
+    getLiveGameweek(),
+    getH2hMatchups(),
+  ]);
 
   // Real Premier League calendar - before a ball's been kicked, standings
   // "rank" is just an arbitrary tie-break over all-zero points, so a live
@@ -33,12 +46,21 @@ export default async function MoneyPage() {
   // merely empty. Every money source defaults to £0 for everyone until
   // there's real gameweek data to project from.
   const seasonStarted = currentGameweek > 0;
+  // Season-long pots (Draft Overall, Blackjack) don't settle on any
+  // gameweek's result individually - only once the whole season's done,
+  // gameweek 38 officially locked. A "leading if it ended today" style
+  // preview would misrepresent an outcome that's still genuinely
+  // undecided, same reasoning as gating H2H/MOTW-SOTW on
+  // liveGameweek.finished rather than showing it live all season.
+  const seasonComplete =
+    plStatus !== null && plStatus.gameweekNumber === FINAL_GAMEWEEK && plStatus.finished;
   const managersByEntry = new Map(managers.map((m) => [m.entryId, m]));
 
-  // Draft league pot - every manager's live net if the season ended today:
+  // Draft league pot - only settles once the season's actually finished
+  // (see seasonComplete above); nothing to project before then, since
+  // "currently 1st" isn't a real outcome until gameweek 38 locks.
   // 1st nets +180 (200 - 20 entry), 2nd +40 (60 - 20), 3rd £0 (20 back -
-  // 20 entry), everyone else just -£20. Becomes final once the real
-  // season's actually finished.
+  // 20 entry), everyone else just -£20.
   const draftRows: PotRow[] = standings.map((s, i) => {
     const payout = i === 0 ? 200 : i === 1 ? 60 : i === 2 ? 20 : 0;
     return {
@@ -48,9 +70,11 @@ export default async function MoneyPage() {
     };
   });
 
-  // Cup pot - winner takes all. Bracket elimination doesn't have a
-  // meaningful "currently leading" score the way a points total does, so
-  // everyone just nets -£10 until a champion's actually crowned.
+  // Cup pot - winner takes all, settles whenever a champion's actually
+  // crowned (can happen well before gameweek 38 - the Cup itself finishes
+  // around Christmas). Everyone stays at £0 until then; bracket elimination
+  // doesn't have a meaningful "currently leading" projection the way a
+  // points total does, so there's nothing sensible to show early anyway.
   const bracket = resolveCupBracket({ managers, gwScores, liveGameweek });
   const cupRows: PotRow[] = managers.map((m) => ({
     entryId: m.entryId,
@@ -120,13 +144,15 @@ export default async function MoneyPage() {
     sotwCount: r.sotwCount + (r.entryId === liveSotwEntryId ? 1 : 0),
   }));
 
-  // Nothing's settled pre-season, so every pot/wager defaults to £0 for
-  // everyone rather than a projection built off meaningless all-zero
-  // standings - real computations above stay intact for once the season
-  // actually gets going.
-  const displayDraftRows = seasonStarted ? draftRows : draftRows.map((r) => ({ ...r, net: 0 }));
-  const displayCupRows = seasonStarted ? cupRows : cupRows.map((r) => ({ ...r, net: 0 }));
-  const displayBlackjackRows = seasonStarted
+  // Draft Overall and Blackjack only pay out once the season's actually
+  // over (seasonComplete); the Cup pays out whenever its own champion is
+  // crowned, independent of the season. Everyone stays at £0 until their
+  // pot's real completion condition, not a running "if it ended today"
+  // projection.
+  const displayDraftRows = seasonComplete ? draftRows : draftRows.map((r) => ({ ...r, net: 0 }));
+  const displayCupRows =
+    bracket.champion !== null ? cupRows : cupRows.map((r) => ({ ...r, net: 0 }));
+  const displayBlackjackRows = seasonComplete
     ? blackjackRows
     : blackjackRows.map((r) => ({ ...r, net: 0 }));
   const displayMatchups = seasonStarted
