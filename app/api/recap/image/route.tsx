@@ -7,6 +7,38 @@ export const runtime = "nodejs";
 const GREEN = "#00ff85";
 const CYAN = "#04f5ff";
 
+// Without an embedded font, Satori falls back to a generic system sans
+// with no real weight distinction beyond one synthetic "bold" - which is
+// why bumping fontWeight 800 -> 900 on the FINAL badge didn't visibly
+// change anything, there was no heavier face for it to pick. Fetches the
+// same Manrope the app itself uses (see app/layout.tsx), two real weight
+// files so 600 (names) and 800 (scores/labels/badge) actually look
+// different. Cached at module scope, not re-fetched per request - the
+// font data never changes.
+let fontsPromise: Promise<{ name: string; data: ArrayBuffer; weight: 600 | 800; style: "normal" }[]> | null = null;
+
+async function loadManropeFonts() {
+  if (!fontsPromise) {
+    fontsPromise = Promise.all(
+      ([600, 800] as const).map(async (weight) => {
+        // Google serves woff2 to modern browsers and ttf to old ones -
+        // ImageResponse only accepts ttf/otf/woff (see next/og docs), so
+        // this pretends to be IE11 to get a ttf URL back from the CSS.
+        const cssRes = await fetch(
+          `https://fonts.googleapis.com/css2?family=Manrope:wght@${weight}`,
+          { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko" } },
+        );
+        const css = await cssRes.text();
+        const url = css.match(/src: url\(([^)]+)\)/)?.[1];
+        if (!url) throw new Error(`No font URL found for Manrope ${weight}`);
+        const data = await fetch(url).then((r) => r.arrayBuffer());
+        return { name: "Manrope", data, weight, style: "normal" as const };
+      }),
+    );
+  }
+  return fontsPromise;
+}
+
 function BlackjackColumn({ rows }: { rows: RecapBlackjackRow[] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
@@ -41,7 +73,7 @@ function BlackjackColumn({ rows }: { rows: RecapBlackjackRow[] }) {
 }
 
 export async function GET() {
-  const data = await getRecapData();
+  const [data, fonts] = await Promise.all([getRecapData(), loadManropeFonts()]);
   const half = Math.ceil(data.blackjackAll.length / 2);
   const colA = data.blackjackAll.slice(0, half);
   const colB = data.blackjackAll.slice(half);
@@ -56,7 +88,7 @@ export async function GET() {
           flexDirection: "column",
           background: "#050505",
           padding: "56px 48px",
-          fontFamily: "sans-serif",
+          fontFamily: "Manrope",
         }}
       >
         {/* Title takes the very top spot now - the league name moved down
@@ -72,7 +104,7 @@ export async function GET() {
             style={{
               display: "flex",
               fontSize: 26,
-              fontWeight: 900,
+              fontWeight: 800,
               letterSpacing: 1,
               textTransform: "uppercase",
               color: "#050505",
@@ -146,7 +178,7 @@ export async function GET() {
             <span style={{ display: "flex", color: "#fff" }}>Bad Blokes&nbsp;</span>
             <span style={{ display: "flex", color: GREEN }}>Weekly</span>
           </span>
-          <span style={{ display: "flex", fontSize: 16, color: "#52525b" }}>badblokesweekly.vercel.app</span>
+          <span style={{ display: "flex", fontSize: 16, fontWeight: 600, color: "#52525b" }}>badblokesweekly.vercel.app</span>
         </div>
       </div>
     ),
@@ -157,6 +189,6 @@ export async function GET() {
     // Satori clips overflow rather than growing the container or erroring,
     // which is exactly what ate the footer entirely at the old 1350
     // height with no warning anywhere.
-    { width: 1080, height: 1533 },
+    { width: 1080, height: 1533, fonts },
   );
 }
