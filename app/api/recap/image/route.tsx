@@ -1,12 +1,13 @@
 import { ImageResponse } from "next/og";
 import { getRecapData, type RecapBlackjackRow } from "@/lib/recap";
+import { BLACKJACK_TARGET } from "@/lib/blackjack";
 
 export const runtime = "nodejs";
 
 const GREEN = "#00ff85";
 const CYAN = "#04f5ff";
 
-function BlackjackColumn({ rows, maxGoals }: { rows: RecapBlackjackRow[]; maxGoals: number }) {
+function BlackjackColumn({ rows }: { rows: RecapBlackjackRow[] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       {rows.map((row, i) => (
@@ -14,11 +15,17 @@ function BlackjackColumn({ rows, maxGoals }: { rows: RecapBlackjackRow[]; maxGoa
           <span style={{ display: "flex", flex: 1, color: "#d4d4d8", fontWeight: 600, overflow: "hidden" }}>
             {row.managerName}
           </span>
+          {/* Progress toward the actual target (21), not relative to
+              whoever's currently top of this list - the earlier version
+              scaled against the current leader's own goal count, which
+              showed anyone in the lead as a "full" bar regardless of how
+              far from 21 they actually were. Capped at 100% since a bust
+              can sit above 21. */}
           <div style={{ display: "flex", width: 56, height: 10, borderRadius: 999, background: "rgba(255,255,255,0.08)", overflow: "hidden", marginRight: 12 }}>
             <div
               style={{
                 display: "flex",
-                width: `${Math.max(10, (row.goals / maxGoals) * 100)}%`,
+                width: `${Math.max(4, Math.min(100, (row.goals / BLACKJACK_TARGET) * 100))}%`,
                 height: "100%",
                 background: `linear-gradient(90deg, ${GREEN}, ${CYAN})`,
               }}
@@ -35,7 +42,6 @@ function BlackjackColumn({ rows, maxGoals }: { rows: RecapBlackjackRow[]; maxGoa
 
 export async function GET() {
   const data = await getRecapData();
-  const maxGoals = data.blackjackAll[0]?.goals || 1;
   const half = Math.ceil(data.blackjackAll.length / 2);
   const colA = data.blackjackAll.slice(0, half);
   const colB = data.blackjackAll.slice(half);
@@ -65,13 +71,13 @@ export async function GET() {
           <span
             style={{
               display: "flex",
-              fontSize: 20,
-              fontWeight: 800,
+              fontSize: 26,
+              fontWeight: 900,
               letterSpacing: 1,
               textTransform: "uppercase",
               color: "#050505",
               background: `linear-gradient(90deg, ${GREEN}, ${CYAN})`,
-              padding: "8px 20px 10px",
+              padding: "10px 26px 12px",
               borderRadius: 999,
               flexShrink: 0,
             }}
@@ -118,8 +124,8 @@ export async function GET() {
           Blackjack — Target 21
         </span>
         <div style={{ display: "flex", flexDirection: "row", gap: 40 }}>
-          <BlackjackColumn rows={colA} maxGoals={maxGoals} />
-          <BlackjackColumn rows={colB} maxGoals={maxGoals} />
+          <BlackjackColumn rows={colA} />
+          <BlackjackColumn rows={colB} />
         </div>
 
         {/* Footer - a fixed marginTop, not "auto": Satori pushes an
