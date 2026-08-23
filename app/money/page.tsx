@@ -93,6 +93,30 @@ export default async function MoneyPage() {
     sotwCount: s.sotwCount,
   }));
 
+  // Same double-counting guard as lib/h2h.ts's H2H stake projection and
+  // lib/liveStandings.ts - only project this gameweek's MOTW/SOTW onto the
+  // live leader/trailer while it isn't already synced into the counts
+  // above (strict >, equal means it's already settled and counted).
+  const syncedLatestGw =
+    gwScores.length > 0 ? Math.max(...gwScores.map((r) => r.gameweek)) : null;
+  const canProjectLiveMotwSotw =
+    liveGameweek !== null &&
+    (syncedLatestGw === null || liveGameweek.eventNumber > syncedLatestGw) &&
+    liveGameweek.entries.length > 0;
+  // Same first-occurrence tie-break as lib/weeklyAwards.ts's official
+  // MOTW/SOTW determination, applied here to the live entries instead.
+  const liveMotwEntryId = canProjectLiveMotwSotw
+    ? liveGameweek!.entries.reduce((best, e) => (e.eventTotal > best.eventTotal ? e : best)).entryId
+    : null;
+  const liveSotwEntryId = canProjectLiveMotwSotw
+    ? liveGameweek!.entries.reduce((worst, e) => (e.eventTotal < worst.eventTotal ? e : worst)).entryId
+    : null;
+  const liveMotwSotwRows = motwSotwRows.map((r) => ({
+    ...r,
+    motwCount: r.motwCount + (r.entryId === liveMotwEntryId ? 1 : 0),
+    sotwCount: r.sotwCount + (r.entryId === liveSotwEntryId ? 1 : 0),
+  }));
+
   // Nothing's settled pre-season, so every pot/wager defaults to £0 for
   // everyone rather than a projection built off meaningless all-zero
   // standings - real computations above stay intact for once the season
@@ -110,7 +134,7 @@ export default async function MoneyPage() {
         teamB: { ...m.teamB, pl: 0 },
       }));
   const displayMotwSotwRows = seasonStarted
-    ? motwSotwRows
+    ? liveMotwSotwRows
     : motwSotwRows.map((r) => ({ ...r, motwCount: 0, sotwCount: 0 }));
 
   // Grand total across every money source, per manager - summed from

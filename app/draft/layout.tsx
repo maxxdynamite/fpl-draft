@@ -1,5 +1,6 @@
 import { DraftSubNav } from "@/components/DraftSubNav";
 import { DraftCountdown } from "@/components/DraftCountdown";
+import { GameweekStatusLabel, type GameweekStatus } from "@/components/GameweekStatusLabel";
 import { getCurrentGameweek } from "@/lib/gameweek";
 import { getLiveGameweek } from "@/lib/liveGwScores";
 import { getDraftSchedule } from "@/lib/leagueInfo";
@@ -27,7 +28,7 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
   // synced gameweek (see syncCurrentGameweek's finished-only guard), so
   // "Provisional" - the gap between full-time and FPL's official lockdown -
   // only ever applies while reading the live feed.
-  const status = !showStatus
+  const status: GameweekStatus | null = !showStatus
     ? null
     : !useLive || liveGameweek!.finished
       ? "Complete"
@@ -49,16 +50,7 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
               Gameweek {gameweekNumber}
             </h1>
-            {status && (
-              // Shares the h1's bold weight (matching stroke thickness -
-              // no more optical baseline-unevenness from a lighter weight
-              // next to bold) but a smaller size and muted colour for the
-              // hierarchy cue instead. Parent's items-baseline handles
-              // alignment on its own; no manual offset needed.
-              <span className="text-sm font-bold uppercase text-zinc-400 dark:text-zinc-500">
-                {status}
-              </span>
-            )}
+            <GameweekStatusLabel status={status} />
           </div>
           <DraftSubNav />
           {draftStatus === "pre" && draftDt && (

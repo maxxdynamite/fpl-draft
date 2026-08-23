@@ -4,6 +4,9 @@ import { getGwScores } from "./gwScores";
 import { getDraftOrder } from "./draftOrder";
 import { getPlayersData } from "./players";
 import { getLiveGameweek } from "./liveGwScores";
+import { getLiveAdjustedStandings } from "./liveStandings";
+
+const H2H_STAKE = 5;
 
 export type H2hSide = {
   entryId: number;
@@ -53,14 +56,16 @@ export type H2hMatchup = {
 // relationship once (lower entry_id first) rather than twice, and attaches
 // the full gameweek-by-gameweek score history between the two of them.
 export async function getH2hMatchups(): Promise<H2hMatchup[]> {
-  const [managers, standings, gwScores, draftOrder, { players }, liveGameweek] = await Promise.all([
-    getManagers(),
-    getStandings(),
-    getGwScores(),
-    getDraftOrder(),
-    getPlayersData(),
-    getLiveGameweek(),
-  ]);
+  const [managers, standings, gwScores, draftOrder, { players }, liveGameweek, liveAdjusted] =
+    await Promise.all([
+      getManagers(),
+      getStandings(),
+      getGwScores(),
+      getDraftOrder(),
+      getPlayersData(),
+      getLiveGameweek(),
+      getLiveAdjustedStandings(),
+    ]);
 
   const standingsByEntry = new Map(standings.map((s) => [s.entryId, s]));
   const managersByEntry = new Map(managers.map((m) => [m.entryId, m]));
@@ -76,12 +81,24 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
     scoresByEntry.set(row.entryId, list);
   }
 
-  function buildSide(entryId: number, streak: number): H2hSide {
+  // Same double-counting guard as lib/liveStandings.ts, computed
+  // separately here because this one gates the £-per-GW H2H stake, not
+  // totalPoints - strict >, not >=, for the same reason: equal means
+  // that gameweek's already synced (and its stake already settled), so
+  // projecting a live outcome on top of it would double-count.
+  const syncedLatestGw =
+    gwScores.length > 0 ? Math.max(...gwScores.map((r) => r.gameweek)) : null;
+  const canProjectLiveH2hPl =
+    liveGameweek !== null &&
+    (syncedLatestGw === null || liveGameweek.eventNumber > syncedLatestGw);
+
+  function buildSide(entryId: number, streak: number, livePlDelta: number): H2hSide {
     const manager = managersByEntry.get(entryId);
     const standing = standingsByEntry.get(entryId);
     const rows = scoresByEntry.get(entryId) ?? [];
     const latest = rows[rows.length - 1];
     const draft = draftOrder.get(entryId);
+    const liveStanding = liveAdjusted.get(entryId);
 
     // The headline score is the only thing that goes live mid-gameweek -
     // wins/streak/history stay sheet-only (see syncCurrentGameweek's
@@ -101,12 +118,15 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
       teamName: manager?.teamName ?? "Unknown",
       managerName: manager?.managerName ?? "Unknown",
       wins: standing?.h2hWins ?? 0,
-      pl: standing?.pl ?? 0,
+      // Official cumulative stake plus a live projection of this week's
+      // £5 H2H outcome, based on the live scores above - settles for real
+      // once the gameweek locks and syncs, same as everything else here.
+      pl: (standing?.pl ?? 0) + livePlDelta,
       latestGameweek,
       latestScore,
       streak,
-      overallRank: standing?.rank ?? null,
-      totalPoints: standing?.totalPoints ?? null,
+      overallRank: liveStanding?.rank ?? standing?.rank ?? null,
+      totalPoints: liveStanding?.value ?? standing?.totalPoints ?? null,
       motwCount: standing?.motwCount ?? null,
       sotwCount: standing?.sotwCount ?? null,
       draftPosition: draft?.position ?? null,
@@ -151,9 +171,24 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
           ]
         : history;
 
+    // Projected outcome of this week's £5 H2H stake if the live scores
+    // stood as final right now - zero-sum between the two rivals, a tie
+    // pays neither side. Only computed when canProjectLiveH2hPl allows it;
+    // otherwise both stay 0 and buildSide's pl falls back to the official
+    // cumulative figure untouched.
+    const liveA = liveEventTotalByEntry.get(manager.entryId) ?? 0;
+    const liveB = liveEventTotalByEntry.get(rival.entryId) ?? 0;
+    const livePlDeltaA = !canProjectLiveH2hPl
+      ? 0
+      : liveA > liveB
+        ? H2H_STAKE
+        : liveA < liveB
+          ? -H2H_STAKE
+          : 0;
+
     matchups.push({
-      teamA: buildSide(manager.entryId, computeStreak(history, "a")),
-      teamB: buildSide(rival.entryId, computeStreak(history, "b")),
+      teamA: buildSide(manager.entryId, computeStreak(history, "a"), livePlDeltaA),
+      teamB: buildSide(rival.entryId, computeStreak(history, "b"), -livePlDeltaA),
       history: displayHistory,
     });
   }

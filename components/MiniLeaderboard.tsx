@@ -3,52 +3,40 @@ import { getLeagueName } from "@/lib/leagueInfo";
 import { getGwScores } from "@/lib/gwScores";
 import { getManagers } from "@/lib/managers";
 import { getLiveGameweek } from "@/lib/liveGwScores";
+import { getLiveAdjustedStandings } from "@/lib/liveStandings";
 import { LeaderboardToggle, type LeaderboardRow } from "./LeaderboardToggle";
 
 export async function MiniLeaderboard() {
-  const [standings, leagueName, gwScores, managers, liveGameweek] = await Promise.all([
-    getStandings(),
-    getLeagueName(),
-    getGwScores(),
-    getManagers(),
-    getLiveGameweek(),
-  ]);
+  const [standings, leagueName, gwScores, managers, liveGameweek, liveAdjusted] =
+    await Promise.all([
+      getStandings(),
+      getLeagueName(),
+      getGwScores(),
+      getManagers(),
+      getLiveGameweek(),
+      getLiveAdjustedStandings(),
+    ]);
 
   const syncedLatestGw =
     gwScores.length > 0 ? Math.max(...gwScores.map((r) => r.gameweek)) : null;
 
-  // Only add live GW points on top of totalPoints if that gameweek isn't
-  // already baked into totalPoints via the daily sync - strict >, not >=
-  // (unlike useLive below, which is comparing "which source describes
-  // this GW" not "is this GW already summed into a different value").
-  // Equal means the sheet's already synced it into totalPoints; adding it
-  // again here would double-count.
-  const canOverlayLiveOnOverall =
-    liveGameweek !== null &&
-    (syncedLatestGw === null || liveGameweek.eventNumber > syncedLatestGw);
-
-  const overallRows: LeaderboardRow[] = canOverlayLiveOnOverall
-    ? (() => {
-        const livePointsByEntry = new Map(
-          liveGameweek!.entries.map((e) => [e.entryId, e.eventTotal]),
-        );
-        return standings
-          .map((s) => ({
-            entryId: s.entryId,
-            teamName: s.teamName,
-            value: s.totalPoints + (livePointsByEntry.get(s.entryId) ?? 0),
-            // no rank here on purpose - LeaderboardToggle falls back to
-            // array index (row.rank ?? i + 1), so the sort below is what
-            // actually drives the displayed position number.
-          }))
-          .sort((a, b) => b.value - a.value);
-      })()
-    : standings.map((s) => ({
+  // Shared with the H2H stats menu's Total Points/Overall Rank rows (see
+  // lib/liveStandings.ts) so both surfaces always agree on the same live
+  // standing. No rank passed through when it's live-adjusted -
+  // LeaderboardToggle falls back to array index (row.rank ?? i + 1), and
+  // these rows are already sorted by the live-adjusted value inside the
+  // helper, so that fallback is what actually drives the position number.
+  const overallRows: LeaderboardRow[] = standings
+    .map((s) => {
+      const adjusted = liveAdjusted.get(s.entryId);
+      return {
         entryId: s.entryId,
         teamName: s.teamName,
-        value: s.totalPoints,
-        rank: s.rank,
-      }));
+        value: adjusted?.value ?? s.totalPoints,
+        rank: adjusted?.isLive ? undefined : (adjusted?.rank ?? s.rank),
+      };
+    })
+    .sort((a, b) => (a.rank !== undefined && b.rank !== undefined ? a.rank - b.rank : b.value - a.value));
 
   // Same live-preferred pattern as the H2H headline score: the "Gameweek"
   // toggle is a live, in-progress number people check mid-round, not a
