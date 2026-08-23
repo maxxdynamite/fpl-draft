@@ -1,0 +1,54 @@
+import { getRecapData, tokensToText } from "@/lib/recap";
+import { CopyButton } from "@/components/CopyButton";
+
+// MOCKUP MODE - see the comment on lib/recap.ts's getRecapData(). This
+// page (and the /api/recap/image route it points at) narrates whatever
+// the live gameweek's scores currently are, not a genuinely finished
+// one. Dev-only for now, on purpose - not something the group should see
+// until it's gated on the gameweek actually being locked.
+export default async function RecapPage() {
+  const data = await getRecapData();
+
+  const lines = [
+    `🏆 GW${data.gameweek} done. ${tokensToText(data.headline)}`,
+    data.closestMatch
+      ? `Closest game of the week: ${data.closestMatch.winnerName} edged ${data.closestMatch.loserName} ${data.closestMatch.winnerScore}–${data.closestMatch.loserScore}.`
+      : null,
+    data.bottomManagerName
+      ? `Spare a thought for ${data.bottomManagerName}, bottom of the pile on ${data.bottomScore}.`
+      : null,
+    `Full table in the app 👉 badblokesweekly.vercel.app`,
+  ].filter((l): l is string => l !== null);
+  const caption = lines.join("\n\n");
+
+  return (
+    <main className="flex-1 w-full max-w-md mx-auto px-4 sm:px-6 pt-6 pb-10">
+      <div className="mb-4 rounded-lg bg-amber-500/10 ring-1 ring-amber-500/30 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
+        Dev-only mockup — narrates the live gameweek as if it's finished,
+        not gated on the real lockdown yet.
+      </div>
+
+      <h1 className="text-xl font-bold mb-3">Weekly Recap</h1>
+
+      {/* Long-press on mobile gives the native Share/Save Image sheet -
+          no separate download step needed. */}
+      <img
+        src="/api/recap/image"
+        alt={`Gameweek ${data.gameweek} recap`}
+        className="w-full rounded-2xl shadow-[var(--shadow-soft)]"
+      />
+
+      <div className="mt-5 rounded-xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-4">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+            Caption
+          </p>
+          <CopyButton text={caption} />
+        </div>
+        <p className="text-sm whitespace-pre-line text-zinc-700 dark:text-zinc-300">
+          {caption}
+        </p>
+      </div>
+    </main>
+  );
+}
