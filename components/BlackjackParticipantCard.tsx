@@ -99,7 +99,7 @@ export function BlackjackParticipantCard({
               stretched by the row - same reasoning as CupBracket.tsx's
               own gradient-text score label. */}
           {!isBust && participant.goalsThisGw > 0 && (
-            <span className="shrink-0 text-[10px] font-semibold tabular-nums bg-gradient-to-r from-[#00ff85] to-[#04f5ff] bg-clip-text text-transparent">
+            <span className="shrink-0 text-[10px] font-extrabold tabular-nums bg-gradient-to-r from-[#00ff85] to-[#04f5ff] bg-clip-text text-transparent">
               +{participant.goalsThisGw}
             </span>
           )}
