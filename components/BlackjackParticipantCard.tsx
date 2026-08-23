@@ -92,15 +92,15 @@ export function BlackjackParticipantCard({
           )}
         </div>
         <div className="flex items-baseline gap-1.5 shrink-0">
-          {/* Hidden rather than shown as "+0" - most cards on a given
+          {/* Hidden rather than shown as "▲0" - most cards on a given
               gameweek will have nothing to report, and this on every
               single one would just be noise. Its presence is the signal.
-              shrink-0 so bg-clip-text has a box sized to "+N" itself, not
-              stretched by the row - same reasoning as CupBracket.tsx's
+              shrink-0 so bg-clip-text has a box sized to the label itself,
+              not stretched by the row - same reasoning as CupBracket.tsx's
               own gradient-text score label. */}
           {!isBust && participant.goalsThisGw > 0 && (
             <span className="shrink-0 text-[10px] font-extrabold tabular-nums bg-gradient-to-r from-[#00ff85] to-[#04f5ff] bg-clip-text text-transparent">
-              +{participant.goalsThisGw}
+              ▲{participant.goalsThisGw}
             </span>
           )}
           <span
