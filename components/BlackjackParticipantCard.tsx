@@ -4,7 +4,6 @@ import { STATUS_META } from "@/lib/blackjackStatus";
 import { QualifiedBadge } from "./QualifiedBadge";
 import { SpadeIcon } from "./SpadeIcon";
 import { PlayerAvatar } from "./PlayerAvatar";
-import { BlackjackHistoryChart } from "./BlackjackHistoryChart";
 
 export function BlackjackParticipantCard({
   participant,
@@ -203,11 +202,6 @@ export function BlackjackParticipantCard({
               </div>
             ))}
       </div>
-
-      {/* Nothing to chart without submitted picks - matches the "hide
-          rather than show empty" reasoning the +N chip above already
-          uses. */}
-      {participant.players && <BlackjackHistoryChart entryId={participant.entryId} />}
     </div>
   );
 }

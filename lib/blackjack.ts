@@ -26,14 +26,6 @@ const PACE_HIGH_OUTER = 4; // at-risk boundary (above expected pace)
 // expectedPace.
 const GRACE_PERIOD_GAMEWEEKS = 4;
 
-// Shared with computeStatus's pace ladder below and the season-progress
-// chart (BlackjackHistoryChart, via app/api/blackjack/history) - both need
-// to plot against the exact same trajectory, not two formulas that could
-// drift apart.
-export function expectedPace(currentGameweek: number): number {
-  return (BLACKJACK_TARGET * currentGameweek) / TOTAL_GAMEWEEKS;
-}
-
 export type BlackjackStatus =
   | "no-picks"
   | "selected"
@@ -79,43 +71,6 @@ async function getGameweekGoalsByPlayerId(gameweek: number): Promise<Map<number,
   const data = await res.json();
   const elements: Array<{ id: number; stats: { goals_scored: number } }> = data.elements ?? [];
   return new Map(elements.map((e) => [e.id, e.stats.goals_scored]));
-}
-
-// Per-player, per-gameweek goal history for the season-progress chart
-// (BlackjackHistoryChart, via app/api/blackjack/history) - a different
-// need than getGameweekGoalsByPlayerId above (one gameweek, every player)
-// or lib/players.ts's Player.goals (every player, season-cumulative only).
-// This is the other diagonal: every gameweek, for a small handful of
-// specific players. FPL doesn't expose "goals by gameweek for player X"
-// any other way than this per-player endpoint, so it's one fetch per
-// unique player rather than one per gameweek - cheap here since a
-// participant only has 4 picks (and Next's fetch cache dedupes repeat
-// requests for the same player across different participants' cards
-// within the revalidate window). Called lazily, only once a card's "All
-// Gameweeks" chart is actually opened - never on the main /blackjack page
-// load, where paying this per-player cost for all 14 managers upfront
-// would be wasted on every card nobody expands.
-export async function getGoalsHistoryByPlayerIds(
-  playerIds: number[],
-  throughGameweek: number,
-): Promise<Map<number, number[]>> {
-  const entries = await Promise.all(
-    playerIds.map(async (id) => {
-      const res = await fetch(
-        `https://fantasy.premierleague.com/api/element-summary/${id}/`,
-        { next: { revalidate: 300 } },
-      );
-      if (!res.ok) {
-        throw new Error(`Failed to fetch element-summary for player ${id}: ${res.status}`);
-      }
-      const data = await res.json();
-      const history: Array<{ round: number; goals_scored: number }> = data.history ?? [];
-      const goalsByRound = new Map(history.map((h) => [h.round, h.goals_scored]));
-      const goals = Array.from({ length: throughGameweek }, (_, i) => goalsByRound.get(i + 1) ?? 0);
-      return [id, goals] as const;
-    }),
-  );
-  return new Map(entries);
 }
 
 // Blackjack requires every pick to have actually scored, not just the
@@ -176,11 +131,11 @@ export function computeStatus(
   if (seasonOver) return "fell-short";
   if (currentGameweek < GRACE_PERIOD_GAMEWEEKS) return "early-days";
 
-  const pace = expectedPace(currentGameweek);
-  if (totalGoals < pace - PACE_LOW_OUTER) return "miles-off";
-  if (totalGoals < pace - PACE_TOLERANCE) return "under-target";
-  if (totalGoals <= pace + PACE_TOLERANCE) return "on-target";
-  if (totalGoals <= pace + PACE_HIGH_OUTER) return "over-target";
+  const expectedPace = (BLACKJACK_TARGET * currentGameweek) / TOTAL_GAMEWEEKS;
+  if (totalGoals < expectedPace - PACE_LOW_OUTER) return "miles-off";
+  if (totalGoals < expectedPace - PACE_TOLERANCE) return "under-target";
+  if (totalGoals <= expectedPace + PACE_TOLERANCE) return "on-target";
+  if (totalGoals <= expectedPace + PACE_HIGH_OUTER) return "over-target";
   return "at-risk";
 }
 
