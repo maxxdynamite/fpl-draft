@@ -93,14 +93,17 @@ export default async function MoneyPage() {
     sotwCount: s.sotwCount,
   }));
 
-  // Same double-counting guard as lib/h2h.ts's H2H stake projection and
-  // lib/liveStandings.ts - only project this gameweek's MOTW/SOTW onto the
-  // live leader/trailer while it isn't already synced into the counts
-  // above (strict >, equal means it's already settled and counted).
+  // Same "wager, not just display" bar as lib/h2h.ts's H2H stake
+  // projection: must wait for liveGameweek.finished (FPL's official
+  // lockdown), not just live/provisional, since bonus/defensive
+  // contribution points can still shuffle who's actually top/bottom right
+  // up until then. Strict >, not >=, for the same double-counting reason
+  // as everywhere else - equal means it's already synced and settled.
   const syncedLatestGw =
     gwScores.length > 0 ? Math.max(...gwScores.map((r) => r.gameweek)) : null;
   const canProjectLiveMotwSotw =
     liveGameweek !== null &&
+    liveGameweek.finished &&
     (syncedLatestGw === null || liveGameweek.eventNumber > syncedLatestGw) &&
     liveGameweek.entries.length > 0;
   // Same first-occurrence tie-break as lib/weeklyAwards.ts's official

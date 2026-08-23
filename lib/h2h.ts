@@ -81,15 +81,18 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
     scoresByEntry.set(row.entryId, list);
   }
 
-  // Same double-counting guard as lib/liveStandings.ts, computed
-  // separately here because this one gates the £-per-GW H2H stake, not
-  // totalPoints - strict >, not >=, for the same reason: equal means
-  // that gameweek's already synced (and its stake already settled), so
-  // projecting a live outcome on top of it would double-count.
+  // A wager settling is a different bar than a display number going live -
+  // this stake must wait for liveGameweek.finished (FPL's own official
+  // lockdown), not just "live" or "provisional", since bonus/defensive
+  // contribution points can still move the result right up until then.
+  // Strict >, not >=, for the double-counting reason noted elsewhere in
+  // this file: equal means that gameweek's already synced (and its stake
+  // already settled), so applying this again would double-count it.
   const syncedLatestGw =
     gwScores.length > 0 ? Math.max(...gwScores.map((r) => r.gameweek)) : null;
   const canProjectLiveH2hPl =
     liveGameweek !== null &&
+    liveGameweek.finished &&
     (syncedLatestGw === null || liveGameweek.eventNumber > syncedLatestGw);
 
   function buildSide(entryId: number, streak: number, livePlDelta: number): H2hSide {
