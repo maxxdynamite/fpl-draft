@@ -47,9 +47,31 @@ export type BlackjackParticipant = {
   teamName: string;
   players: Player[] | null; // null until picks are submitted
   totalGoals: number;
+  goalsThisGw: number; // goals from this participant's picks in the current gameweek only, not the season total
   allScored: boolean; // every pick has scored at least once
   status: BlackjackStatus;
 };
+
+// Per-player goals scored in one specific gameweek - separate from
+// lib/players.ts's Player.goals, which is the season-to-date total. The
+// general FPL API (not the Draft-specific one, same convention as
+// getPlayersData) tracks this per event; used to show "+N this GW" next
+// to a participant's season total without needing any historical
+// snapshot of our own - it's a live, independently queryable stat for
+// whichever gameweek is currently live, same as everything else this
+// game reads from bootstrap-static.
+async function getGameweekGoalsByPlayerId(gameweek: number): Promise<Map<number, number>> {
+  const res = await fetch(
+    `https://fantasy.premierleague.com/api/event/${gameweek}/live/`,
+    { next: { revalidate: 300 } },
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to fetch gameweek ${gameweek} live stats: ${res.status}`);
+  }
+  const data = await res.json();
+  const elements: Array<{ id: number; stats: { goals_scored: number } }> = data.elements ?? [];
+  return new Map(elements.map((e) => [e.id, e.stats.goals_scored]));
+}
 
 // Blackjack requires every pick to have actually scored, not just the
 // combined total landing on 21 - a squad with three big scorers and one
@@ -165,6 +187,10 @@ export async function getBlackjackLeaderboard(): Promise<BlackjackParticipant[]>
     getBlackjackPicks(),
     getPlayersData(),
   ]);
+  // Pre-season there's no live gameweek to ask about yet - same guard
+  // computeStatus itself already uses for currentGameweek === 0.
+  const gwGoalsByPlayerId =
+    currentGameweek > 0 ? await getGameweekGoalsByPlayerId(currentGameweek) : new Map<number, number>();
 
   const playersById = new Map(players.map((p) => [p.id, p]));
   const picksByEntry = new Map(picks.map((p) => [p.entryId, p]));
@@ -178,6 +204,17 @@ export async function getBlackjackLeaderboard(): Promise<BlackjackParticipant[]>
 
     const validPicks = pickedPlayers && pickedPlayers.length === 4 ? pickedPlayers : null;
     const totalGoals = validPicks ? validPicks.reduce((sum, p) => sum + p.goals, 0) : 0;
+    // Clamped to totalGoals: this comes from a separate live endpoint
+    // (the per-gameweek event feed) than the season-cumulative Player.goals
+    // above (bootstrap-static), and the two don't always update in lockstep
+    // - bootstrap-static has been observed lagging a goal the live event
+    // feed already has. A weekly delta can never legitimately exceed the
+    // season total, so if they ever disagree, trust the more conservative
+    // number rather than show something that looks self-contradictory
+    // ("0 / 21, +4 this GW").
+    const goalsThisGw = validPicks
+      ? Math.min(totalGoals, validPicks.reduce((sum, p) => sum + (gwGoalsByPlayerId.get(p.id) ?? 0), 0))
+      : 0;
     const allScored = validPicks ? validPicks.every((p) => p.goals > 0) : false;
 
     return {
@@ -186,6 +223,7 @@ export async function getBlackjackLeaderboard(): Promise<BlackjackParticipant[]>
       teamName: manager.teamName,
       players: validPicks,
       totalGoals,
+      goalsThisGw,
       allScored,
       status: validPicks
         ? computeStatus(totalGoals, allScored, currentGameweek)

@@ -51,6 +51,7 @@ function buildParticipant(
   teamName: string,
   players: Player[] | null,
   gameweek: number = PREVIEW_GAMEWEEK,
+  goalsThisGw: number = 0,
 ): BlackjackParticipant {
   const totalGoals = players ? players.reduce((sum, p) => sum + p.goals, 0) : 0;
   const allScored = players ? players.every((p) => p.goals > 0) : false;
@@ -60,6 +61,7 @@ function buildParticipant(
     teamName,
     players,
     totalGoals,
+    goalsThisGw,
     allScored,
     status: players ? computeStatus(totalGoals, allScored, gameweek) : "no-picks",
   };
@@ -206,12 +208,21 @@ const scenarios: BlackjackParticipant[] = [
     player(260, "Wilson", "LEE", 13, "MID", 153682, 0),
   ]),
 
-  buildParticipant(7, "On pace + qualified", "8 goals, all 4 scored", [
-    player(428, "Cunha", "MUN", 16, "MID", 430871, 3),
-    player(208, "Sarr", "CRY", 8, "MID", 232185, 2),
-    player(248, "Beto", "EVE", 9, "FWD", 486385, 2),
-    player(426, "B.Fernandes", "MUN", 16, "MID", 141746, 1),
-  ]),
+  // goalsThisGw: 2 - also demonstrates the "+N this GW" chip next to the
+  // headline total (BlackjackParticipantCard).
+  buildParticipant(
+    7,
+    "On pace + qualified",
+    "8 goals, all 4 scored",
+    [
+      player(428, "Cunha", "MUN", 16, "MID", 430871, 3),
+      player(208, "Sarr", "CRY", 8, "MID", 232185, 2),
+      player(248, "Beto", "EVE", 9, "FWD", 486385, 2),
+      player(426, "B.Fernandes", "MUN", 16, "MID", 141746, 1),
+    ],
+    PREVIEW_GAMEWEEK,
+    2,
+  ),
 
   buildParticipant(8, "On pace, not qualified", "8 goals, two picks on 0", [
     player(452, "Bruno G.", "NEW", 17, "MID", 208706, 5),

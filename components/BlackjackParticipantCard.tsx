@@ -102,6 +102,14 @@ export function BlackjackParticipantCard({
           <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">
             / {BLACKJACK_TARGET}
           </span>
+          {/* Hidden rather than shown as "+0" - most cards on a given
+              gameweek will have nothing to report, and a chip on every
+              single one would just be noise. Its presence is the signal. */}
+          {!isBust && participant.goalsThisGw > 0 && (
+            <span className="text-[10px] font-extrabold tabular-nums text-green-600 dark:text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded-full">
+              +{participant.goalsThisGw} this GW
+            </span>
+          )}
         </div>
       </div>
 
