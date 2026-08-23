@@ -92,6 +92,17 @@ export function BlackjackParticipantCard({
           )}
         </div>
         <div className="flex items-baseline gap-1.5 shrink-0">
+          {/* Hidden rather than shown as "+0" - most cards on a given
+              gameweek will have nothing to report, and this on every
+              single one would just be noise. Its presence is the signal.
+              shrink-0 so bg-clip-text has a box sized to "+N" itself, not
+              stretched by the row - same reasoning as CupBracket.tsx's
+              own gradient-text score label. */}
+          {!isBust && participant.goalsThisGw > 0 && (
+            <span className="shrink-0 text-lg font-extrabold tabular-nums bg-gradient-to-r from-[#00ff85] to-[#04f5ff] bg-clip-text text-transparent">
+              +{participant.goalsThisGw}
+            </span>
+          )}
           <span
             className={`text-4xl font-extrabold tabular-nums tracking-tight ${
               isBust ? "text-zinc-400 dark:text-zinc-500" : ""
@@ -102,14 +113,6 @@ export function BlackjackParticipantCard({
           <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">
             / {BLACKJACK_TARGET}
           </span>
-          {/* Hidden rather than shown as "+0" - most cards on a given
-              gameweek will have nothing to report, and a chip on every
-              single one would just be noise. Its presence is the signal. */}
-          {!isBust && participant.goalsThisGw > 0 && (
-            <span className="text-[10px] font-extrabold tabular-nums text-green-600 dark:text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded-full">
-              +{participant.goalsThisGw} this GW
-            </span>
-          )}
         </div>
       </div>
 
