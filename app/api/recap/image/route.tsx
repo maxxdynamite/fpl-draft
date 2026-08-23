@@ -58,7 +58,7 @@ export async function GET() {
             row. Sized as a clear headline, not the loudest thing on the
             card - the H2H scores below are the actual content people are
             here for, so the title shouldn't out-compete them. */}
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ display: "flex", fontSize: 48, fontWeight: 800, letterSpacing: -1, color: "#fff" }}>
             Gameweek {data.gameweek} Recap
           </span>
@@ -82,7 +82,7 @@ export async function GET() {
 
         {/* H2H results - draft-page left/right order, not winner-first */}
         <span style={{ display: "flex", fontSize: 22, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", color: "#6b6b74", margin: "40px 0 28px" }}>
-          {data.leagueName} - H2H
+          {data.leagueName} — H2H
         </span>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {data.h2hResults.map((r, i) => {
@@ -99,11 +99,11 @@ export async function GET() {
                 }}
               >
                 <span style={{ display: "flex", flex: 1, color: "#d4d4d8", fontWeight: 600 }}>{r.aName}</span>
-                <span style={{ display: "flex", width: 66, justifyContent: "center", fontWeight: 800, fontSize: 37, color: aWon ? GREEN : "#6b6b74" }}>
+                <span style={{ display: "flex", width: 66, justifyContent: "center", fontWeight: 800, fontSize: 37, color: aWon ? "#fff" : "#6b6b74" }}>
                   {r.aScore}
                 </span>
                 <span style={{ display: "flex", width: 38, justifyContent: "center", fontSize: 19, color: "#45454d", fontWeight: 700 }}>v</span>
-                <span style={{ display: "flex", width: 66, justifyContent: "center", fontWeight: 800, fontSize: 37, color: !aWon ? GREEN : "#6b6b74" }}>
+                <span style={{ display: "flex", width: 66, justifyContent: "center", fontWeight: 800, fontSize: 37, color: !aWon ? "#fff" : "#6b6b74" }}>
                   {r.bScore}
                 </span>
                 <span style={{ display: "flex", flex: 1, justifyContent: "flex-end", color: "#d4d4d8", fontWeight: 600 }}>{r.bName}</span>

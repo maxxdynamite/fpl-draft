@@ -1,5 +1,6 @@
 import { getRecapData, tokensToText } from "@/lib/recap";
 import { CopyButton } from "@/components/CopyButton";
+import { ShareButton } from "@/components/ShareButton";
 
 // MOCKUP MODE - see the comment on lib/recap.ts's getRecapData(). This
 // page (and the /api/recap/image route it points at) narrates whatever
@@ -30,13 +31,23 @@ export default async function RecapPage() {
 
       <h1 className="text-xl font-bold mb-3">Weekly Recap</h1>
 
-      {/* Long-press on mobile gives the native Share/Save Image sheet -
-          no separate download step needed. */}
       <img
         src="/api/recap/image"
         alt={`Gameweek ${data.gameweek} recap`}
         className="w-full rounded-2xl shadow-[var(--shadow-soft)]"
       />
+
+      {/* Shares the image and caption together in one native share sheet
+          where supported (see ShareButton) - falls back to pointing at
+          Copy caption + long-press-to-save below when it isn't. */}
+      <div className="mt-4">
+        <ShareButton
+          imageUrl="/api/recap/image"
+          caption={caption}
+          fileName={`gameweek-${data.gameweek}-recap.png`}
+          title={`Gameweek ${data.gameweek} Recap`}
+        />
+      </div>
 
       <div className="mt-5 rounded-xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-4">
         <div className="flex items-center justify-between gap-2 mb-2">
