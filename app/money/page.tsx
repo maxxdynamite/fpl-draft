@@ -189,32 +189,38 @@ export default async function MoneyPage() {
   }));
 
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-4 items-start sm:grid-cols-3">
-        <TotalMoneyTile rows={totalRows} />
+    // Single flowing grid, not fixed rows of three - Draft Overall/Cup/
+    // Blackjack only render once they're actually relevant (see
+    // seasonComplete/bracket.champion below), so a hardcoded row layout
+    // would otherwise leave visible gaps while they're hidden.
+    <div className="grid gap-4 items-start sm:grid-cols-3">
+      <TotalMoneyTile rows={totalRows} />
+      <DraftH2hTile matchups={displayMatchups} />
+      <MotwSotwTile rows={displayMotwSotwRows} />
+      {seasonComplete && (
         <PotTile
           title="Draft Overall"
           entryFee={DRAFT_ENTRY}
           entrantCount={managers.length}
           rows={displayDraftRows}
         />
-        <DraftH2hTile matchups={displayMatchups} />
-      </div>
-      <div className="grid gap-4 items-start sm:grid-cols-3">
-        <MotwSotwTile rows={displayMotwSotwRows} />
+      )}
+      {bracket.champion !== null && (
         <PotTile
           title="Christmas Cup"
           entryFee={CUP_ENTRY}
           entrantCount={managers.length}
           rows={displayCupRows}
         />
+      )}
+      {seasonComplete && (
         <PotTile
           title="Blackjack"
           entryFee={BLACKJACK_ENTRY}
           entrantCount={blackjackParticipants.length}
           rows={displayBlackjackRows}
         />
-      </div>
+      )}
     </div>
   );
 }
