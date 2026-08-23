@@ -8,9 +8,29 @@ import { usePathname } from "next/navigation";
 // here), so it swaps to a plain back link to the main Blackjack page
 // instead. Same pill treatment either way, just label/destination differ,
 // so the title row's height/alignment stays untouched.
-export function BlackjackHeaderAction() {
+export function BlackjackHeaderAction({
+  pickingWindowOpen,
+}: {
+  pickingWindowOpen: boolean;
+}) {
   const pathname = usePathname();
   const onPicksPage = pathname === "/blackjack/picks";
+
+  // "Back" always stays a real, clickable link regardless of the window -
+  // it's just navigation, and the picks page itself already shows its own
+  // "Picks are locked" messaging when closed. Only the "Make Your Picks"
+  // call-to-action - the one that'd lead someone into a form they can't
+  // actually submit right now - gets greyed out and made inert.
+  if (!onPicksPage && !pickingWindowOpen) {
+    return (
+      <span
+        aria-disabled="true"
+        className="flex items-center gap-2 px-4 pt-[5px] pb-[7px] rounded-full text-sm font-semibold bg-zinc-200 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-600 cursor-not-allowed"
+      >
+        Make Your Picks
+      </span>
+    );
+  }
 
   return (
     <Link

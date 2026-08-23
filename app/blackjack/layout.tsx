@@ -1,5 +1,6 @@
 import { getPlayersData } from "@/lib/players";
 import { getPlGameweekStatus } from "@/lib/plGameweekStatus";
+import { isPickingWindowOpen } from "@/lib/pickingWindow";
 import { GameweekStatusLabel, type GameweekStatus } from "@/components/GameweekStatusLabel";
 import { BlackjackHeaderAction } from "@/components/BlackjackHeaderAction";
 
@@ -9,10 +10,11 @@ export default async function BlackjackLayout({ children }: LayoutProps<"/blackj
   // which is a separate, out-of-sync competition schedule. Falls back to
   // Gameweek 1 pre-season (currentGameweek is 0 before a ball's kicked),
   // same convention as the Draft layout's own pre-season fallback.
-  const [{ currentGameweek }, plStatus] = await Promise.all([
+  const [{ currentGameweek, seasonStartTime }, plStatus] = await Promise.all([
     getPlayersData(),
     getPlGameweekStatus(),
   ]);
+  const pickingWindowOpen = isPickingWindowOpen(seasonStartTime);
   const gameweekNumber = currentGameweek > 0 ? currentGameweek : 1;
   const status: GameweekStatus | null = !plStatus
     ? null
@@ -35,7 +37,7 @@ export default async function BlackjackLayout({ children }: LayoutProps<"/blackj
           </h1>
           <GameweekStatusLabel status={status} />
         </div>
-        <BlackjackHeaderAction />
+        <BlackjackHeaderAction pickingWindowOpen={pickingWindowOpen} />
       </div>
       {children}
     </main>
