@@ -91,18 +91,7 @@ export function BlackjackParticipantCard({
             </span>
           )}
         </div>
-        <div className="flex items-baseline gap-1.5 shrink-0">
-          {/* Hidden rather than shown as "+0" - most cards on a given
-              gameweek will have nothing to report, and this on every
-              single one would just be noise. Its presence is the signal.
-              shrink-0 so bg-clip-text has a box sized to "+N" itself, not
-              stretched by the row - same reasoning as CupBracket.tsx's
-              own gradient-text score label. */}
-          {!isBust && participant.goalsThisGw > 0 && (
-            <span className="shrink-0 text-xs font-semibold tabular-nums bg-gradient-to-r from-[#00ff85] to-[#04f5ff] bg-clip-text text-transparent">
-              +{participant.goalsThisGw}
-            </span>
-          )}
+        <div className="flex items-end gap-1.5 shrink-0">
           <span
             className={`text-4xl font-extrabold tabular-nums tracking-tight ${
               isBust ? "text-zinc-400 dark:text-zinc-500" : ""
@@ -110,9 +99,19 @@ export function BlackjackParticipantCard({
           >
             {participant.totalGoals}
           </span>
-          <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">
-            / {BLACKJACK_TARGET}
-          </span>
+          <div className="flex flex-col items-start">
+            {/* Hidden rather than shown as "+0" - most cards on a given
+                gameweek will have nothing to report, and this on every
+                single one would just be noise. Its presence is the signal. */}
+            {!isBust && participant.goalsThisGw > 0 && (
+              <span className="text-xs font-semibold tabular-nums leading-none mb-0.5 bg-gradient-to-r from-[#00ff85] to-[#04f5ff] bg-clip-text text-transparent">
+                +{participant.goalsThisGw}
+              </span>
+            )}
+            <span className="text-sm font-semibold leading-none text-zinc-400 dark:text-zinc-500">
+              / {BLACKJACK_TARGET}
+            </span>
+          </div>
         </div>
       </div>
 
