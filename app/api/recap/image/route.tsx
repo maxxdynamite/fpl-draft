@@ -6,22 +6,11 @@ export const runtime = "nodejs";
 const GREEN = "#00ff85";
 const CYAN = "#04f5ff";
 
-function BlackjackColumn({
-  rows,
-  startRank,
-  maxGoals,
-}: {
-  rows: RecapBlackjackRow[];
-  startRank: number;
-  maxGoals: number;
-}) {
+function BlackjackColumn({ rows, maxGoals }: { rows: RecapBlackjackRow[]; maxGoals: number }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       {rows.map((row, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", padding: "13px 0", fontSize: 24 }}>
-          <span style={{ display: "flex", width: 32, color: "#52525b", fontWeight: 700, fontSize: 18 }}>
-            {startRank + i}
-          </span>
           <span style={{ display: "flex", flex: 1, color: "#d4d4d8", fontWeight: 600, overflow: "hidden" }}>
             {row.managerName}
           </span>
@@ -66,9 +55,11 @@ export async function GET() {
       >
         {/* Title takes the very top spot now - the league name moved down
             into the H2H section label instead of getting its own header
-            row, freeing that space for everything below to scale up. */}
+            row. Sized as a clear headline, not the loudest thing on the
+            card - the H2H scores below are the actual content people are
+            here for, so the title shouldn't out-compete them. */}
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 66, fontWeight: 800, letterSpacing: -1, color: "#fff" }}>
+          <span style={{ display: "flex", fontSize: 48, fontWeight: 800, letterSpacing: -1, color: "#fff" }}>
             Gameweek {data.gameweek} Recap
           </span>
           <span
@@ -90,7 +81,7 @@ export async function GET() {
         </div>
 
         {/* H2H results - draft-page left/right order, not winner-first */}
-        <span style={{ display: "flex", fontSize: 22, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", color: "#6b6b74", margin: "44px 0 18px" }}>
+        <span style={{ display: "flex", fontSize: 22, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", color: "#6b6b74", margin: "40px 0 28px" }}>
           {data.leagueName} - H2H
         </span>
         <div style={{ display: "flex", flexDirection: "column" }}>
@@ -123,33 +114,43 @@ export async function GET() {
 
         {/* Blackjack - every manager, split into two columns so all 14
             names fit without shrinking past legibility. */}
-        <span style={{ display: "flex", fontSize: 22, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", color: "#6b6b74", margin: "44px 0 18px" }}>
+        <span style={{ display: "flex", fontSize: 22, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", color: "#6b6b74", margin: "40px 0 28px" }}>
           Blackjack — Target 21
         </span>
         <div style={{ display: "flex", flexDirection: "row", gap: 40 }}>
-          <BlackjackColumn rows={colA} startRank={1} maxGoals={maxGoals} />
-          <BlackjackColumn rows={colB} startRank={half + 1} maxGoals={maxGoals} />
+          <BlackjackColumn rows={colA} maxGoals={maxGoals} />
+          <BlackjackColumn rows={colB} maxGoals={maxGoals} />
         </div>
 
-        {/* Footer */}
+        {/* Footer - a fixed marginTop, not "auto": Satori pushes an
+            auto-margin flex child hard against the container's edge, past
+            the container's own bottom padding, which clipped this right
+            off the canvas instead of leaving it visible above the edge. */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginTop: "auto",
+            marginTop: 40,
             paddingTop: 28,
             borderTop: "2px solid rgba(255,255,255,0.08)",
           }}
         >
           <span style={{ display: "flex", fontSize: 20, fontWeight: 800 }}>
-            <span style={{ color: "#fff" }}>Bad Blokes&nbsp;</span>
-            <span style={{ color: GREEN }}>Weekly</span>
+            <span style={{ display: "flex", color: "#fff" }}>Bad Blokes&nbsp;</span>
+            <span style={{ display: "flex", color: GREEN }}>Weekly</span>
           </span>
           <span style={{ display: "flex", fontSize: 16, color: "#52525b" }}>badblokesweekly.vercel.app</span>
         </div>
       </div>
     ),
-    { width: 1080, height: 1350 },
+    // Measured, not guessed: content (title through footer) actually
+    // needs ~1477px at this sizing, plus the same 56px the top padding
+    // uses so the footer isn't flush against the bottom edge. A canvas
+    // taller than the content also silently drops whatever doesn't fit -
+    // Satori clips overflow rather than growing the container or erroring,
+    // which is exactly what ate the footer entirely at the old 1350
+    // height with no warning anywhere.
+    { width: 1080, height: 1533 },
   );
 }
