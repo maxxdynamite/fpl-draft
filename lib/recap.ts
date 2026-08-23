@@ -1,5 +1,5 @@
 import { getH2hMatchups } from "./h2h";
-import { getBlackjackLeaderboard } from "./blackjack";
+import { getBlackjackLeaderboard, type BlackjackStatus } from "./blackjack";
 import { getLeagueName } from "./leagueInfo";
 
 // aName/aScore is always teamA, bName/bScore always teamB - same left/right
@@ -25,6 +25,7 @@ export type RecapWinnerLoser = {
 export type RecapBlackjackRow = {
   managerName: string;
   goals: number;
+  status: BlackjackStatus;
 };
 
 // A small run of text where some spans are emphasised (bold/bright) -
@@ -48,6 +49,45 @@ function winnerLoser(m: RecapMatchup): RecapWinnerLoser {
   return m.aScore >= m.bScore
     ? { winnerName: m.aName, winnerScore: m.aScore, loserName: m.bName, loserScore: m.bScore }
     : { winnerName: m.bName, winnerScore: m.bScore, loserName: m.aName, loserScore: m.aScore };
+}
+
+// A raw goal tally alone doesn't say whether the Blackjack leader is in a
+// good spot - reaching 21 needs the right pace across the whole season,
+// so being well ahead this early is a genuine risk (busting before it
+// counts), not an unambiguous positive, while being right on target is
+// the actually good outcome. Reuses the same status the rest of the app
+// already computes (lib/blackjackStatus.ts) rather than re-deriving pace
+// judgement from scratch here.
+function blackjackLeaderClause(row: RecapBlackjackRow): RecapToken[] {
+  const goals: RecapToken = { text: `${row.goals} goal${row.goals === 1 ? "" : "s"}`, strong: true };
+  switch (row.status) {
+    case "blackjack":
+    case "winner":
+      return [{ text: " and has already hit an actual blackjack — " }, goals, { text: ", dead on 21." }];
+    case "over-target":
+      return [
+        { text: " and leads the Blackjack pot with " },
+        goals,
+        { text: " — well ahead of pace already, which isn't unambiguously good news this early." },
+      ];
+    case "at-risk":
+    case "edge":
+      return [
+        { text: " and leads the Blackjack pot on " },
+        goals,
+        { text: ", but is living dangerously close to busting." },
+      ];
+    case "on-target":
+      return [{ text: " and is right on pace atop the Blackjack pot with " }, goals, { text: "." }];
+    case "early-days":
+      return [
+        { text: " and currently leads the Blackjack pot with " },
+        goals,
+        { text: " — too early to read much into pace yet." },
+      ];
+    default:
+      return [{ text: " and leads the Blackjack pot with " }, goals, { text: "." }];
+  }
 }
 
 // MOCKUP MODE: this project's whole live-data philosophy (see
@@ -107,21 +147,20 @@ export async function getRecapData(): Promise<RecapData> {
   const blackjackAll: RecapBlackjackRow[] = blackjackParticipants
     .filter((p) => p.players !== null)
     .sort((a, b) => b.totalGoals - a.totalGoals)
-    .map((p) => ({ managerName: p.managerName, goals: p.totalGoals }));
+    .map((p) => ({ managerName: p.managerName, goals: p.totalGoals, status: p.status }));
   const blackjackLeader = blackjackAll[0] ?? null;
 
   // Same top-scorer as the Blackjack leader is a genuinely different,
   // better story than either fact alone - worth its own sentence rather
-  // than two generic ones.
+  // than two generic ones. The Blackjack half is pace-aware (see
+  // blackjackLeaderClause) rather than just repeating the goal count.
   const headline: RecapToken[] =
     topManager && blackjackLeader && topManager.managerName === blackjackLeader.managerName
       ? [
           { text: topManager.managerName, strong: true },
           { text: " is having himself a week — top scorer on " },
           { text: `${topManager.latestScore} pts`, strong: true },
-          { text: " and leading the Blackjack pot with " },
-          { text: `${blackjackLeader.goals} goals`, strong: true },
-          { text: " already." },
+          ...blackjackLeaderClause(blackjackLeader),
         ]
       : topManager
         ? [
