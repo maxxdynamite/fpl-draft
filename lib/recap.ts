@@ -2,12 +2,24 @@ import { getH2hMatchups } from "./h2h";
 import { getBlackjackLeaderboard } from "./blackjack";
 import { getLeagueName } from "./leagueInfo";
 
+// aName/aScore is always teamA, bName/bScore always teamB - same left/right
+// pairing as the draft page's own H2H tiles (getH2hMatchups() already
+// produces that order), not "winner first". Which side actually won is
+// derived separately wherever it's needed (colouring a row, describing
+// the closest match in words) rather than baked into the list order.
 export type RecapMatchup = {
+  aName: string;
+  aScore: number;
+  bName: string;
+  bScore: number;
+  margin: number;
+};
+
+export type RecapWinnerLoser = {
   winnerName: string;
   winnerScore: number;
   loserName: string;
   loserScore: number;
-  margin: number;
 };
 
 export type RecapBlackjackRow = {
@@ -25,12 +37,18 @@ export type RecapData = {
   gameweek: number;
   leagueName: string;
   headline: RecapToken[];
-  h2hResults: RecapMatchup[]; // sorted by margin, biggest first
-  closestMatch: RecapMatchup | null;
-  blackjackTop: RecapBlackjackRow[];
+  h2hResults: RecapMatchup[]; // draft-page order, not sorted by margin
+  closestMatch: RecapWinnerLoser | null;
+  blackjackAll: RecapBlackjackRow[]; // every manager, ranked by goals
   bottomManagerName: string | null;
   bottomScore: number | null;
 };
+
+function winnerLoser(m: RecapMatchup): RecapWinnerLoser {
+  return m.aScore >= m.bScore
+    ? { winnerName: m.aName, winnerScore: m.aScore, loserName: m.bName, loserScore: m.bScore }
+    : { winnerName: m.bName, winnerScore: m.bScore, loserName: m.aName, loserScore: m.aScore };
+}
 
 // MOCKUP MODE: this project's whole live-data philosophy (see
 // lib/h2h.ts, lib/liveStandings.ts, app/money/page.tsx) is that nothing
@@ -51,27 +69,27 @@ export async function getRecapData(): Promise<RecapData> {
 
   const gameweek = matchups[0]?.teamA.latestGameweek ?? 1;
 
+  // Draft-page order, not re-sorted - same pairing/left-right as
+  // getH2hMatchups() already gives every other H2H view in the app.
   const h2hResults: RecapMatchup[] = matchups
     .map((m): RecapMatchup | null => {
       const a = m.teamA;
       const b = m.teamB;
       if (a.latestScore === null || b.latestScore === null) return null;
-      const [winner, loser] =
-        a.latestScore >= b.latestScore ? [a, b] : [b, a];
       return {
-        winnerName: winner.managerName,
-        winnerScore: winner.latestScore!,
-        loserName: loser.managerName,
-        loserScore: loser.latestScore!,
-        margin: winner.latestScore! - loser.latestScore!,
+        aName: a.managerName,
+        aScore: a.latestScore,
+        bName: b.managerName,
+        bScore: b.latestScore,
+        margin: Math.abs(a.latestScore - b.latestScore),
       };
     })
-    .filter((r): r is RecapMatchup => r !== null)
-    .sort((a, b) => b.margin - a.margin);
+    .filter((r): r is RecapMatchup => r !== null);
 
-  const biggestWin = h2hResults[0] ?? null;
-  const closestMatch =
-    h2hResults.length > 0 ? h2hResults[h2hResults.length - 1] : null;
+  // Sorted by margin only for picking out the closest match's words in
+  // the caption - the list above stays in draft-page order regardless.
+  const byMargin = [...h2hResults].sort((x, y) => x.margin - y.margin);
+  const closestMatch = byMargin.length > 0 ? winnerLoser(byMargin[0]) : null;
 
   // Flattened across both sides of every matchup - covers every manager
   // exactly once, same pool getH2hMatchups() already builds from.
@@ -86,12 +104,11 @@ export async function getRecapData(): Promise<RecapData> {
     scored[0],
   );
 
-  const blackjackTop: RecapBlackjackRow[] = blackjackParticipants
+  const blackjackAll: RecapBlackjackRow[] = blackjackParticipants
     .filter((p) => p.players !== null)
     .sort((a, b) => b.totalGoals - a.totalGoals)
-    .slice(0, 3)
     .map((p) => ({ managerName: p.managerName, goals: p.totalGoals }));
-  const blackjackLeader = blackjackTop[0] ?? null;
+  const blackjackLeader = blackjackAll[0] ?? null;
 
   // Same top-scorer as the Blackjack leader is a genuinely different,
   // better story than either fact alone - worth its own sentence rather
@@ -120,8 +137,8 @@ export async function getRecapData(): Promise<RecapData> {
     leagueName,
     headline,
     h2hResults,
-    closestMatch: closestMatch && closestMatch !== biggestWin ? closestMatch : null,
-    blackjackTop,
+    closestMatch,
+    blackjackAll,
     bottomManagerName: bottomManager?.managerName ?? null,
     bottomScore: bottomManager?.latestScore ?? null,
   };

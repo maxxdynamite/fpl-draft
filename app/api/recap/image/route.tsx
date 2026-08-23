@@ -1,18 +1,44 @@
 import { ImageResponse } from "next/og";
-import { getRecapData, type RecapToken } from "@/lib/recap";
+import { getRecapData, type RecapBlackjackRow } from "@/lib/recap";
 
 export const runtime = "nodejs";
 
 const GREEN = "#00ff85";
 const CYAN = "#04f5ff";
 
-function Headline({ tokens }: { tokens: RecapToken[] }) {
+function BlackjackColumn({
+  rows,
+  startRank,
+  maxGoals,
+}: {
+  rows: RecapBlackjackRow[];
+  startRank: number;
+  maxGoals: number;
+}) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", fontSize: 27, lineHeight: 1.5, color: "#e4e4e7" }}>
-      {tokens.map((t, i) => (
-        <span key={i} style={{ color: t.strong ? "#ffffff" : "#e4e4e7", fontWeight: t.strong ? 800 : 400 }}>
-          {t.text}
-        </span>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+      {rows.map((row, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", padding: "9px 0", fontSize: 20 }}>
+          <span style={{ display: "flex", width: 26, color: "#52525b", fontWeight: 700, fontSize: 16 }}>
+            {startRank + i}
+          </span>
+          <span style={{ display: "flex", flex: 1, color: "#d4d4d8", fontWeight: 600, overflow: "hidden" }}>
+            {row.managerName}
+          </span>
+          <div style={{ display: "flex", width: 46, height: 8, borderRadius: 999, background: "rgba(255,255,255,0.08)", overflow: "hidden", marginRight: 10 }}>
+            <div
+              style={{
+                display: "flex",
+                width: `${Math.max(10, (row.goals / maxGoals) * 100)}%`,
+                height: "100%",
+                background: `linear-gradient(90deg, ${GREEN}, ${CYAN})`,
+              }}
+            />
+          </div>
+          <span style={{ display: "flex", width: 26, justifyContent: "flex-end", fontWeight: 800, color: "#fff" }}>
+            {row.goals}
+          </span>
+        </div>
       ))}
     </div>
   );
@@ -20,8 +46,10 @@ function Headline({ tokens }: { tokens: RecapToken[] }) {
 
 export async function GET() {
   const data = await getRecapData();
-  const results = data.h2hResults.slice(0, 7);
-  const maxGoals = data.blackjackTop[0]?.goals ?? 1;
+  const maxGoals = data.blackjackAll[0]?.goals || 1;
+  const half = Math.ceil(data.blackjackAll.length / 2);
+  const colA = data.blackjackAll.slice(0, half);
+  const colB = data.blackjackAll.slice(half);
 
   return new ImageResponse(
     (
@@ -57,79 +85,50 @@ export async function GET() {
             Final
           </span>
         </div>
-        <div style={{ display: "flex", fontSize: 56, fontWeight: 800, letterSpacing: -1, color: "#fff", margin: "6px 0 36px" }}>
+        <div style={{ display: "flex", fontSize: 60, fontWeight: 800, letterSpacing: -1, color: "#fff", margin: "8px 0 40px" }}>
           Gameweek {data.gameweek} Recap
         </div>
 
-        {/* Storyline highlight */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            borderRadius: 28,
-            padding: "26px 30px",
-            background: "linear-gradient(135deg, rgba(0,255,133,0.14), rgba(4,245,255,0.10))",
-            border: `2px solid rgba(0,255,133,0.28)`,
-            marginBottom: 34,
-          }}
-        >
-          <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", color: GREEN, marginBottom: 10 }}>
-            Storyline of the week
-          </span>
-          <Headline tokens={data.headline} />
-        </div>
-
-        {/* H2H results */}
-        <span style={{ display: "flex", fontSize: 18, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", color: "#6b6b74", marginBottom: 12 }}>
+        {/* H2H results - draft-page left/right order, not winner-first */}
+        <span style={{ display: "flex", fontSize: 20, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", color: "#6b6b74", marginBottom: 14 }}>
           Head-to-Head
         </span>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          {results.map((r, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                padding: "12px 0",
-                borderTop: i === 0 ? "none" : "2px solid rgba(255,255,255,0.06)",
-                fontSize: 22,
-              }}
-            >
-              <span style={{ display: "flex", flex: 1, color: "#d4d4d8", fontWeight: 600 }}>{r.winnerName}</span>
-              <span style={{ display: "flex", width: 50, justifyContent: "center", fontWeight: 800, fontSize: 26, color: GREEN }}>
-                {r.winnerScore}
-              </span>
-              <span style={{ display: "flex", width: 30, justifyContent: "center", fontSize: 16, color: "#45454d", fontWeight: 700 }}>v</span>
-              <span style={{ display: "flex", width: 50, justifyContent: "center", fontWeight: 800, fontSize: 26, color: "#6b6b74" }}>
-                {r.loserScore}
-              </span>
-              <span style={{ display: "flex", flex: 1, justifyContent: "flex-end", color: "#d4d4d8", fontWeight: 600 }}>{r.loserName}</span>
-            </div>
-          ))}
+          {data.h2hResults.map((r, i) => {
+            const aWon = r.aScore >= r.bScore;
+            return (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "16px 0",
+                  borderTop: i === 0 ? "none" : "2px solid rgba(255,255,255,0.06)",
+                  fontSize: 26,
+                }}
+              >
+                <span style={{ display: "flex", flex: 1, color: "#d4d4d8", fontWeight: 600 }}>{r.aName}</span>
+                <span style={{ display: "flex", width: 56, justifyContent: "center", fontWeight: 800, fontSize: 30, color: aWon ? GREEN : "#6b6b74" }}>
+                  {r.aScore}
+                </span>
+                <span style={{ display: "flex", width: 34, justifyContent: "center", fontSize: 17, color: "#45454d", fontWeight: 700 }}>v</span>
+                <span style={{ display: "flex", width: 56, justifyContent: "center", fontWeight: 800, fontSize: 30, color: !aWon ? GREEN : "#6b6b74" }}>
+                  {r.bScore}
+                </span>
+                <span style={{ display: "flex", flex: 1, justifyContent: "flex-end", color: "#d4d4d8", fontWeight: 600 }}>{r.bName}</span>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Blackjack */}
-        <span style={{ display: "flex", fontSize: 18, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", color: "#6b6b74", margin: "32px 0 12px" }}>
+        {/* Blackjack - every manager, split into two columns so all 14
+            names fit without shrinking past legibility. */}
+        <span style={{ display: "flex", fontSize: 20, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", color: "#6b6b74", margin: "36px 0 14px" }}>
           Blackjack — Target 21
         </span>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {data.blackjackTop.map((row, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", padding: "8px 0", fontSize: 22 }}>
-              <span style={{ display: "flex", width: 30, color: "#52525b", fontWeight: 700, fontSize: 18 }}>{i + 1}</span>
-              <span style={{ display: "flex", flex: 1, color: "#d4d4d8", fontWeight: 600 }}>{row.managerName}</span>
-              <div style={{ display: "flex", width: 140, height: 10, borderRadius: 999, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    width: `${Math.max(8, (row.goals / maxGoals) * 100)}%`,
-                    height: "100%",
-                    background: `linear-gradient(90deg, ${GREEN}, ${CYAN})`,
-                  }}
-                />
-              </div>
-              <span style={{ display: "flex", width: 40, justifyContent: "flex-end", fontWeight: 800, color: "#fff" }}>{row.goals}</span>
-            </div>
-          ))}
+        <div style={{ display: "flex", flexDirection: "row", gap: 36 }}>
+          <BlackjackColumn rows={colA} startRank={1} maxGoals={maxGoals} />
+          <BlackjackColumn rows={colB} startRank={half + 1} maxGoals={maxGoals} />
         </div>
 
         {/* Footer */}
