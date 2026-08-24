@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SpadeIcon } from "./SpadeIcon";
 import { PoundIcon } from "./PoundIcon";
+import { TrophyIcon } from "./TrophyIcon";
 
 function ArrowsLeftRightIcon() {
   return (
@@ -50,6 +51,7 @@ const links = [
   { href: "/draft", label: "Draft", Icon: ArrowsLeftRightIcon },
   { href: "/blackjack", label: "Blackjack", Icon: SpadeIcon },
   { href: "/money", label: "Money", Icon: PoundIcon },
+  { href: "/history", label: "History", Icon: TrophyIcon },
 ];
 
 export function TopNav() {
@@ -83,11 +85,15 @@ export function TopNav() {
           </span>
         </Link>
 
-        {/* Full pill nav - three tabs never fit below ~460px (measured:
-            nav starts overflowing the header between 440-480px viewport
-            width), well within real phone widths, so it's hidden below
-            sm (640px) in favour of the dropdown, not just shrunk. */}
-        <nav className="hidden sm:flex items-center gap-1 p-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] shadow-[var(--shadow-pressed)]">
+        {/* Full pill nav - four tabs need ~673px at the sm breakpoint's own
+            logo size (measured directly via getBoundingClientRect, not
+            estimated), which doesn't fit inside sm's 640px - the three-tab
+            version fit fine at 640 (comfortable margin down to ~460px),
+            but the added History tab ate that margin and then some. Switch
+            point moved to md (768px) instead, where the logo's own jump to
+            text-3xl only pushes the total to ~725px - comfortable again -
+            rather than shrinking the pill or re-tuning its padding. */}
+        <nav className="hidden md:flex items-center gap-1 p-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] shadow-[var(--shadow-pressed)]">
           {links.map((link) => {
             const active = pathname.startsWith(link.href);
             return (
@@ -108,8 +114,10 @@ export function TopNav() {
         </nav>
 
         {/* Mobile/narrow-tablet dropdown - single pill showing the active
-            section, expands into the same three links on tap. */}
-        <div className="relative sm:hidden" ref={menuRef}>
+            section, expands into the same links on tap. Covers up to md
+            (768px) now, not just sm (640px) - see the pill nav's own
+            comment above for why the switch point moved. */}
+        <div className="relative md:hidden" ref={menuRef}>
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
