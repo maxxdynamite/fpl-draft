@@ -12,14 +12,11 @@ export async function MotwSotwLeaderboard() {
             Manager of the Week
           </p>
           <ul>
-            {motw.map((leader, i) => (
+            {motw.map((leader) => (
               <li
                 key={leader.entryId}
                 className="flex items-center gap-2 px-3 py-1.5 border-t border-black/[0.04] dark:border-white/[0.06] text-xs"
               >
-                <span className="w-5 shrink-0 tabular-nums text-zinc-400 dark:text-zinc-500 font-medium">
-                  {i + 1}
-                </span>
                 <span className="flex-1 font-medium truncate">
                   {leader.managerName}
                 </span>
@@ -43,14 +40,11 @@ export async function MotwSotwLeaderboard() {
             Spanner of the Week
           </p>
           <ul>
-            {sotw.map((leader, i) => (
+            {sotw.map((leader) => (
               <li
                 key={leader.entryId}
                 className="flex items-center gap-2 px-3 py-1.5 border-t border-black/[0.04] dark:border-white/[0.06] text-xs"
               >
-                <span className="w-5 shrink-0 tabular-nums text-zinc-400 dark:text-zinc-500 font-medium">
-                  {i + 1}
-                </span>
                 <span className="flex-1 font-medium truncate">
                   {leader.managerName}
                 </span>

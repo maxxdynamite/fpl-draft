@@ -12,14 +12,11 @@ export async function GwScoreRecords() {
             Highest GW Score
           </p>
           <ul>
-            {highest.map((record, i) => (
+            {highest.map((record) => (
               <li
                 key={`${record.entryId}-${record.gameweek}`}
                 className="flex items-center gap-2 px-3 py-1.5 border-t border-black/[0.04] dark:border-white/[0.06] text-xs"
               >
-                <span className="w-5 shrink-0 tabular-nums text-zinc-400 dark:text-zinc-500 font-medium">
-                  {i + 1}
-                </span>
                 <span className="flex-1 min-w-0">
                   <span className="block font-medium truncate">
                     {record.teamName}
@@ -48,14 +45,11 @@ export async function GwScoreRecords() {
             Lowest GW Score
           </p>
           <ul>
-            {lowest.map((record, i) => (
+            {lowest.map((record) => (
               <li
                 key={`${record.entryId}-${record.gameweek}`}
                 className="flex items-center gap-2 px-3 py-1.5 border-t border-black/[0.04] dark:border-white/[0.06] text-xs"
               >
-                <span className="w-5 shrink-0 tabular-nums text-zinc-400 dark:text-zinc-500 font-medium">
-                  {i + 1}
-                </span>
                 <span className="flex-1 min-w-0">
                   <span className="block font-medium truncate">
                     {record.teamName}
