@@ -46,9 +46,14 @@ export type RecapBlackjackRow = {
 // never drift out of sync with each other.
 export type RecapToken = { text: string; strong?: boolean };
 
+// managerName for the personal, narrative lines (headline, closest game,
+// streak, bottom-of-the-week) - teamName for the stat/record/award lines
+// (season high/low, overall table, MOTW/SOTW), so the caption doesn't
+// read as the same name-shape repeated in every sentence. Blackjack
+// always stays managerName regardless of which line it's in.
 export type RecapHotStreak = { managerName: string; streak: number };
-export type RecapSeasonScore = { managerName: string; score: number; gameweek: number };
-export type RecapOverallStanding = { managerName: string; totalPoints: number };
+export type RecapSeasonScore = { teamName: string; score: number; gameweek: number };
+export type RecapOverallStanding = { teamName: string; totalPoints: number };
 export type RecapAward = { teamName: string; points: number };
 
 export type RecapData = {
@@ -136,6 +141,7 @@ export async function getRecapData(): Promise<RecapData> {
       getWeeklyAwards(),
     ]);
   const managerNameByEntry = new Map(managers.map((m) => [m.entryId, m.managerName]));
+  const teamNameByEntry = new Map(managers.map((m) => [m.entryId, m.teamName]));
 
   const gameweek = matchups[0]?.teamA.latestGameweek ?? 1;
 
@@ -224,12 +230,12 @@ export async function getRecapData(): Promise<RecapData> {
     const highRow = gwScores.reduce((best, row) => (row.eventTotal > best.eventTotal ? row : best));
     const lowRow = gwScores.reduce((worst, row) => (row.eventTotal < worst.eventTotal ? row : worst));
     seasonHigh = {
-      managerName: managerNameByEntry.get(highRow.entryId) ?? "Unknown",
+      teamName: teamNameByEntry.get(highRow.entryId) ?? "Unknown",
       score: highRow.eventTotal,
       gameweek: highRow.gameweek,
     };
     seasonLow = {
-      managerName: managerNameByEntry.get(lowRow.entryId) ?? "Unknown",
+      teamName: teamNameByEntry.get(lowRow.entryId) ?? "Unknown",
       score: lowRow.eventTotal,
       gameweek: lowRow.gameweek,
     };
@@ -246,12 +252,12 @@ export async function getRecapData(): Promise<RecapData> {
     standings.length > 0 && !standings.every((s) => s.totalPoints === standings[0].totalPoints);
   const overallTop: RecapOverallStanding | null =
     standingsHaveSpread && standings[0]
-      ? { managerName: managerNameByEntry.get(standings[0].entryId) ?? "Unknown", totalPoints: standings[0].totalPoints }
+      ? { teamName: teamNameByEntry.get(standings[0].entryId) ?? "Unknown", totalPoints: standings[0].totalPoints }
       : null;
   const overallBottom: RecapOverallStanding | null =
     standingsHaveSpread && standings[standings.length - 1]
       ? {
-          managerName: managerNameByEntry.get(standings[standings.length - 1].entryId) ?? "Unknown",
+          teamName: teamNameByEntry.get(standings[standings.length - 1].entryId) ?? "Unknown",
           totalPoints: standings[standings.length - 1].totalPoints,
         }
       : null;
