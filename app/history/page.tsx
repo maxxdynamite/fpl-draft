@@ -143,9 +143,22 @@ function TitleLeaderboard({
 
   return (
     <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden">
-      <p className="px-4 sm:px-5 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-        {title}
-      </p>
+      {primary ? (
+        <>
+          {/* Same treatment as TotalMoneyTile's own header - a thin
+              gradient accent strip plus gradient title text, marking
+              this out as the headline panel above Blackjack/Cup below
+              it, same bg-clip-text technique the site logo itself uses. */}
+          <div className="h-1 bg-gradient-to-r from-[#00ff85] to-[#04f5ff]" aria-hidden="true" />
+          <p className="inline-block px-4 sm:px-5 pt-2 pb-2 text-[10px] font-extrabold uppercase tracking-wide bg-gradient-to-r from-[#00ff85] to-[#04f5ff] bg-clip-text text-transparent">
+            {title}
+          </p>
+        </>
+      ) : (
+        <p className="px-4 sm:px-5 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+          {title}
+        </p>
+      )}
       <ul>
         {tallies.map((tally) => (
           <li
