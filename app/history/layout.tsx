@@ -6,7 +6,7 @@ export default function HistoryLayout({ children }: LayoutProps<"/history">) {
           there's no status pill to align against, just the plain title. */}
       <div className="flex items-center mb-5 h-10">
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
-          History
+          Hall of Fame
         </h1>
       </div>
       {children}
