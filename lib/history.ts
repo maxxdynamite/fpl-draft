@@ -65,7 +65,7 @@ export const SEASON_HISTORY: SeasonRecord[] = [
   {
     season: "2020/21",
     draft: [
-      { place: 1, manager: "Alasdair Hall-Jones" },
+      { place: 1, manager: "Phil Thomas" },
       { place: 1, manager: "Matthew Giles" },
       { place: 3, manager: "Marc Edwards" },
     ],
@@ -78,10 +78,8 @@ export const SEASON_HISTORY: SeasonRecord[] = [
     season: "2018/19",
     draft: [{ place: 1, manager: "Phil Thomas" }],
   },
-  {
-    season: "2017/18",
-    draft: [{ place: 1, manager: "Phil Thomas" }],
-  },
+  // No competition in 2017/18 - not a missing-data gap, there's nothing
+  // to record.
 ];
 
 export type ManagerTally = {
