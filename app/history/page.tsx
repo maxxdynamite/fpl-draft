@@ -60,17 +60,19 @@ function TitleRow({ icon, label, names }: { icon: ReactNode; label: string; name
 
 // 194px matches the Draft H2H tile / Blackjack card height exactly
 // (measured via getBoundingClientRect against both) - but only for
-// seasons that actually have a Blackjack/Cup footer to fill it. A
-// Draft-only season has nothing to spend that extra space on, so it
-// sizes to its own content instead of carrying dead space just to hit
-// a height nothing on the card needs.
+// seasons with a full two-row footer (Blackjack and Cup) to fill it. A
+// Draft-only season, or one with just a single footer category (e.g.
+// 2024/25 once Blackjack was pulled - no winner yet), has nothing to
+// spend that extra space on, so it sizes to its own content instead of
+// carrying dead space just to hit a height nothing on the card needs.
 function SeasonCard({ record }: { record: SeasonRecord }) {
   const draftGroups = groupByPlace(record.draft);
   const hasFooter = record.blackjack || record.cup;
+  const isFullFooter = record.blackjack && record.cup;
 
   return (
     <div
-      className={`${hasFooter ? "h-[194px] overflow-hidden" : ""} flex flex-col rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-3.5`}
+      className={`${isFullFooter ? "h-[194px] overflow-hidden" : ""} flex flex-col rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-3.5`}
     >
       <h2 className="flex items-center gap-2 font-extrabold text-base tracking-tight text-zinc-900 dark:text-white mb-1.5">
         <ArrowsLeftRightIcon size={14} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
