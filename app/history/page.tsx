@@ -153,10 +153,8 @@ function TitleLeaderboard({
             }`}
           >
             <span
-              className={`flex-1 min-w-0 truncate ${
-                primary
-                  ? "font-bold text-zinc-900 dark:text-white"
-                  : "font-medium text-xs text-zinc-500 dark:text-zinc-400"
+              className={`flex-1 min-w-0 truncate text-zinc-900 dark:text-white ${
+                primary ? "font-bold" : "font-medium text-xs"
               }`}
             >
               {tally.manager}
@@ -164,7 +162,7 @@ function TitleLeaderboard({
             {/* One emoji per title, not a number - the count reads at a
                 glance without needing a legend. */}
             <span
-              className={`shrink-0 tracking-tight ${primary ? "text-sm" : "text-[11px] opacity-70"}`}
+              className={`shrink-0 tracking-tight ${primary ? "text-sm" : "text-[11px]"}`}
               aria-label={`${tally.count} ${title}`}
             >
               {emoji.repeat(tally.count)}
