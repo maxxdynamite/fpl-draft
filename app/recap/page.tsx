@@ -13,28 +13,30 @@ export default async function RecapPage() {
   const lines = [
     `GW${data.gameweek} done. ${tokensToText(data.headline)}`,
     data.closestMatch
-      ? `Closest game of the week: ${data.closestMatch.winnerName} edged ${data.closestMatch.loserName} ${data.closestMatch.winnerScore}–${data.closestMatch.loserScore}.`
+      ? data.closestMatch.isTie
+        ? `Closest game of the week wasn't close at all — it was a dead heat. ${data.closestMatch.winnerName} (${data.closestMatch.winnerTeam}) and ${data.closestMatch.loserName} (${data.closestMatch.loserTeam}) both posted ${data.closestMatch.winnerScore}, so no bragging rights for anyone.`
+        : `Closest game of the week: ${data.closestMatch.winnerName} (${data.closestMatch.winnerTeam}) scraped past ${data.closestMatch.loserName} (${data.closestMatch.loserTeam}), ${data.closestMatch.winnerScore}–${data.closestMatch.loserScore}.`
       : null,
     data.hotStreak
-      ? `${data.hotStreak.managerName} is riding a ${data.hotStreak.streak}-game H2H win streak — nobody's stopped them yet.`
+      ? `${data.hotStreak.managerName} (${data.hotStreak.teamName}) is ${data.hotStreak.streak} games deep into an H2H win streak. Someone ought to check on the rest of the league.`
       : null,
     data.motw && data.sotw
-      ? `🏆 MOTW: ${data.motw.teamName} (${data.motw.points} pts)\n🔧 SOTW: ${data.sotw.teamName} (${data.sotw.points} pts)`
+      ? `🏆 MOTW: ${data.motw.teamName} (${data.motw.points} pts)\n🔧 SOTW: ${data.sotw.teamName} (${data.sotw.points} pts) — someone had to.`
       : null,
     data.seasonHigh && data.seasonLow
-      ? `Season extremes so far: ${data.seasonHigh.teamName}'s ${data.seasonHigh.score} in GW${data.seasonHigh.gameweek} is the high point, ${data.seasonLow.teamName}'s ${data.seasonLow.score} in GW${data.seasonLow.gameweek} the low.`
+      ? `Season high so far belongs to ${data.seasonHigh.teamName} — ${data.seasonHigh.score} back in GW${data.seasonHigh.gameweek}. The low bar is held by ${data.seasonLow.teamName}, ${data.seasonLow.score} in GW${data.seasonLow.gameweek}, and nobody's rushing to take it off them.`
       : null,
     data.overallTop && data.overallBottom
-      ? `Overall table: ${data.overallTop.teamName} leads on ${data.overallTop.totalPoints} pts, ${data.overallBottom.teamName} props up the bottom on ${data.overallBottom.totalPoints}.`
+      ? `In the table that actually matters, ${data.overallTop.teamName} lead the way on ${data.overallTop.totalPoints} pts. ${data.overallBottom.teamName} are propping up the rest of the league on ${data.overallBottom.totalPoints} — building character, presumably.`
       : null,
-    data.bottomManagerName
-      ? `Spare a thought for ${data.bottomManagerName}, bottom of the pile on ${data.bottomScore}.`
+    data.bottomOfWeek
+      ? `Spare a thought for ${data.bottomOfWeek.managerName} (${data.bottomOfWeek.teamName}), rock bottom this week on ${data.bottomOfWeek.score}.`
       : null,
     // Scheme included (not just the bare domain) so WhatsApp reliably
     // treats it as a tappable link even embedded in an image caption,
     // not just as a plain-text message on its own - see ShareButton's
     // own comment on what that combination does and doesn't get you.
-    `The full recap (and then some) is in the app 👉 https://badblokesweekly.vercel.app`,
+    `Everything else is in the app 👉 https://badblokesweekly.vercel.app`,
   ].filter((l): l is string => l !== null);
   const caption = lines.join("\n\n");
 

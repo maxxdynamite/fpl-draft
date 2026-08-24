@@ -19,19 +19,32 @@ const MIN_GAMEWEEKS_FOR_SEASON_RECORDS = 3;
 // produces that order), not "winner first". Which side actually won is
 // derived separately wherever it's needed (colouring a row, describing
 // the closest match in words) rather than baked into the list order.
+// aTeam/bTeam are caption-only (the image route never reads them) - the
+// dry-humour voice wants both the manager and their team name in play,
+// not just one or the other.
 export type RecapMatchup = {
   aName: string;
+  aTeam: string;
   aScore: number;
   bName: string;
+  bTeam: string;
   bScore: number;
   margin: number;
 };
 
 export type RecapWinnerLoser = {
   winnerName: string;
+  winnerTeam: string;
   winnerScore: number;
   loserName: string;
+  loserTeam: string;
   loserScore: number;
+  // A genuine tie has no winner - winnerName/loserName still get
+  // populated (one side arbitrarily first) so callers that don't care
+  // about ties don't need a separate null-handling path, but anything
+  // narrating this in words needs to check isTie first rather than
+  // calling a 12-12 draw an "edge".
+  isTie: boolean;
 };
 
 export type RecapBlackjackRow = {
@@ -46,12 +59,13 @@ export type RecapBlackjackRow = {
 // never drift out of sync with each other.
 export type RecapToken = { text: string; strong?: boolean };
 
-// managerName for the personal, narrative lines (headline, closest game,
-// streak, bottom-of-the-week) - teamName for the stat/record/award lines
-// (season high/low, overall table, MOTW/SOTW), so the caption doesn't
-// read as the same name-shape repeated in every sentence. Blackjack
-// always stays managerName regardless of which line it's in.
-export type RecapHotStreak = { managerName: string; streak: number };
+// Both managerName and teamName travel together almost everywhere now -
+// the dry-humour voice leans on team names (this league's are mostly
+// jokes) for flavour while keeping the manager identifiable, rather than
+// segregating "this line gets one, that line gets the other". Blackjack
+// stays managerName-only throughout, deliberately - see RecapBlackjackRow.
+export type RecapPersonScore = { managerName: string; teamName: string; score: number };
+export type RecapHotStreak = { managerName: string; teamName: string; streak: number };
 export type RecapSeasonScore = { teamName: string; score: number; gameweek: number };
 export type RecapOverallStanding = { teamName: string; totalPoints: number };
 export type RecapAward = { teamName: string; points: number };
@@ -63,8 +77,7 @@ export type RecapData = {
   h2hResults: RecapMatchup[]; // draft-page order, not sorted by margin
   closestMatch: RecapWinnerLoser | null;
   blackjackAll: RecapBlackjackRow[]; // every manager, ranked by goals
-  bottomManagerName: string | null;
-  bottomScore: number | null;
+  bottomOfWeek: RecapPersonScore | null;
   hotStreak: RecapHotStreak | null; // longest active H2H win streak, gated at STREAK_THRESHOLD
   seasonHigh: RecapSeasonScore | null; // gated at MIN_GAMEWEEKS_FOR_SEASON_RECORDS
   seasonLow: RecapSeasonScore | null;
@@ -75,9 +88,26 @@ export type RecapData = {
 };
 
 function winnerLoser(m: RecapMatchup): RecapWinnerLoser {
+  const isTie = m.aScore === m.bScore;
   return m.aScore >= m.bScore
-    ? { winnerName: m.aName, winnerScore: m.aScore, loserName: m.bName, loserScore: m.bScore }
-    : { winnerName: m.bName, winnerScore: m.bScore, loserName: m.aName, loserScore: m.aScore };
+    ? {
+        winnerName: m.aName,
+        winnerTeam: m.aTeam,
+        winnerScore: m.aScore,
+        loserName: m.bName,
+        loserTeam: m.bTeam,
+        loserScore: m.bScore,
+        isTie,
+      }
+    : {
+        winnerName: m.bName,
+        winnerTeam: m.bTeam,
+        winnerScore: m.bScore,
+        loserName: m.aName,
+        loserTeam: m.aTeam,
+        loserScore: m.aScore,
+        isTie,
+      };
 }
 
 // A raw goal tally alone doesn't say whether the Blackjack leader is in a
@@ -109,11 +139,25 @@ function blackjackLeaderClause(row: RecapBlackjackRow): RecapToken[] {
     case "on-target":
       return [{ text: " and is right on pace atop the Blackjack pot with " }, goals, { text: "." }];
     case "early-days":
-      return [
-        { text: " and currently leads the Blackjack pot with " },
-        goals,
-        { text: " — too early to read much into pace yet." },
-      ];
+      // A generic "too early to call" undersold a genuinely blistering
+      // start (4 from 4 picks in Gameweek 1 alone) as a shrug - the
+      // grace period (see GRACE_PERIOD_GAMEWEEKS, lib/blackjack.ts) means
+      // the pace ladder itself can't judge it yet, but the caption can
+      // still clock that it's a hot start without pretending to know if
+      // it'll last.
+      return row.goals >= 3
+        ? [
+            { text: " and has already banked " },
+            goals,
+            {
+              text: " for the Blackjack pot — a blistering start that's either a golden touch or a bust with extra steps.",
+            },
+          ]
+        : [
+            { text: " and currently tops the Blackjack pot with " },
+            goals,
+            { text: " — nothing worth reading into yet." },
+          ];
     default:
       return [{ text: " and leads the Blackjack pot with " }, goals, { text: "." }];
   }
@@ -154,8 +198,10 @@ export async function getRecapData(): Promise<RecapData> {
       if (a.latestScore === null || b.latestScore === null) return null;
       return {
         aName: a.managerName,
+        aTeam: a.teamName,
         aScore: a.latestScore,
         bName: b.managerName,
+        bTeam: b.teamName,
         bScore: b.latestScore,
         margin: Math.abs(a.latestScore - b.latestScore),
       };
@@ -194,16 +240,16 @@ export async function getRecapData(): Promise<RecapData> {
     topManager && blackjackLeader && topManager.managerName === blackjackLeader.managerName
       ? [
           { text: topManager.managerName, strong: true },
-          { text: " is having himself a week — top scorer on " },
+          { text: ` (${topManager.teamName}) is quietly making everyone else look bad — top scorer on ` },
           { text: `${topManager.latestScore} pts`, strong: true },
           ...blackjackLeaderClause(blackjackLeader),
         ]
       : topManager
         ? [
             { text: topManager.managerName, strong: true },
-            { text: " tops the gameweek on " },
+            { text: ` (${topManager.teamName}) tops the gameweek on ` },
             { text: `${topManager.latestScore} pts`, strong: true },
-            { text: "." },
+            { text: ". Try again next week, everyone else." },
           ]
         : [];
 
@@ -217,7 +263,7 @@ export async function getRecapData(): Promise<RecapData> {
   );
   const hotStreak: RecapHotStreak | null =
     streakLeader && streakLeader.streak >= STREAK_THRESHOLD
-      ? { managerName: streakLeader.managerName, streak: streakLeader.streak }
+      ? { managerName: streakLeader.managerName, teamName: streakLeader.teamName, streak: streakLeader.streak }
       : null;
 
   // Season-wide extremes from GW_Scores (every gameweek played so far),
@@ -269,8 +315,10 @@ export async function getRecapData(): Promise<RecapData> {
     h2hResults,
     closestMatch,
     blackjackAll,
-    bottomManagerName: bottomManager?.managerName ?? null,
-    bottomScore: bottomManager?.latestScore ?? null,
+    bottomOfWeek:
+      bottomManager && bottomManager.latestScore !== null
+        ? { managerName: bottomManager.managerName, teamName: bottomManager.teamName, score: bottomManager.latestScore }
+        : null,
     hotStreak,
     seasonHigh,
     seasonLow,
