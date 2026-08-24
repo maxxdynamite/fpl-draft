@@ -82,27 +82,35 @@ export const SEASON_HISTORY: SeasonRecord[] = [
   // to record.
 ];
 
-export type DraftTitleTally = {
+export type TitleTally = {
   manager: string;
-  draftGolds: number;
+  count: number;
 };
 
-// Draft 1st place only - the sidebar wants "BB Draft Titles" specifically,
-// not a combined Draft/Blackjack/Cup tally. A tied Draft 1st (2020/21)
-// counts as a full title for each of the tied managers, same as any solo
-// win - the trophy isn't diluted by being shared.
-export function getDraftTitleLeaderboard(): DraftTitleTally[] {
+export type TitleCategory = "draft" | "blackjack" | "cup";
+
+// One tally per competition, each its own sidebar panel (BB Draft Titles /
+// BB Blackjack Titles / Christmas Cup Titles) rather than a single
+// combined "most decorated" number - a tied Draft 1st (2020/21) or a
+// shared Blackjack win counts as a full title for each of the tied
+// managers, same as any solo win.
+export function getTitleLeaderboard(category: TitleCategory): TitleTally[] {
   const tallies = new Map<string, number>();
+  const bump = (manager: string) => tallies.set(manager, (tallies.get(manager) ?? 0) + 1);
 
   for (const season of SEASON_HISTORY) {
-    for (const result of season.draft) {
-      if (result.place === 1) {
-        tallies.set(result.manager, (tallies.get(result.manager) ?? 0) + 1);
+    if (category === "draft") {
+      for (const result of season.draft) {
+        if (result.place === 1) bump(result.manager);
       }
+    } else if (category === "blackjack") {
+      season.blackjack?.forEach(bump);
+    } else if (category === "cup" && season.cup) {
+      bump(season.cup);
     }
   }
 
   return [...tallies.entries()]
-    .map(([manager, draftGolds]) => ({ manager, draftGolds }))
-    .sort((a, b) => b.draftGolds - a.draftGolds);
+    .map(([manager, count]) => ({ manager, count }))
+    .sort((a, b) => b.count - a.count);
 }

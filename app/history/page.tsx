@@ -2,7 +2,13 @@ import type { ReactNode } from "react";
 import { TrophyIcon } from "@/components/TrophyIcon";
 import { SpadeIcon } from "@/components/SpadeIcon";
 import { ArrowsLeftRightIcon } from "@/components/ArrowsLeftRightIcon";
-import { SEASON_HISTORY, getDraftTitleLeaderboard, type SeasonRecord, type SeasonDraftResult } from "@/lib/history";
+import {
+  SEASON_HISTORY,
+  getTitleLeaderboard,
+  type SeasonRecord,
+  type SeasonDraftResult,
+  type TitleCategory,
+} from "@/lib/history";
 
 function groupByPlace(draft: SeasonDraftResult[]): { place: 1 | 2 | 3; managers: string[] }[] {
   const byPlace = new Map<number, string[]>();
@@ -111,13 +117,17 @@ function SeasonCard({ record }: { record: SeasonRecord }) {
   );
 }
 
-function DraftTitlesLeaderboard() {
-  const tallies = getDraftTitleLeaderboard();
+// Same panel shape for all three competitions - only the title, category,
+// and emoji differ. Each competition gets its own emoji rather than a
+// shared star: ⭐ for Draft, 🃏 for Blackjack (the game's own card
+// theme), 🎄 for the Christmas Cup (the competition's actual name).
+function TitleLeaderboard({ title, category, emoji }: { title: string; category: TitleCategory; emoji: string }) {
+  const tallies = getTitleLeaderboard(category);
 
   return (
     <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden">
       <p className="px-4 sm:px-5 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-        BB Draft Titles
+        {title}
       </p>
       <ul>
         {tallies.map((tally) => (
@@ -128,10 +138,10 @@ function DraftTitlesLeaderboard() {
             <span className="flex-1 min-w-0 font-bold truncate text-zinc-900 dark:text-white">
               {tally.manager}
             </span>
-            {/* One star per Draft title, not a number - the count reads
-                at a glance without needing a legend. */}
-            <span className="shrink-0 text-sm tracking-tight" aria-label={`${tally.draftGolds} Draft titles`}>
-              {"⭐".repeat(tally.draftGolds)}
+            {/* One emoji per title, not a number - the count reads at a
+                glance without needing a legend. */}
+            <span className="shrink-0 text-sm tracking-tight" aria-label={`${tally.count} ${title}`}>
+              {emoji.repeat(tally.count)}
             </span>
           </li>
         ))}
@@ -154,8 +164,10 @@ export default function HistoryPage() {
           <SeasonCard key={record.season} record={record} />
         ))}
       </div>
-      <aside className="lg:sticky lg:top-24">
-        <DraftTitlesLeaderboard />
+      <aside className="lg:sticky lg:top-24 space-y-4">
+        <TitleLeaderboard title="BB Draft Titles" category="draft" emoji="⭐" />
+        <TitleLeaderboard title="BB Blackjack Titles" category="blackjack" emoji="🃏" />
+        <TitleLeaderboard title="Christmas Cup Titles" category="cup" emoji="🎄" />
       </aside>
     </div>
   );
