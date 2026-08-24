@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { TrophyIcon } from "@/components/TrophyIcon";
 import { SpadeIcon } from "@/components/SpadeIcon";
+import { ArrowsLeftRightIcon } from "@/components/ArrowsLeftRightIcon";
 import { SEASON_HISTORY, getMostDecorated, type SeasonRecord, type SeasonDraftResult } from "@/lib/history";
 
 function groupByPlace(draft: SeasonDraftResult[]): { place: 1 | 2 | 3; managers: string[] }[] {
@@ -25,7 +26,7 @@ const PLACE_STYLES: Record<1 | 2 | 3, string> = {
 function PlaceBadge({ place }: { place: 1 | 2 | 3 }) {
   return (
     <span
-      className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-[11px] font-extrabold shrink-0 ${PLACE_STYLES[place]}`}
+      className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-sm font-black shrink-0 ${PLACE_STYLES[place]}`}
     >
       {place}
     </span>
@@ -52,7 +53,8 @@ function SeasonCard({ record }: { record: SeasonRecord }) {
 
   return (
     <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-5">
-      <h2 className="font-extrabold text-lg tracking-tight text-zinc-900 dark:text-white mb-3">
+      <h2 className="flex items-center gap-2 font-extrabold text-lg tracking-tight text-zinc-900 dark:text-white mb-3">
+        <ArrowsLeftRightIcon size={16} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
         {record.season}
       </h2>
 
