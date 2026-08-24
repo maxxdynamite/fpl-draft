@@ -322,9 +322,16 @@ function Tile({
   registerRef: (el: HTMLDivElement | null) => void;
 }) {
   const isChampion = content.emphasis === "champion";
+  // Neutral opacity matches the ring-black/[0.03] dark:ring-white/[0.06]
+  // every other tile in the app uses (Blackjack/History cards, H2H tiles,
+  // the mini leaderboard) - this cell fakes its border via a padded
+  // background layer instead of an actual ring (see innerClass below) so
+  // a winning cell can get a full gradient border instead, but the
+  // neutral case still needs to read at the same subtlety as everywhere
+  // else, not roughly double its opacity.
   const borderClass = content.gradient
     ? "bg-gradient-to-br from-[#00ff85] to-[#04f5ff]"
-    : "bg-black/[0.06] dark:bg-white/[0.08]";
+    : "bg-black/[0.03] dark:bg-white/[0.06]";
   // The champion cell keeps the exact same two-layer box model as every
   // other tile (so its height stays identical) - both layers just use the
   // same gradient instead of a white/zinc-900 inner fill, so no sliver of
