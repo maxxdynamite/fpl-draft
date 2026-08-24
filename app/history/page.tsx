@@ -64,7 +64,7 @@ function SeasonCard({ record }: { record: SeasonRecord }) {
 
   return (
     <div
-      className={`${hasFooter ? "h-[194px] overflow-hidden" : ""} flex flex-col rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-4`}
+      className={`${hasFooter ? "h-[194px] overflow-hidden" : ""} flex flex-col rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-3.5`}
     >
       <h2 className="flex items-center gap-2 font-extrabold text-base tracking-tight text-zinc-900 dark:text-white mb-1.5">
         <ArrowsLeftRightIcon size={14} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
@@ -89,15 +89,18 @@ function SeasonCard({ record }: { record: SeasonRecord }) {
         ))}
       </div>
 
-      {/* mt-auto, not a fixed margin - pushes the footer to the bottom of
-          the fixed-height card, so the gap above it (the divider's own
-          breathing room) is whatever space the card isn't using rather
-          than a guessed pixel value. A card with only Cup (no Blackjack,
-          e.g. 2023/24) has more free space to push through than one with
-          both, and gets a bigger gap for it automatically - same
-          mechanism, no separate casework. */}
+      {/* Fixed, symmetric mt-2/pt-2 - the divider needs to sit the same
+          distance from the Draft rows above it as from the Blackjack/Cup
+          rows below it on every card. mt-auto (tried first) instead
+          resolved to whatever leftover space each card happened to have,
+          which was next to nothing on a card with both Blackjack and Cup
+          (barely any room left to distribute) - the divider ended up
+          touching the Draft rows on exactly the cards with the most
+          footer content. A card with only Cup may show a little space
+          below the footer again as a result, a smaller cost than the
+          divider spacing being inconsistent. */}
       {hasFooter && (
-        <div className="mt-auto pt-3 border-t border-black/[0.04] dark:border-white/[0.06] space-y-1.5">
+        <div className="mt-2 pt-2 border-t border-black/[0.04] dark:border-white/[0.06] space-y-1.5">
           {record.blackjack && (
             <TitleRow icon={<SpadeIcon size={10} />} label="Blackjack" names={record.blackjack} />
           )}
