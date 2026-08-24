@@ -118,10 +118,25 @@ function SeasonCard({ record }: { record: SeasonRecord }) {
 }
 
 // Same panel shape for all three competitions - only the title, category,
-// and emoji differ. Each competition gets its own emoji rather than a
-// shared star: ⭐ for Draft, 🃏 for Blackjack (the game's own card
+// emoji, and hierarchy differ. Each competition gets its own emoji rather
+// than a shared star: ⭐ for Draft, 🃏 for Blackjack (the game's own card
 // theme), 🎄 for the Christmas Cup (the competition's actual name).
-function TitleLeaderboard({ title, category, emoji }: { title: string; category: TitleCategory; emoji: string }) {
+//
+// primary (Draft) vs secondary (Blackjack/Cup) mirrors the same
+// hierarchy already established on the season cards themselves - Draft
+// is the headline competition, Blackjack/Cup are smaller and more muted
+// everywhere they appear, not just here.
+function TitleLeaderboard({
+  title,
+  category,
+  emoji,
+  primary = false,
+}: {
+  title: string;
+  category: TitleCategory;
+  emoji: string;
+  primary?: boolean;
+}) {
   const tallies = getTitleLeaderboard(category);
 
   return (
@@ -133,14 +148,23 @@ function TitleLeaderboard({ title, category, emoji }: { title: string; category:
         {tallies.map((tally) => (
           <li
             key={tally.manager}
-            className="flex items-center gap-3 px-4 sm:px-5 py-2.5 border-t border-black/[0.04] dark:border-white/[0.06]"
+            className={`flex items-center gap-2 px-4 sm:px-5 border-t border-black/[0.04] dark:border-white/[0.06] ${
+              primary ? "py-2.5" : "py-2"
+            }`}
           >
-            <span className="flex-1 min-w-0 font-bold truncate text-zinc-900 dark:text-white">
+            <span
+              className={`flex-1 min-w-0 truncate text-zinc-900 dark:text-white ${
+                primary ? "font-bold" : "font-semibold text-sm"
+              }`}
+            >
               {tally.manager}
             </span>
             {/* One emoji per title, not a number - the count reads at a
                 glance without needing a legend. */}
-            <span className="shrink-0 text-sm tracking-tight" aria-label={`${tally.count} ${title}`}>
+            <span
+              className={`shrink-0 tracking-tight ${primary ? "text-sm" : "text-xs"}`}
+              aria-label={`${tally.count} ${title}`}
+            >
               {emoji.repeat(tally.count)}
             </span>
           </li>
@@ -165,9 +189,16 @@ export default function HistoryPage() {
         ))}
       </div>
       <aside className="lg:sticky lg:top-24 space-y-4">
-        <TitleLeaderboard title="BB Draft Titles" category="draft" emoji="⭐" />
-        <TitleLeaderboard title="BB Blackjack Titles" category="blackjack" emoji="🃏" />
-        <TitleLeaderboard title="Christmas Cup Titles" category="cup" emoji="🎄" />
+        <TitleLeaderboard title="BB Draft Titles" category="draft" emoji="⭐" primary />
+        {/* Side by side only below lg - the mobile layout gives this row
+            the full page width to pair up in, but the desktop sidebar is
+            a fixed 260px column where two columns would squeeze each
+            name into ~120px. Stays stacked there instead, same as Draft
+            above it. */}
+        <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
+          <TitleLeaderboard title="BB Blackjack Winners" category="blackjack" emoji="🃏" />
+          <TitleLeaderboard title="Christmas Cup Winners" category="cup" emoji="🎄" />
+        </div>
       </aside>
     </div>
   );
