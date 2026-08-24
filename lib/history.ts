@@ -82,42 +82,27 @@ export const SEASON_HISTORY: SeasonRecord[] = [
   // to record.
 ];
 
-export type ManagerTally = {
+export type DraftTitleTally = {
   manager: string;
-  titles: number;
   draftGolds: number;
-  blackjackWins: number;
-  cupWins: number;
 };
 
-// Ranked purely by championships (Draft 1st / Blackjack win / Cup win),
-// not podium finishes - "most decorated" should answer "who's actually
-// won the most", not "who's finished top 3 the most". A tied Draft 1st
-// (2020/21) counts as a full title for each of the tied managers, same
-// as a shared Blackjack win - the trophy isn't diluted by being shared.
-export function getMostDecorated(): ManagerTally[] {
-  const tallies = new Map<string, ManagerTally>();
-
-  function bump(manager: string, key: "draftGolds" | "blackjackWins" | "cupWins") {
-    const existing = tallies.get(manager) ?? {
-      manager,
-      titles: 0,
-      draftGolds: 0,
-      blackjackWins: 0,
-      cupWins: 0,
-    };
-    existing[key] += 1;
-    existing.titles += 1;
-    tallies.set(manager, existing);
-  }
+// Draft 1st place only - the sidebar wants "BB Draft Titles" specifically,
+// not a combined Draft/Blackjack/Cup tally. A tied Draft 1st (2020/21)
+// counts as a full title for each of the tied managers, same as any solo
+// win - the trophy isn't diluted by being shared.
+export function getDraftTitleLeaderboard(): DraftTitleTally[] {
+  const tallies = new Map<string, number>();
 
   for (const season of SEASON_HISTORY) {
     for (const result of season.draft) {
-      if (result.place === 1) bump(result.manager, "draftGolds");
+      if (result.place === 1) {
+        tallies.set(result.manager, (tallies.get(result.manager) ?? 0) + 1);
+      }
     }
-    season.blackjack?.forEach((manager) => bump(manager, "blackjackWins"));
-    if (season.cup) bump(season.cup, "cupWins");
   }
 
-  return [...tallies.values()].sort((a, b) => b.titles - a.titles);
+  return [...tallies.entries()]
+    .map(([manager, draftGolds]) => ({ manager, draftGolds }))
+    .sort((a, b) => b.draftGolds - a.draftGolds);
 }
