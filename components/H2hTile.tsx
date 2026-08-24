@@ -475,7 +475,17 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                 {Array.from({ length: TOTAL_GAMEWEEKS }, (_, i) => i + 1).map(
                   (gw) => {
                     const row = historyByGw.get(gw);
-                    const aWin = row ? row.aScore > row.bScore : null;
+                    // Computed independently, not one as the other's
+                    // negation (the old `!aWin` for B) - on a tie neither
+                    // side actually won, so !aWin being true there faded
+                    // the wrong side out (the tied "loser" B stayed full
+                    // brightness). Full brightness now means "this side
+                    // won outright", faded means "did not" - covering an
+                    // actual loss and a tie the same way, rather than a
+                    // tie masquerading as a win for whichever side wasn't
+                    // A.
+                    const aWon = row ? row.aScore > row.bScore : null;
+                    const bWon = row ? row.bScore > row.aScore : null;
                     return (
                       <div
                         key={gw}
@@ -488,14 +498,14 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                         </span>
                         <span
                           className={`h-4 flex items-center justify-center text-base font-extrabold tabular-nums leading-none text-[#04211a] ${
-                            row ? (aWin ? "" : "opacity-45") : "opacity-35 font-semibold"
+                            row ? (aWon ? "" : "opacity-45") : "opacity-35 font-semibold"
                           }`}
                         >
                           {row ? row.aScore : "–"}
                         </span>
                         <span
                           className={`h-4 flex items-center justify-center text-base font-extrabold tabular-nums leading-none text-[#04211a] mt-2.5 ${
-                            row ? (!aWin ? "" : "opacity-45") : "opacity-35 font-semibold"
+                            row ? (bWon ? "" : "opacity-45") : "opacity-35 font-semibold"
                           }`}
                         >
                           {row ? row.bScore : "–"}
