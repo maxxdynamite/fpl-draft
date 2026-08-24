@@ -64,7 +64,7 @@ function SeasonCard({ record }: { record: SeasonRecord }) {
 
   return (
     <div
-      className={`${hasFooter ? "h-[194px] overflow-hidden" : ""} rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-4`}
+      className={`${hasFooter ? "h-[194px] overflow-hidden" : ""} flex flex-col rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-4`}
     >
       <h2 className="flex items-center gap-2 font-extrabold text-base tracking-tight text-zinc-900 dark:text-white mb-1.5">
         <ArrowsLeftRightIcon size={14} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
@@ -89,8 +89,15 @@ function SeasonCard({ record }: { record: SeasonRecord }) {
         ))}
       </div>
 
+      {/* mt-auto, not a fixed margin - pushes the footer to the bottom of
+          the fixed-height card, so the gap above it (the divider's own
+          breathing room) is whatever space the card isn't using rather
+          than a guessed pixel value. A card with only Cup (no Blackjack,
+          e.g. 2023/24) has more free space to push through than one with
+          both, and gets a bigger gap for it automatically - same
+          mechanism, no separate casework. */}
       {hasFooter && (
-        <div className="mt-1 pt-1 border-t border-black/[0.04] dark:border-white/[0.06] space-y-1">
+        <div className="mt-auto pt-3 border-t border-black/[0.04] dark:border-white/[0.06] space-y-1.5">
           {record.blackjack && (
             <TitleRow icon={<SpadeIcon size={10} />} label="Blackjack" names={record.blackjack} />
           )}
