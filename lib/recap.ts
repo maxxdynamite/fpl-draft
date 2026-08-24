@@ -1,6 +1,18 @@
-import { getH2hMatchups } from "./h2h";
+import { getH2hMatchups, type H2hSide } from "./h2h";
 import { getBlackjackLeaderboard, type BlackjackStatus } from "./blackjack";
 import { getLeagueName } from "./leagueInfo";
+import { getManagers } from "./managers";
+import { getGwScores } from "./gwScores";
+import { getStandings } from "./standings";
+import { getWeeklyAwards } from "./weeklyAwards";
+
+// Same threshold H2hTile's own StreakBadge uses to decide a streak is
+// worth calling out at all - a 1 or 2-game run isn't a story yet.
+const STREAK_THRESHOLD = 3;
+// Season high/low only means something once there's an actual season's
+// worth of weeks to compare - at GW1 or 2 it would just silently repeat
+// this week's own top/bottom score under a fancier name.
+const MIN_GAMEWEEKS_FOR_SEASON_RECORDS = 3;
 
 // aName/aScore is always teamA, bName/bScore always teamB - same left/right
 // pairing as the draft page's own H2H tiles (getH2hMatchups() already
@@ -34,6 +46,11 @@ export type RecapBlackjackRow = {
 // never drift out of sync with each other.
 export type RecapToken = { text: string; strong?: boolean };
 
+export type RecapHotStreak = { managerName: string; streak: number };
+export type RecapSeasonScore = { managerName: string; score: number; gameweek: number };
+export type RecapOverallStanding = { managerName: string; totalPoints: number };
+export type RecapAward = { teamName: string; points: number };
+
 export type RecapData = {
   gameweek: number;
   leagueName: string;
@@ -43,6 +60,13 @@ export type RecapData = {
   blackjackAll: RecapBlackjackRow[]; // every manager, ranked by goals
   bottomManagerName: string | null;
   bottomScore: number | null;
+  hotStreak: RecapHotStreak | null; // longest active H2H win streak, gated at STREAK_THRESHOLD
+  seasonHigh: RecapSeasonScore | null; // gated at MIN_GAMEWEEKS_FOR_SEASON_RECORDS
+  seasonLow: RecapSeasonScore | null;
+  overallTop: RecapOverallStanding | null;
+  overallBottom: RecapOverallStanding | null;
+  motw: RecapAward | null;
+  sotw: RecapAward | null;
 };
 
 function winnerLoser(m: RecapMatchup): RecapWinnerLoser {
@@ -101,11 +125,17 @@ function blackjackLeaderClause(row: RecapBlackjackRow): RecapToken[] {
 // to see the actual page/image working end-to-end before gameweek 1 has
 // really finished. Revisit before this goes further than a dev preview.
 export async function getRecapData(): Promise<RecapData> {
-  const [matchups, blackjackParticipants, leagueName] = await Promise.all([
-    getH2hMatchups(),
-    getBlackjackLeaderboard(),
-    getLeagueName(),
-  ]);
+  const [matchups, blackjackParticipants, leagueName, managers, gwScores, standings, weeklyAwards] =
+    await Promise.all([
+      getH2hMatchups(),
+      getBlackjackLeaderboard(),
+      getLeagueName(),
+      getManagers(),
+      getGwScores(),
+      getStandings(),
+      getWeeklyAwards(),
+    ]);
+  const managerNameByEntry = new Map(managers.map((m) => [m.entryId, m.managerName]));
 
   const gameweek = matchups[0]?.teamA.latestGameweek ?? 1;
 
@@ -171,6 +201,61 @@ export async function getRecapData(): Promise<RecapData> {
           ]
         : [];
 
+  // Longest active H2H win streak across the whole league, not just this
+  // matchup's two sides - same field (H2hSide.streak) the H2H tiles
+  // themselves already show a badge for, gated at the same threshold so
+  // this only calls out a streak actually worth boasting about.
+  const streakLeader = allSides.reduce<H2hSide | null>(
+    (best, s) => (best === null || s.streak > best.streak ? s : best),
+    null,
+  );
+  const hotStreak: RecapHotStreak | null =
+    streakLeader && streakLeader.streak >= STREAK_THRESHOLD
+      ? { managerName: streakLeader.managerName, streak: streakLeader.streak }
+      : null;
+
+  // Season-wide extremes from GW_Scores (every gameweek played so far),
+  // not just this week's - gated on having enough weeks that "season
+  // high/low" means something more than "this week's high/low again".
+  const distinctGameweeksPlayed = new Set(gwScores.map((row) => row.gameweek)).size;
+  let seasonHigh: RecapSeasonScore | null = null;
+  let seasonLow: RecapSeasonScore | null = null;
+  if (distinctGameweeksPlayed >= MIN_GAMEWEEKS_FOR_SEASON_RECORDS && gwScores.length > 0) {
+    const highRow = gwScores.reduce((best, row) => (row.eventTotal > best.eventTotal ? row : best));
+    const lowRow = gwScores.reduce((worst, row) => (row.eventTotal < worst.eventTotal ? row : worst));
+    seasonHigh = {
+      managerName: managerNameByEntry.get(highRow.entryId) ?? "Unknown",
+      score: highRow.eventTotal,
+      gameweek: highRow.gameweek,
+    };
+    seasonLow = {
+      managerName: managerNameByEntry.get(lowRow.entryId) ?? "Unknown",
+      score: lowRow.eventTotal,
+      gameweek: lowRow.gameweek,
+    };
+  }
+
+  // Standings is already rank-sorted (see lib/standings.ts) - first/last
+  // are simply the current overall leader and anchor. Pre-season (or any
+  // point before the sheet's had a single gameweek synced into it), every
+  // row sits tied at 0 - a "leader vs. bottom" sentence built from that
+  // would be a coin flip between two managers who haven't actually done
+  // anything yet, not a real story, so it's suppressed until the table
+  // shows an actual spread.
+  const standingsHaveSpread =
+    standings.length > 0 && !standings.every((s) => s.totalPoints === standings[0].totalPoints);
+  const overallTop: RecapOverallStanding | null =
+    standingsHaveSpread && standings[0]
+      ? { managerName: managerNameByEntry.get(standings[0].entryId) ?? "Unknown", totalPoints: standings[0].totalPoints }
+      : null;
+  const overallBottom: RecapOverallStanding | null =
+    standingsHaveSpread && standings[standings.length - 1]
+      ? {
+          managerName: managerNameByEntry.get(standings[standings.length - 1].entryId) ?? "Unknown",
+          totalPoints: standings[standings.length - 1].totalPoints,
+        }
+      : null;
+
   return {
     gameweek,
     leagueName,
@@ -180,6 +265,13 @@ export async function getRecapData(): Promise<RecapData> {
     blackjackAll,
     bottomManagerName: bottomManager?.managerName ?? null,
     bottomScore: bottomManager?.latestScore ?? null,
+    hotStreak,
+    seasonHigh,
+    seasonLow,
+    overallTop,
+    overallBottom,
+    motw: weeklyAwards ? { teamName: weeklyAwards.motwTeam, points: weeklyAwards.motwPoints } : null,
+    sotw: weeklyAwards ? { teamName: weeklyAwards.sotwTeam, points: weeklyAwards.sotwPoints } : null,
   };
 }
 

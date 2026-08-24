@@ -15,6 +15,18 @@ export default async function RecapPage() {
     data.closestMatch
       ? `Closest game of the week: ${data.closestMatch.winnerName} edged ${data.closestMatch.loserName} ${data.closestMatch.winnerScore}–${data.closestMatch.loserScore}.`
       : null,
+    data.hotStreak
+      ? `${data.hotStreak.managerName} is riding a ${data.hotStreak.streak}-game H2H win streak — nobody's stopped them yet.`
+      : null,
+    data.motw && data.sotw
+      ? `🏆 MOTW: ${data.motw.teamName} (${data.motw.points} pts)\n🔧 SOTW: ${data.sotw.teamName} (${data.sotw.points} pts)`
+      : null,
+    data.seasonHigh && data.seasonLow
+      ? `Season extremes so far: ${data.seasonHigh.managerName}'s ${data.seasonHigh.score} in GW${data.seasonHigh.gameweek} is the high point, ${data.seasonLow.managerName}'s ${data.seasonLow.score} in GW${data.seasonLow.gameweek} the low.`
+      : null,
+    data.overallTop && data.overallBottom
+      ? `Overall table: ${data.overallTop.managerName} leads on ${data.overallTop.totalPoints} pts, ${data.overallBottom.managerName} props up the bottom on ${data.overallBottom.totalPoints}.`
+      : null,
     data.bottomManagerName
       ? `Spare a thought for ${data.bottomManagerName}, bottom of the pile on ${data.bottomScore}.`
       : null,
