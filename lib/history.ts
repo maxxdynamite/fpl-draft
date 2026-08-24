@@ -34,6 +34,7 @@ export const SEASON_HISTORY: SeasonRecord[] = [
       { place: 2, manager: "Brett Cooper" },
       { place: 3, manager: "Michael McKenna" },
     ],
+    blackjack: ["Michael McKenna", "Cav Ferris"],
     cup: "Cav Ferris",
   },
   {
