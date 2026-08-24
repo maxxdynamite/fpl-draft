@@ -303,6 +303,18 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
             : "[clip-path:inset(100%_0%_0%_0%)]"
         }`}
       />
+      {/* shadow-[var(--shadow-soft)]'s dark-mode inset top highlight (the
+          "emboss" every other tile in the app shows) paints as part of
+          this div's own box - behind the two opaque full-cover layers
+          above in stacking order, which completely hid it (confirmed by
+          hiding those layers and watching it appear). Every other tile
+          sets its background directly on the same ring/shadow element,
+          so it has nothing covering its own inset shadow; this tile
+          can't do that (the background IS the crossfade animation), so
+          the highlight gets redrawn as its own layer instead, above the
+          two that were hiding it. No-op in light mode, same as the
+          --shadow-soft variable itself only having this line in dark. */}
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px dark:bg-white/[0.04]" />
 
       <div className="relative p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">

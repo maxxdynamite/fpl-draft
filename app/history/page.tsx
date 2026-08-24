@@ -149,12 +149,14 @@ function TitleLeaderboard({
           <li
             key={tally.manager}
             className={`flex items-center gap-2 px-4 sm:px-5 border-t border-black/[0.04] dark:border-white/[0.06] ${
-              primary ? "py-2.5" : "py-2"
+              primary ? "py-2.5" : "py-1.5"
             }`}
           >
             <span
-              className={`flex-1 min-w-0 truncate text-zinc-900 dark:text-white ${
-                primary ? "font-bold" : "font-semibold text-sm"
+              className={`flex-1 min-w-0 truncate ${
+                primary
+                  ? "font-bold text-zinc-900 dark:text-white"
+                  : "font-medium text-xs text-zinc-500 dark:text-zinc-400"
               }`}
             >
               {tally.manager}
@@ -162,7 +164,7 @@ function TitleLeaderboard({
             {/* One emoji per title, not a number - the count reads at a
                 glance without needing a legend. */}
             <span
-              className={`shrink-0 tracking-tight ${primary ? "text-sm" : "text-xs"}`}
+              className={`shrink-0 tracking-tight ${primary ? "text-sm" : "text-[11px] opacity-70"}`}
               aria-label={`${tally.count} ${title}`}
             >
               {emoji.repeat(tally.count)}
