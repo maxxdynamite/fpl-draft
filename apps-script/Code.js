@@ -201,15 +201,17 @@ function dryRunPrompt() {
   SpreadsheetApp.getUi().alert('Check Executions (clock icon on the left) for the raw API response.');
 }
 
-// One-click setup for the daily automatic pull — safe to re-run, clears
-// any previous trigger for this function first so it never stacks duplicates.
-// Timed for just after FPL's gameweek lockdown (09:00 UK, as of the rule
-// change extending it from "1hr after full time") so the daily pull reliably
-// lands on finalised bonus points/defensive contribution data instead of
-// provisional numbers. Apps Script triggers aren't exact-to-the-minute
-// though - nearMinute just biases it close to :05, actual fire time can
-// land within roughly a 15min window either side.
-function installDailyTrigger() {
+// One-click setup for the automatic pull — safe to re-run, clears any
+// previous trigger for this function first so it never stacks duplicates.
+// Runs every 15 minutes rather than once a day: syncCurrentGameweek()
+// already refuses to write anything until FPL's own current_event_finished
+// flag is true (see its own guard, above), so calling it this often is
+// harmless - it just throws-and-skips on every run until the gameweek
+// actually locks, then writes on the very next run after that. A daily
+// trigger used to mean up to ~24h of lag between FPL locking a gameweek
+// and the sheet (and everything downstream of it - H2H, wagers, the
+// recap) reflecting it; this bounds that lag to ~15 minutes instead.
+function installFrequentSyncTrigger() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'syncCurrentGameweek') {
       ScriptApp.deleteTrigger(t);
@@ -217,11 +219,9 @@ function installDailyTrigger() {
   });
   ScriptApp.newTrigger('syncCurrentGameweek')
     .timeBased()
-    .everyDays(1)
-    .atHour(9)
-    .nearMinute(5)
+    .everyMinutes(15)
     .create();
-  SpreadsheetApp.getUi().alert('Daily automatic sync installed — will run once a day around 9:05am.');
+  SpreadsheetApp.getUi().alert('Automatic sync installed — will check every 15 minutes and write as soon as FPL locks the gameweek.');
 }
 
 // Makes the sheet readable via link (view-only) so the web app can pull
@@ -246,7 +246,7 @@ function onOpen() {
     .addItem('Sync current gameweek now', 'syncNowPrompt')
     .addItem('Sync manager & team names now', 'syncManagerNamesPrompt')
     .addSeparator()
-    .addItem('Install daily automatic sync', 'installDailyTrigger')
+    .addItem('Install automatic sync (every 15min)', 'installFrequentSyncTrigger')
     .addSeparator()
     .addItem('Enable public read access (for web app)', 'enablePublicReadAccess')
     .addToUi();
