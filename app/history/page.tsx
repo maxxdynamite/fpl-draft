@@ -96,16 +96,16 @@ function SeasonCard({ record }: { record: SeasonRecord }) {
               </span>
             )}
             {/* Golden Spanner sits on the same row as the lowest podium
-                place, pinned to the right edge - bare gold glyph (no badge
+                place, pinned to the right edge - bare glyph (no badge
                 circle, unlike PlaceBadge/the medal treatment), sized up a
                 touch from a typical inline icon since it's not being
-                cropped into a 24px circle anymore. */}
+                cropped into a 24px circle anymore. Same muted grey as its
+                own name text, not gold - "Golden" is the award's name, not
+                a colour instruction for the icon. */}
             {i === draftGroups.length - 1 && record.spanner && (
-              <span className="flex items-center gap-1 shrink-0 min-w-0">
-                <WrenchIcon size={18} className="text-amber-400 shrink-0" />
-                <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 truncate">
-                  {record.spanner}
-                </span>
+              <span className="flex items-center gap-1 shrink-0 min-w-0 text-zinc-400 dark:text-zinc-500">
+                <WrenchIcon size={18} className="shrink-0" />
+                <span className="text-xs font-semibold truncate">{record.spanner}</span>
               </span>
             )}
           </div>
