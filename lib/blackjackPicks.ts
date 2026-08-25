@@ -19,6 +19,7 @@ export async function getBlackjackPicks(): Promise<BlackjackPicks[]> {
   const { data } = Papa.parse<Record<string, string>>(csv, {
     header: true,
     skipEmptyLines: true,
+    transformHeader: (header) => header.trim(),
   });
 
   return data

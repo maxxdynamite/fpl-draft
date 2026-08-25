@@ -5,6 +5,7 @@ import { getDraftOrder } from "./draftOrder";
 import { getPlayersData } from "./players";
 import { getLiveGameweek } from "./liveGwScores";
 import { getLiveAdjustedStandings } from "./liveStandings";
+import { computeMotwSotwTallies } from "./gwScores";
 
 const H2H_STAKE = 5;
 
@@ -81,6 +82,11 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
     scoresByEntry.set(row.entryId, list);
   }
 
+  // Computed from GW_Scores directly, not Standings' motw_count/sotw_count
+  // columns - see computeMotwSotwTallies' own comment for why those are
+  // unreliable.
+  const motwSotwTallies = computeMotwSotwTallies(gwScores);
+
   // A wager settling is a different bar than a display number going live -
   // this stake must wait for liveGameweek.finished (FPL's own official
   // lockdown), not just "live" or "provisional", since bonus/defensive
@@ -130,8 +136,8 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
       streak,
       overallRank: liveStanding?.rank ?? standing?.rank ?? null,
       totalPoints: liveStanding?.value ?? standing?.totalPoints ?? null,
-      motwCount: standing?.motwCount ?? null,
-      sotwCount: standing?.sotwCount ?? null,
+      motwCount: gwScores.length > 0 ? (motwSotwTallies.get(entryId)?.motwCount ?? 0) : null,
+      sotwCount: gwScores.length > 0 ? (motwSotwTallies.get(entryId)?.sotwCount ?? 0) : null,
       draftPosition: draft?.position ?? null,
       firstPick: draft ? (playerNameById.get(draft.firstPickElementId) ?? null) : null,
     };

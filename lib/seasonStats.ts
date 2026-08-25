@@ -1,6 +1,5 @@
 import { getManagers } from "./managers";
-import { getStandings } from "./standings";
-import { getGwScores } from "./gwScores";
+import { getGwScores, computeMotwSotwTallies } from "./gwScores";
 
 // Sorts descending by value and takes the top `limit`, but extends past
 // that cutoff to include anyone tied with the last qualifying entry —
@@ -30,23 +29,25 @@ export type MotwSotwLeaders = {
 // Top managers by season-long MOTW/SOTW tally, zero-count entries excluded
 // so the list only shows once someone's actually won one.
 export async function getMotwSotwLeaders(limit = 3): Promise<MotwSotwLeaders> {
-  const [standings, managers] = await Promise.all([
-    getStandings(),
+  const [gwScores, managers] = await Promise.all([
+    getGwScores(),
     getManagers(),
   ]);
   const managerNameByEntry = new Map(
     managers.map((m) => [m.entryId, m.managerName]),
   );
+  const tallies = computeMotwSotwTallies(gwScores);
+  const entries = [...tallies.entries()].map(([entryId, t]) => ({ entryId, ...t }));
 
   const toLeaders = (key: "motwCount" | "sotwCount") =>
     topWithTies(
-      standings.filter((s) => s[key] > 0),
-      (s) => s[key],
+      entries.filter((e) => e[key] > 0),
+      (e) => e[key],
       limit,
-    ).map((s) => ({
-      entryId: s.entryId,
-      managerName: managerNameByEntry.get(s.entryId) ?? "Unknown",
-      count: s[key],
+    ).map((e) => ({
+      entryId: e.entryId,
+      managerName: managerNameByEntry.get(e.entryId) ?? "Unknown",
+      count: e[key],
     }));
 
   return {

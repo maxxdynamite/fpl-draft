@@ -14,6 +14,7 @@ export async function getManagers(): Promise<Manager[]> {
   const { data } = Papa.parse<Record<string, string>>(csv, {
     header: true,
     skipEmptyLines: true,
+    transformHeader: (header) => header.trim(),
   });
 
   return data.map((row) => ({

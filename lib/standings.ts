@@ -8,8 +8,6 @@ export type StandingsRow = {
   rank: number;
   h2hWins: number;
   pl: number;
-  motwCount: number;
-  sotwCount: number;
 };
 
 export async function getStandings(): Promise<StandingsRow[]> {
@@ -18,6 +16,7 @@ export async function getStandings(): Promise<StandingsRow[]> {
   const { data } = Papa.parse<Record<string, string>>(csv, {
     header: true,
     skipEmptyLines: true,
+    transformHeader: (header) => header.trim(),
   });
 
   return data
@@ -28,8 +27,6 @@ export async function getStandings(): Promise<StandingsRow[]> {
       rank: Number(row.rank),
       h2hWins: Number(row.h2h_wins),
       pl: Number(row.p_l),
-      motwCount: Number(row.motw_count),
-      sotwCount: Number(row.sotw_count),
     }))
     .sort((a, b) => a.rank - b.rank);
 }

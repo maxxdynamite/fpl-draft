@@ -7,6 +7,7 @@ import { getPlGameweekStatus } from "@/lib/plGameweekStatus";
 import { getLiveGameweek } from "@/lib/liveGwScores";
 import { resolveCupBracket } from "@/lib/cupBracket";
 import { getH2hMatchups } from "@/lib/h2h";
+import { computeMotwSotwTallies } from "@/lib/gwScores";
 import { PotTile, type PotRow } from "@/components/PotTile";
 import { DraftH2hTile } from "@/components/DraftH2hTile";
 import { MotwSotwTile } from "@/components/MotwSotwTile";
@@ -110,11 +111,15 @@ export default async function MoneyPage() {
         : -BLACKJACK_ENTRY,
   }));
 
+  // Computed from GW_Scores directly, not Standings' motw_count/sotw_count
+  // columns - see computeMotwSotwTallies' own comment for why those are
+  // unreliable.
+  const motwSotwTallies = computeMotwSotwTallies(gwScores);
   const motwSotwRows = standings.map((s) => ({
     entryId: s.entryId,
     managerName: managersByEntry.get(s.entryId)?.managerName ?? "Unknown",
-    motwCount: s.motwCount,
-    sotwCount: s.sotwCount,
+    motwCount: motwSotwTallies.get(s.entryId)?.motwCount ?? 0,
+    sotwCount: motwSotwTallies.get(s.entryId)?.sotwCount ?? 0,
   }));
 
   // Same "wager, not just display" bar as lib/h2h.ts's H2H stake
