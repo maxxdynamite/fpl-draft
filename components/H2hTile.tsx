@@ -77,12 +77,12 @@ function PlayerStatsMenu({
         open ? "opacity-100 visible pointer-events-auto" : "opacity-0 invisible pointer-events-none"
       }`}
     >
-      <StatRow label="Draft Order" value={draftPosition?.toString() ?? "TBD"} />
-      <StatRow label="First Pick" value={firstPick ?? "TBD"} />
       <StatRow label="Overall Rank" value={overallRank?.toString() ?? "–"} />
       <StatRow label="Total Points" value={totalPoints?.toString() ?? "–"} />
       <StatRow label="MOTW" value={motwCount?.toString() ?? "–"} />
       <StatRow label="SOTW" value={sotwCount?.toString() ?? "–"} />
+      <StatRow label="Draft Order" value={draftPosition?.toString() ?? "TBD"} />
+      <StatRow label="First Pick" value={firstPick ?? "TBD"} />
     </div>
   );
 }
