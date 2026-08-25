@@ -74,7 +74,7 @@ function SeasonCard({ record }: { record: SeasonRecord }) {
     <div
       className={`${isFullFooter ? "h-[194px] overflow-hidden" : ""} flex flex-col rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] p-3.5`}
     >
-      <h2 className="flex items-center gap-2 font-medium text-base tracking-tight text-zinc-900 dark:text-white mb-1.5">
+      <h2 className="flex items-center gap-2 font-semibold text-base tracking-tight text-zinc-400 dark:text-zinc-500 mb-1.5">
         <ArrowsLeftRightIcon size={14} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
         {record.season}
       </h2>
