@@ -44,20 +44,10 @@ function PlaceBadge({ place }: { place: 1 | 2 | 3 }) {
 // not bold) - the user wants Draft's top 3 to read as the headline of
 // the card, with Blackjack/Cup as a lesser footnote. Winner names still
 // get full-bright text so they're legible at a glance.
-function TitleRow({
-  icon,
-  label,
-  names,
-  iconClassName = "bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400",
-}: {
-  icon: ReactNode;
-  label: string;
-  names: string[];
-  iconClassName?: string;
-}) {
+function TitleRow({ icon, label, names }: { icon: ReactNode; label: string; names: string[] }) {
   return (
     <div className="flex items-center gap-2 text-[11px]">
-      <span className={`flex items-center justify-center h-4 w-4 rounded-full shrink-0 ${iconClassName}`}>
+      <span className="flex items-center justify-center h-4 w-4 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 shrink-0">
         {icon}
       </span>
       <span className="shrink-0 font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
@@ -72,17 +62,15 @@ function TitleRow({
 
 // 194px matches the Draft H2H tile / Blackjack card height exactly
 // (measured via getBoundingClientRect against both) - but only for
-// seasons with exactly two footer rows to fill it (Blackjack+Cup, the
-// only pairing that existed when this was measured). A Draft-only season,
-// one with just a single footer category, or now one with all three
-// (Blackjack+Cup+Golden Spanner) has either nothing to spend that space
-// on or more than it can hold, so it sizes to its own content instead of
-// carrying dead space or clipping a row.
+// seasons with a full two-row footer (Blackjack and Cup) to fill it. A
+// Draft-only season, or one with just a single footer category (e.g.
+// 2024/25 once Blackjack was pulled - no winner yet), has nothing to
+// spend that extra space on, so it sizes to its own content instead of
+// carrying dead space just to hit a height nothing on the card needs.
 function SeasonCard({ record }: { record: SeasonRecord }) {
   const draftGroups = groupByPlace(record.draft);
-  const footerCount = [record.blackjack, record.cup, record.spanner].filter(Boolean).length;
-  const hasFooter = footerCount > 0;
-  const isFullFooter = footerCount === 2;
+  const hasFooter = record.blackjack || record.cup;
+  const isFullFooter = record.blackjack && record.cup;
 
   return (
     <div
@@ -96,15 +84,29 @@ function SeasonCard({ record }: { record: SeasonRecord }) {
       {/* Bigger and bolder than the Blackjack/Cup footer below - Draft's
           top 3 is the headline of every card, the footer is a footnote. */}
       <div className="space-y-1">
-        {draftGroups.map((group) => (
+        {draftGroups.map((group, i) => (
           <div key={group.place} className="flex items-center gap-2 text-sm">
             <PlaceBadge place={group.place} />
-            <span className="font-bold truncate text-zinc-900 dark:text-white">
+            <span className="font-bold truncate text-zinc-900 dark:text-white flex-1 min-w-0">
               {group.managers.join(" & ")}
             </span>
             {group.managers.length > 1 && (
               <span className="text-[9px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 shrink-0">
                 Joint
+              </span>
+            )}
+            {/* Golden Spanner sits on the same row as the lowest podium
+                place, pinned to the right edge - icon only (no label/name,
+                unlike Blackjack/Cup below), same h-6 w-6 medal-badge size
+                PlaceBadge itself uses. The manager's name is still there,
+                just as a native tooltip rather than visible text. */}
+            {i === draftGroups.length - 1 && record.spanner && (
+              <span
+                className="inline-flex items-center justify-center h-6 w-6 rounded-full shrink-0 bg-gradient-to-br from-[#fde68a] to-[#d97706] text-[#3a1d00]"
+                title={`Golden Spanner: ${record.spanner}`}
+                aria-label={`Golden Spanner: ${record.spanner}`}
+              >
+                <WrenchIcon size={12} />
               </span>
             )}
           </div>
@@ -127,18 +129,6 @@ function SeasonCard({ record }: { record: SeasonRecord }) {
             <TitleRow icon={<SpadeIcon size={10} />} label="Blackjack" names={record.blackjack} />
           )}
           {record.cup && <TitleRow icon={<TrophyIcon size={10} />} label="Cup" names={[record.cup]} />}
-          {/* Gold badge instead of the shared neutral grey one Blackjack/Cup
-              use - this is a named "Golden" award, so the icon itself
-              carries that rather than just the label text saying so. Same
-              medal-gold gradient as PLACE_STYLES[1] above, at badge scale. */}
-          {record.spanner && (
-            <TitleRow
-              icon={<WrenchIcon size={10} />}
-              label="Golden Spanner"
-              names={[record.spanner]}
-              iconClassName="bg-gradient-to-br from-[#fde68a] to-[#d97706] text-[#3a1d00]"
-            />
-          )}
         </div>
       )}
     </div>
