@@ -3,6 +3,7 @@ import { BlackjackParticipantCard } from "@/components/BlackjackParticipantCard"
 import {
   applyWinnerStatus,
   computeStatus,
+  computeExpectedPace,
   TOTAL_GAMEWEEKS,
   type BlackjackParticipant,
 } from "@/lib/blackjack";
@@ -55,6 +56,7 @@ function buildParticipant(
 ): BlackjackParticipant {
   const totalGoals = players ? players.reduce((sum, p) => sum + p.goals, 0) : 0;
   const allScored = players ? players.every((p) => p.goals > 0) : false;
+  const status = players ? computeStatus(totalGoals, allScored, gameweek) : "no-picks";
   return {
     entryId,
     managerName,
@@ -63,7 +65,8 @@ function buildParticipant(
     totalGoals,
     goalsThisGw,
     allScored,
-    status: players ? computeStatus(totalGoals, allScored, gameweek) : "no-picks",
+    status,
+    expectedPace: computeExpectedPace(status, gameweek),
   };
 }
 
