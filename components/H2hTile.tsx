@@ -49,12 +49,28 @@ function StreakBadge({ streak, hide }: { streak: number; hide: boolean }) {
 // at most one of these two is ever true. Same green/red pairing
 // MotwSotwTile (Money page) already uses for MOTW/SOTW, just as an icon
 // here instead of coloured text.
-function MotwSotwBadge({ isMotw, isSotw }: { isMotw: boolean; isSotw: boolean }) {
+function MotwSotwBadge({
+  isMotw,
+  isSotw,
+  dark,
+}: {
+  isMotw: boolean;
+  isSotw: boolean;
+  dark: boolean;
+}) {
+  // In "All Gameweeks" mode (dark=true) the manager name itself recolours to
+  // text-[#04211a] rather than disappearing - the icon follows the same
+  // rule instead of being hidden outright, matching every other element on
+  // this row.
   if (isMotw) {
-    return <CrownIcon size={12} className="shrink-0 text-[#00b368] dark:text-[#00ff85]" />;
+    return (
+      <CrownIcon size={12} className={`shrink-0 ${dark ? "text-[#04211a]" : "text-[#00b368] dark:text-[#00ff85]"}`} />
+    );
   }
   if (isSotw) {
-    return <WrenchIcon size={12} className="shrink-0 text-[#e90052] dark:text-[#ff2d78]" />;
+    return (
+      <WrenchIcon size={12} className={`shrink-0 ${dark ? "text-[#04211a]" : "text-[#e90052] dark:text-[#ff2d78]"}`} />
+    );
   }
   return null;
 }
@@ -159,9 +175,9 @@ function SideHeader({
             align === "right" ? "justify-end" : "justify-start"
           } ${dark ? "text-[#04211a]" : "text-zinc-900 dark:text-white"}`}
         >
-          {align === "right" && !dark && <MotwSotwBadge isMotw={isLatestMotw} isSotw={isLatestSotw} />}
+          {align === "right" && <MotwSotwBadge isMotw={isLatestMotw} isSotw={isLatestSotw} dark={dark} />}
           <span className="truncate min-w-0">{managerName}</span>
-          {align === "left" && !dark && <MotwSotwBadge isMotw={isLatestMotw} isSotw={isLatestSotw} />}
+          {align === "left" && <MotwSotwBadge isMotw={isLatestMotw} isSotw={isLatestSotw} dark={dark} />}
         </button>
         <PlayerStatsMenu
           align={align}
