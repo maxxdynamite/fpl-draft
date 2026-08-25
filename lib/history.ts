@@ -44,6 +44,7 @@ export const SEASON_HISTORY: SeasonRecord[] = [
       { place: 2, manager: "Liam Zajdlic" },
       { place: 3, manager: "Alasdair Hall-Jones" },
     ],
+    blackjack: ["Jordan Gibbens"],
     cup: "Alasdair Hall-Jones",
   },
   {
@@ -53,6 +54,7 @@ export const SEASON_HISTORY: SeasonRecord[] = [
       { place: 2, manager: "Phil Thomas" },
       { place: 3, manager: "Liam Zajdlic" },
     ],
+    cup: "Marc Edwards",
   },
   {
     season: "2021/22",
