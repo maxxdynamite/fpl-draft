@@ -61,15 +61,23 @@ function MotwSotwBadge({
   // In "All Gameweeks" mode (dark=true) the manager name itself recolours to
   // text-[#04211a] rather than disappearing - the icon follows the same
   // rule instead of being hidden outright, matching every other element on
-  // this row.
+  // this row. transition-colors duration-300 matches the name button's own
+  // transition (above) - fill="currentColor" alone doesn't animate, it was
+  // snapping instantly while the name faded.
   if (isMotw) {
     return (
-      <CrownIcon size={12} className={`shrink-0 ${dark ? "text-[#04211a]" : "text-[#00b368] dark:text-[#00ff85]"}`} />
+      <CrownIcon
+        size={12}
+        className={`shrink-0 transition-colors duration-300 ${dark ? "text-[#04211a]" : "text-[#00b368] dark:text-[#00ff85]"}`}
+      />
     );
   }
   if (isSotw) {
     return (
-      <WrenchIcon size={12} className={`shrink-0 ${dark ? "text-[#04211a]" : "text-[#e90052] dark:text-[#ff2d78]"}`} />
+      <WrenchIcon
+        size={12}
+        className={`shrink-0 transition-colors duration-300 ${dark ? "text-[#04211a]" : "text-[#e90052] dark:text-[#ff2d78]"}`}
+      />
     );
   }
   return null;
