@@ -3,7 +3,6 @@ import { BlackjackParticipantCard } from "@/components/BlackjackParticipantCard"
 import {
   applyWinnerStatus,
   computeStatus,
-  computeExpectedPace,
   TOTAL_GAMEWEEKS,
   type BlackjackParticipant,
 } from "@/lib/blackjack";
@@ -66,7 +65,6 @@ function buildParticipant(
     goalsThisGw,
     allScored,
     status,
-    expectedPace: computeExpectedPace(status, gameweek),
   };
 }
 

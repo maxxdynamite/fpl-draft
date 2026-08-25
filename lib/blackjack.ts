@@ -50,30 +50,7 @@ export type BlackjackParticipant = {
   goalsThisGw: number; // goals from this participant's picks in the current gameweek only, not the season total
   allScored: boolean; // every pick has scored at least once
   status: BlackjackStatus;
-  // Same formula computeStatus's own pace ladder uses internally, exposed
-  // here for the progress bar's pace tick (BlackjackParticipantCard) - not
-  // a new calculation, just this one already being made visible. Null
-  // whenever there's no season left to chase pace in: pre-season, no
-  // picks, or any terminal status (bust/blackjack/winner/fell-short).
-  expectedPace: number | null;
 };
-
-const TERMINAL_STATUSES: readonly BlackjackStatus[] = [
-  "no-picks",
-  "selected",
-  "bust",
-  "blackjack",
-  "winner",
-  "fell-short",
-];
-
-// Same formula computeStatus's own pace ladder uses internally - exported
-// so callers building a BlackjackParticipant (getBlackjackLeaderboard
-// below, and app/blackjack/preview/page.tsx's mock data) share one
-// implementation instead of two that could drift apart.
-export function computeExpectedPace(status: BlackjackStatus, currentGameweek: number): number | null {
-  return TERMINAL_STATUSES.includes(status) ? null : (BLACKJACK_TARGET * currentGameweek) / TOTAL_GAMEWEEKS;
-}
 
 // Per-player goals scored in one specific gameweek - separate from
 // lib/players.ts's Player.goals, which is the season-to-date total. The
@@ -252,7 +229,6 @@ export async function getBlackjackLeaderboard(): Promise<BlackjackParticipant[]>
       goalsThisGw,
       allScored,
       status,
-      expectedPace: computeExpectedPace(status, currentGameweek),
     };
   });
 

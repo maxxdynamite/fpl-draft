@@ -136,16 +136,6 @@ export function BlackjackParticipantCard({
             className={`h-full ${isBust ? "bg-black" : "bg-gradient-to-r from-[#00ff85] to-[#04f5ff]"}`}
             style={{ width: `${Math.min(100, (participant.totalGoals / BLACKJACK_TARGET) * 100)}%` }}
           />
-          {/* Hidden, not zeroed, once expectedPace is null (see its own
-              comment, lib/blackjack.ts) - a tick sitting at 0% would read
-              as "you should have 0 goals by now", not "pace doesn't apply
-              here anymore". */}
-          {participant.expectedPace !== null && (
-            <div
-              className="absolute top-1/2 -translate-y-1/2 w-0.5 h-2 rounded-full bg-white/90"
-              style={{ left: `${Math.min(100, (participant.expectedPace / BLACKJACK_TARGET) * 100)}%` }}
-            />
-          )}
         </div>
       )}
 
