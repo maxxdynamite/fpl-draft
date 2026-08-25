@@ -23,51 +23,48 @@ function buildLeagueEntryToEntryIdMap_(data) {
   return map;
 }
 
-// Keeps the Managers sheet's team_name/manager_name columns in sync with
-// the API, matched on entry_id - the only identifier guaranteed to stay
-// constant if someone renames their team or themselves mid-season. Never
-// adds or removes rows: rival_entry_id has to be set by hand, so a brand
-// new entry is left for manual setup, and a sheet row whose entry_id no
-// longer appears in the API is left untouched and reported instead.
-function syncManagerNames_(data) {
+// Keeps the Managers sheet's team_name column in sync with the API,
+// matched on entry_id - the only identifier guaranteed to stay constant if
+// someone renames their team mid-season. Never adds or removes rows:
+// rival_entry_id has to be set by hand, so a brand new entry is left for
+// manual setup, and a sheet row whose entry_id no longer appears in the API
+// is left untouched and reported instead.
+//
+// manager_name is deliberately NOT synced (used to be, alongside
+// team_name) - the API's player_first_name/player_last_name is always
+// title-cased, which stomped on managers' own stylisation of their name
+// (e.g. Brett Cooper spells his lowercase as "brett cooper") every ~15min
+// on the next auto-sync. manager_name is now sheet-owned: edit it by hand
+// and it stays put.
+function syncTeamNames_(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(MANAGERS_SHEET);
   if (!sheet) throw new Error('Sheet "' + MANAGERS_SHEET + '" not found.');
 
-  const apiByEntryId = {};
+  const teamNameByEntryId = {};
   data.league_entries.forEach(function (le) {
-    apiByEntryId[le.entry_id] = {
-      teamName: le.entry_name,
-      managerName: (le.player_first_name + ' ' + le.player_last_name).trim()
-    };
+    teamNameByEntryId[le.entry_id] = le.entry_name;
   });
 
   const values = sheet.getDataRange().getValues();
   const header = values[0];
   const entryCol = header.indexOf('entry_id');
   const teamCol = header.indexOf('team_name');
-  const managerCol = header.indexOf('manager_name');
 
   let updated = 0;
   const missingFromApi = [];
 
   for (let i = 1; i < values.length; i++) {
     const entryId = values[i][entryCol];
-    const api = apiByEntryId[entryId];
-    if (!api) {
+    const teamName = teamNameByEntryId[entryId];
+    if (teamName === undefined) {
       missingFromApi.push(entryId);
       continue;
     }
-    let rowChanged = false;
-    if (values[i][teamCol] !== api.teamName) {
-      sheet.getRange(i + 1, teamCol + 1).setValue(api.teamName);
-      rowChanged = true;
+    if (values[i][teamCol] !== teamName) {
+      sheet.getRange(i + 1, teamCol + 1).setValue(teamName);
+      updated++;
     }
-    if (values[i][managerCol] !== api.managerName) {
-      sheet.getRange(i + 1, managerCol + 1).setValue(api.managerName);
-      rowChanged = true;
-    }
-    if (rowChanged) updated++;
   }
 
   return { updated: updated, missingFromApi: missingFromApi };
@@ -108,26 +105,26 @@ function findLastDataRow_(sheet) {
 // streaks/history built on this sheet shouldn't reflect a result that
 // bonus points or defensive contribution points could still flip.
 function syncCurrentGameweek() {
-  // League details carry both the score-relevant standings and each
-  // manager's current team_name/manager_name, so fetch it once up front and
-  // sync names regardless of whether a gameweek happens to be live - names
-  // can change at any point in the season, not just while scores are moving.
+  // League details carry both the score-relevant standings and each team's
+  // current team_name, so fetch it once up front and sync it regardless of
+  // whether a gameweek happens to be live - a team can be renamed at any
+  // point in the season, not just while scores are moving.
   const data = fetchLeagueDetails_();
-  const nameResult = syncManagerNames_(data);
+  const nameResult = syncTeamNames_(data);
 
   const game = fetchGameState_();
   const eventNumber = game.current_event;
   if (!eventNumber) {
     throw new Error(
       'No gameweek is currently live yet (next_event: ' + game.next_event + ').' +
-      ' Manager names were still synced: ' + nameResult.updated + ' updated.'
+      ' Team names were still synced: ' + nameResult.updated + ' updated.'
     );
   }
 
   if (!game.current_event_finished) {
     throw new Error(
       'Gameweek ' + eventNumber + ' is still live, not finished yet - skipping score sync' +
-      ' until it locks. Manager names were still synced: ' + nameResult.updated + ' updated.'
+      ' until it locks. Team names were still synced: ' + nameResult.updated + ' updated.'
     );
   }
 
@@ -190,7 +187,7 @@ function syncNowPrompt() {
     let msg =
       'Synced GW' + r.eventNumber + ': ' + r.updated + ' updated, ' + r.inserted + ' inserted.' +
       (r.finished ? ' (gameweek finished)' : ' (gameweek still in progress)') +
-      '\n\nManager names: ' + r.namesUpdated + ' updated.';
+      '\n\nTeam names: ' + r.namesUpdated + ' updated.';
     if (r.namesMissingFromApi.length > 0) {
       msg += '\nNot found in API (left untouched): ' + r.namesMissingFromApi.join(', ');
     }
@@ -200,12 +197,12 @@ function syncNowPrompt() {
   }
 }
 
-function syncManagerNamesPrompt() {
+function syncTeamNamesPrompt() {
   const ui = SpreadsheetApp.getUi();
   try {
     const data = fetchLeagueDetails_();
-    const r = syncManagerNames_(data);
-    let msg = 'Manager names: ' + r.updated + ' updated.';
+    const r = syncTeamNames_(data);
+    let msg = 'Team names: ' + r.updated + ' updated.';
     if (r.missingFromApi.length > 0) {
       msg += '\nNot found in API (left untouched): ' + r.missingFromApi.join(', ');
     }
@@ -263,7 +260,7 @@ function onOpen() {
     .createMenu('FPL Draft')
     .addItem('Dry run (log raw API data)', 'dryRunPrompt')
     .addItem('Sync current gameweek now', 'syncNowPrompt')
-    .addItem('Sync manager & team names now', 'syncManagerNamesPrompt')
+    .addItem('Sync team names now', 'syncTeamNamesPrompt')
     .addSeparator()
     .addItem('Install automatic sync (every 15min)', 'installFrequentSyncTrigger')
     .addSeparator()
