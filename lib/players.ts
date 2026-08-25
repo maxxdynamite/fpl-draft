@@ -56,8 +56,17 @@ export async function getPlayersData(): Promise<PlayersData> {
   // League calendar, not this app's own Draft league gameweek tracker,
   // which is a separate competition on a separate (and currently
   // out-of-sync) schedule.
+  //
+  // The "+1 if live" bonus only applies when the current gameweek is
+  // actually unfinished - is_current alone isn't enough to tell. The
+  // classic FPL API keeps the just-finished gameweek marked is_current
+  // right up until the next one's own deadline passes, so a naive
+  // events.some(is_current) check double-counted it: once via the
+  // finished filter, once more via this bonus, showing "Gameweek 2"
+  // while gameweek 2 hadn't even kicked off yet.
+  const currentEvent = events.find((e) => e.is_current);
   const currentGameweek =
-    events.filter((e) => e.finished).length + (events.some((e) => e.is_current) ? 1 : 0);
+    events.filter((e) => e.finished).length + (currentEvent && !currentEvent.finished ? 1 : 0);
 
   // Before a season's first gameweek, bootstrap-static still reports last
   // season's final goals_scored rather than resetting to 0 - real
