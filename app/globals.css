@@ -1,8 +1,16 @@
 @import "tailwindcss";
 
+/* Dark is the only theme this app ships - see app/layout.tsx, which
+   applies the "dark" class unconditionally regardless of the visitor's
+   OS/browser preference. Switches Tailwind's dark: variant from its v4
+   default (prefers-color-scheme media query) to this class instead, so
+   every dark: utility across the app keeps working without touching
+   each of those call sites individually. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #f7f7f8;
-  --foreground: #16161a;
+  --background: #0b0b0d;
+  --foreground: #f2f2f4;
 }
 
 @theme inline {
@@ -12,19 +20,9 @@
 
   /* Soft, layered "elevation" shadows — a subtle bevel-and-lift feel
      without going full neumorphism. Reused across cards, nav pills. */
-  --shadow-soft: 0 1px 1px rgba(16, 16, 20, 0.03), 0 8px 20px -6px rgba(16, 16, 20, 0.08);
-  --shadow-soft-lg: 0 2px 2px rgba(16, 16, 20, 0.04), 0 16px 36px -8px rgba(16, 16, 20, 0.12);
-  --shadow-pressed: inset 0 1px 2px rgba(16, 16, 20, 0.12);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b0b0d;
-    --foreground: #f2f2f4;
-    --shadow-soft: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 20px -6px rgba(0, 0, 0, 0.5);
-    --shadow-soft-lg: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 20px 40px -10px rgba(0, 0, 0, 0.6);
-    --shadow-pressed: inset 0 1px 3px rgba(0, 0, 0, 0.4);
-  }
+  --shadow-soft: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 20px -6px rgba(0, 0, 0, 0.5);
+  --shadow-soft-lg: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+  --shadow-pressed: inset 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 body {
