@@ -163,17 +163,21 @@ function blackjackLeaderClause(row: RecapBlackjackRow): RecapToken[] {
   }
 }
 
-// MOCKUP MODE: this project's whole live-data philosophy (see
-// lib/h2h.ts, lib/liveStandings.ts, app/money/page.tsx) is that nothing
-// "official" - H2H tallies, wagers - should reflect a gameweek before FPL
-// actually locks it. A recap is exactly that kind of official summary, so
-// the real version of this function will need the same finished-gameweek
-// gate before it's ever shown beyond this dev build. For now it
-// deliberately ignores that and narrates whatever getH2hMatchups()'s
-// live-preferred scores currently say, since the point of this pass is
-// to see the actual page/image working end-to-end before gameweek 1 has
-// really finished. Revisit before this goes further than a dev preview.
-export async function getRecapData(): Promise<RecapData> {
+// A recap is an "official" summary in the same sense as H2H tallies and
+// wagers (see lib/h2h.ts, lib/liveStandings.ts, app/money/page.tsx) - it
+// must describe a gameweek that's actually finished and synced, never a
+// live/in-progress one. Unlike those other views, a recap also can't
+// silently fall back to "no live data yet, show official instead" - it
+// specifically narrates ONE gameweek, so it needs its own target rather
+// than picking up whatever getH2hMatchups() happens to be showing live
+// right now (which would start describing gameweek 2's in-progress
+// scores the moment it kicks off, instead of recapping gameweek 1).
+// gwScores is the only source that's ever purely synced/official, so the
+// target gameweek - and every score quoted for it - comes from there,
+// not from matchups' live-preferred latestScore/latestGameweek. Returns
+// null before the very first sync has happened, since there's nothing to
+// recap yet.
+export async function getRecapData(): Promise<RecapData | null> {
   const [matchups, blackjackParticipants, leagueName, managers, gwScores, standings, weeklyAwards] =
     await Promise.all([
       getH2hMatchups(),
@@ -184,26 +188,36 @@ export async function getRecapData(): Promise<RecapData> {
       getStandings(),
       getWeeklyAwards(),
     ]);
+  if (gwScores.length === 0) return null;
+
   const managerNameByEntry = new Map(managers.map((m) => [m.entryId, m.managerName]));
   const teamNameByEntry = new Map(managers.map((m) => [m.entryId, m.teamName]));
 
-  const gameweek = matchups[0]?.teamA.latestGameweek ?? 1;
+  const gameweek = Math.max(...gwScores.map((r) => r.gameweek));
+  const syncedScoreByEntry = new Map(
+    gwScores.filter((r) => r.gameweek === gameweek).map((r) => [r.entryId, r.eventTotal]),
+  );
 
   // Draft-page order, not re-sorted - same pairing/left-right as
   // getH2hMatchups() already gives every other H2H view in the app.
+  // Scores come from syncedScoreByEntry (this gameweek's official
+  // GW_Scores rows), not matchups' own live-preferred latestScore - see
+  // this function's own comment above for why.
   const h2hResults: RecapMatchup[] = matchups
     .map((m): RecapMatchup | null => {
       const a = m.teamA;
       const b = m.teamB;
-      if (a.latestScore === null || b.latestScore === null) return null;
+      const aScore = syncedScoreByEntry.get(a.entryId);
+      const bScore = syncedScoreByEntry.get(b.entryId);
+      if (aScore === undefined || bScore === undefined) return null;
       return {
         aName: a.managerName,
         aTeam: a.teamName,
-        aScore: a.latestScore,
+        aScore,
         bName: b.managerName,
         bTeam: b.teamName,
-        bScore: b.latestScore,
-        margin: Math.abs(a.latestScore - b.latestScore),
+        bScore,
+        margin: Math.abs(aScore - bScore),
       };
     })
     .filter((r): r is RecapMatchup => r !== null);
@@ -214,15 +228,18 @@ export async function getRecapData(): Promise<RecapData> {
   const closestMatch = byMargin.length > 0 ? winnerLoser(byMargin[0]) : null;
 
   // Flattened across both sides of every matchup - covers every manager
-  // exactly once, same pool getH2hMatchups() already builds from.
-  const allSides = matchups.flatMap((m) => [m.teamA, m.teamB]);
-  const scored = allSides.filter((s) => s.latestScore !== null);
+  // exactly once, same pool getH2hMatchups() already builds from. Scores
+  // come from syncedScoreByEntry, same reasoning as h2hResults above.
+  const allSides = matchups
+    .flatMap((m) => [m.teamA, m.teamB])
+    .map((s) => ({ ...s, syncedScore: syncedScoreByEntry.get(s.entryId) ?? null }));
+  const scored = allSides.filter((s) => s.syncedScore !== null);
   const topManager = scored.reduce(
-    (best, s) => (s.latestScore! > best.latestScore! ? s : best),
+    (best, s) => (s.syncedScore! > best.syncedScore! ? s : best),
     scored[0],
   );
   const bottomManager = scored.reduce(
-    (worst, s) => (s.latestScore! < worst.latestScore! ? s : worst),
+    (worst, s) => (s.syncedScore! < worst.syncedScore! ? s : worst),
     scored[0],
   );
 
@@ -241,14 +258,14 @@ export async function getRecapData(): Promise<RecapData> {
       ? [
           { text: topManager.managerName, strong: true },
           { text: ` (${topManager.teamName}) is quietly making everyone else look bad — top scorer on ` },
-          { text: `${topManager.latestScore} pts`, strong: true },
+          { text: `${topManager.syncedScore} pts`, strong: true },
           ...blackjackLeaderClause(blackjackLeader),
         ]
       : topManager
         ? [
             { text: topManager.managerName, strong: true },
             { text: ` (${topManager.teamName}) tops the gameweek on ` },
-            { text: `${topManager.latestScore} pts`, strong: true },
+            { text: `${topManager.syncedScore} pts`, strong: true },
             { text: ". Try again next week, everyone else." },
           ]
         : [];
@@ -316,8 +333,8 @@ export async function getRecapData(): Promise<RecapData> {
     closestMatch,
     blackjackAll,
     bottomOfWeek:
-      bottomManager && bottomManager.latestScore !== null
-        ? { managerName: bottomManager.managerName, teamName: bottomManager.teamName, score: bottomManager.latestScore }
+      bottomManager && bottomManager.syncedScore !== null
+        ? { managerName: bottomManager.managerName, teamName: bottomManager.teamName, score: bottomManager.syncedScore }
         : null,
     hotStreak,
     seasonHigh,

@@ -2,13 +2,21 @@ import { getRecapData, tokensToText } from "@/lib/recap";
 import { CopyButton } from "@/components/CopyButton";
 import { ShareButton } from "@/components/ShareButton";
 
-// MOCKUP MODE - see the comment on lib/recap.ts's getRecapData(). This
-// page (and the /api/recap/image route it points at) narrates whatever
-// the live gameweek's scores currently are, not a genuinely finished
-// one. Dev-only for now, on purpose - not something the group should see
-// until it's gated on the gameweek actually being locked.
 export default async function RecapPage() {
   const data = await getRecapData();
+
+  // getRecapData() returns null before the very first gameweek has
+  // synced - nothing to recap yet, not an error.
+  if (!data) {
+    return (
+      <main className="flex-1 w-full max-w-md mx-auto px-4 sm:px-6 pt-6 pb-10">
+        <h1 className="text-xl font-bold mb-3">Weekly Recap</h1>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          No gameweek has finished and synced yet - check back once one has.
+        </p>
+      </main>
+    );
+  }
 
   const lines = [
     `GW${data.gameweek} done. ${tokensToText(data.headline)}`,
@@ -42,11 +50,6 @@ export default async function RecapPage() {
 
   return (
     <main className="flex-1 w-full max-w-md mx-auto px-4 sm:px-6 pt-6 pb-10">
-      <div className="mb-4 rounded-lg bg-amber-500/10 ring-1 ring-amber-500/30 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
-        Dev-only mockup — narrates the live gameweek as if it's finished,
-        not gated on the real lockdown yet.
-      </div>
-
       <h1 className="text-xl font-bold mb-3">Weekly Recap</h1>
 
       <img

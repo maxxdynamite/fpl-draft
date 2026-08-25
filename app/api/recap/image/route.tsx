@@ -74,6 +74,12 @@ function BlackjackColumn({ rows }: { rows: RecapBlackjackRow[] }) {
 
 export async function GET() {
   const [data, fonts] = await Promise.all([getRecapData(), loadManropeFonts()]);
+  // Same as the page this image is embedded in - null means no gameweek
+  // has synced yet, not an error. The page never renders the <img> tag
+  // in that case, so this is only ever hit directly/pre-first-sync.
+  if (!data) {
+    return new Response("No gameweek has finished and synced yet.", { status: 404 });
+  }
   const half = Math.ceil(data.blackjackAll.length / 2);
   const colA = data.blackjackAll.slice(0, half);
   const colB = data.blackjackAll.slice(half);
