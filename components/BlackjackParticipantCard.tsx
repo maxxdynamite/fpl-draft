@@ -148,12 +148,14 @@ export function BlackjackParticipantCard({
           {/* Brand gradient (same green-to-cyan as the Q badge/qualified
               glow/blackjack pill), not the per-status colour - one
               consistent fill regardless of pace band. Bust is the one
-              exception: it keeps solid black instead, matching the rest of
-              the card's own "hand is dead" monochrome treatment (black
-              pill, greyscale avatars) rather than closing out on a
-              celebratory gradient. */}
+              exception: no gradient, matching the rest of the card's own
+              "hand is dead" monochrome treatment (black pill, greyscale
+              avatars) - but zinc-600, not the pill's actual black. Bust is
+              always clamped to (or past) 100% width, so a true black fill
+              here would sit on a near-black card and its own faint track,
+              rendering as an invisible void instead of a filled bar. */}
           <div
-            className={`h-full ${isBust ? "bg-black" : "bg-gradient-to-r from-[#00ff85] to-[#04f5ff]"}`}
+            className={`h-full ${isBust ? "bg-zinc-600" : "bg-gradient-to-r from-[#00ff85] to-[#04f5ff]"}`}
             style={{ width: `${Math.min(100, (participant.totalGoals / BLACKJACK_TARGET) * 100)}%` }}
           />
         </div>
