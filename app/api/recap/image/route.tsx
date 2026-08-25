@@ -43,7 +43,7 @@ function BlackjackColumn({ rows }: { rows: RecapBlackjackRow[] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       {rows.map((row, i) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", padding: "10px 0", fontSize: 24 }}>
+        <div key={i} style={{ display: "flex", alignItems: "center", padding: "8px 0", fontSize: 21 }}>
           <span style={{ display: "flex", flex: 1, color: "#d4d4d8", fontWeight: 600, overflow: "hidden" }}>
             {row.managerName}
           </span>
@@ -53,7 +53,7 @@ function BlackjackColumn({ rows }: { rows: RecapBlackjackRow[] }) {
               showed anyone in the lead as a "full" bar regardless of how
               far from 21 they actually were. Capped at 100% since a bust
               can sit above 21. */}
-          <div style={{ display: "flex", width: 56, height: 10, borderRadius: 999, background: "rgba(255,255,255,0.08)", overflow: "hidden", marginRight: 12 }}>
+          <div style={{ display: "flex", width: 50, height: 9, borderRadius: 999, background: "rgba(255,255,255,0.08)", overflow: "hidden", marginRight: 11 }}>
             <div
               style={{
                 display: "flex",
@@ -63,7 +63,7 @@ function BlackjackColumn({ rows }: { rows: RecapBlackjackRow[] }) {
               }}
             />
           </div>
-          <span style={{ display: "flex", width: 30, justifyContent: "flex-end", fontWeight: 800, color: "#fff" }}>
+          <span style={{ display: "flex", width: 26, justifyContent: "flex-end", fontWeight: 800, color: "#fff" }}>
             {row.goals}
           </span>
         </div>
@@ -93,7 +93,7 @@ export async function GET() {
           display: "flex",
           flexDirection: "column",
           background: "#050505",
-          padding: "40px 48px",
+          padding: "40px 46px",
           fontFamily: "Manrope",
         }}
       >
@@ -103,19 +103,19 @@ export async function GET() {
             card - the H2H scores below are the actual content people are
             here for, so the title shouldn't out-compete them. */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ display: "flex", fontSize: 48, fontWeight: 800, letterSpacing: -1, color: "#fff" }}>
+          <span style={{ display: "flex", fontSize: 40, fontWeight: 800, letterSpacing: -1, color: "#fff" }}>
             Gameweek {data.gameweek} Recap
           </span>
           <span
             style={{
               display: "flex",
-              fontSize: 26,
+              fontSize: 20,
               fontWeight: 800,
               letterSpacing: 1,
               textTransform: "uppercase",
               color: "#050505",
               background: `linear-gradient(90deg, ${GREEN}, ${CYAN})`,
-              padding: "10px 26px 12px",
+              padding: "8px 20px 9px",
               borderRadius: 999,
               flexShrink: 0,
             }}
@@ -125,7 +125,7 @@ export async function GET() {
         </div>
 
         {/* H2H results - draft-page left/right order, not winner-first */}
-        <span style={{ display: "flex", fontSize: 22, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", color: "#6b6b74", margin: "28px 0 16px" }}>
+        <span style={{ display: "flex", fontSize: 19, fontWeight: 800, letterSpacing: 1.3, textTransform: "uppercase", color: "#6b6b74", margin: "22px 0 12px" }}>
           {data.leagueName} — H2H
         </span>
         <div style={{ display: "flex", flexDirection: "column" }}>
@@ -141,17 +141,17 @@ export async function GET() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  padding: "15px 0",
+                  padding: "11px 0",
                   borderTop: i === 0 ? "none" : "2px solid rgba(255,255,255,0.06)",
-                  fontSize: 32,
+                  fontSize: 26,
                 }}
               >
                 <span style={{ display: "flex", flex: 1, color: "#d4d4d8", fontWeight: 600 }}>{r.aName}</span>
-                <span style={{ display: "flex", width: 66, justifyContent: "center", fontWeight: 800, fontSize: 37, color: aWon ? "#fff" : "#6b6b74" }}>
+                <span style={{ display: "flex", width: 56, justifyContent: "center", fontWeight: 800, fontSize: 30, color: aWon ? "#fff" : "#6b6b74" }}>
                   {r.aScore}
                 </span>
-                <span style={{ display: "flex", width: 38, justifyContent: "center", fontSize: 19, color: "#45454d", fontWeight: 700 }}>v</span>
-                <span style={{ display: "flex", width: 66, justifyContent: "center", fontWeight: 800, fontSize: 37, color: bWon ? "#fff" : "#6b6b74" }}>
+                <span style={{ display: "flex", width: 30, justifyContent: "center", fontSize: 15, color: "#45454d", fontWeight: 700 }}>v</span>
+                <span style={{ display: "flex", width: 56, justifyContent: "center", fontWeight: 800, fontSize: 30, color: bWon ? "#fff" : "#6b6b74" }}>
                   {r.bScore}
                 </span>
                 <span style={{ display: "flex", flex: 1, justifyContent: "flex-end", color: "#d4d4d8", fontWeight: 600 }}>{r.bName}</span>
@@ -162,7 +162,7 @@ export async function GET() {
 
         {/* Blackjack - every manager, split into two columns so all 14
             names fit without shrinking past legibility. */}
-        <span style={{ display: "flex", fontSize: 22, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", color: "#6b6b74", margin: "28px 0 16px" }}>
+        <span style={{ display: "flex", fontSize: 19, fontWeight: 800, letterSpacing: 1.3, textTransform: "uppercase", color: "#6b6b74", margin: "22px 0 12px" }}>
           Blackjack — Target 21
         </span>
         <div style={{ display: "flex", flexDirection: "row", gap: 40 }}>
@@ -179,30 +179,30 @@ export async function GET() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginTop: 28,
-            paddingTop: 18,
+            marginTop: 14,
+            paddingTop: 16,
             borderTop: "2px solid rgba(255,255,255,0.08)",
           }}
         >
-          <span style={{ display: "flex", fontSize: 20, fontWeight: 800 }}>
+          <span style={{ display: "flex", fontSize: 18, fontWeight: 800 }}>
             <span style={{ display: "flex", color: "#fff" }}>Bad Blokes&nbsp;</span>
             <span style={{ display: "flex", color: GREEN }}>Weekly</span>
           </span>
-          <span style={{ display: "flex", fontSize: 16, fontWeight: 600, color: "#52525b" }}>badblokesweekly.vercel.app</span>
+          <span style={{ display: "flex", fontSize: 14, fontWeight: 600, color: "#52525b" }}>badblokesweekly.vercel.app</span>
         </div>
       </div>
     ),
-    // Measured, not guessed: content (title through footer) actually
-    // ends at row 1277 at this sizing (checked by rendering at a
-    // deliberately oversized canvas and finding the last non-background
-    // pixel row), plus the same 40px the top padding uses so the footer
-    // isn't flush against the bottom edge. A canvas taller than the
-    // content also silently drops whatever doesn't fit - Satori clips
-    // overflow rather than growing the container or erroring, which is
-    // exactly what ate the footer entirely the first time this was
-    // guessed instead of measured. 1080x1320 (≈4:5) keeps the whole
-    // card visible in WhatsApp's chat thumbnail without the heavy
-    // top/bottom cropping a taller image gets there.
-    { width: 1080, height: 1320, fonts },
+    // Measured, not guessed: content (title through footer) ends at row
+    // 1038 at this sizing (checked by rendering at a deliberately
+    // oversized canvas and finding the last non-background pixel row),
+    // leaving ~42px of bottom breathing room to match the 40px top
+    // padding. A canvas shorter than the real content also silently
+    // clips whatever doesn't fit instead of erring, which is exactly
+    // what ate the footer entirely the first time this was guessed
+    // instead of measured. True 1:1 square (1080x1080), not just close -
+    // WhatsApp's chat thumbnail essentially never crops a square image,
+    // unlike any portrait ratio (even 4:5, the previous size here),
+    // which still risks some cropping depending on the client.
+    { width: 1080, height: 1080, fonts },
   );
 }
