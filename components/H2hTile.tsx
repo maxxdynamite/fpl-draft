@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { H2hMatchup } from "@/lib/h2h";
 import { formatPl, plColor } from "@/lib/format";
-import { MedalIcon } from "./MedalIcon";
+import { CrownIcon } from "./CrownIcon";
 import { WrenchIcon } from "./WrenchIcon";
 
 function initials(managerName: string): string {
@@ -51,7 +51,7 @@ function StreakBadge({ streak, hide }: { streak: number; hide: boolean }) {
 // here instead of coloured text.
 function MotwSotwBadge({ isMotw, isSotw }: { isMotw: boolean; isSotw: boolean }) {
   if (isMotw) {
-    return <MedalIcon size={12} className="shrink-0 text-[#00b368] dark:text-[#00ff85]" />;
+    return <CrownIcon size={12} className="shrink-0 text-[#00b368] dark:text-[#00ff85]" />;
   }
   if (isSotw) {
     return <WrenchIcon size={12} className="shrink-0 text-[#e90052] dark:text-[#ff2d78]" />;

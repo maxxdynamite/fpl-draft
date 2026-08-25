@@ -1,5 +1,5 @@
 import { getWeeklyAwards } from "@/lib/weeklyAwards";
-import { MedalIcon } from "./MedalIcon";
+import { CrownIcon } from "./CrownIcon";
 import { WrenchIcon } from "./WrenchIcon";
 
 const motwColor = "text-[#00b368] dark:text-[#00ff85]";
@@ -12,7 +12,7 @@ export async function WeeklyAwardTablets() {
   return (
     <div className="rounded-xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden">
       <div className="flex items-center gap-2.5 px-3.5 py-2.5">
-        <MedalIcon size={22} className={motwColor} />
+        <CrownIcon size={22} className={motwColor} />
         <span className="flex-1 min-w-0 truncate text-zinc-900 dark:text-white text-[12.5px] font-bold">
           {awards.motwTeam}
         </span>
