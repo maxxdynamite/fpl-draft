@@ -7,7 +7,7 @@ export const STATUS_META: Record<
   "no-picks": {
     label: "No picks yet",
     dotClass: "bg-zinc-300 dark:bg-zinc-600",
-    textClass: "text-zinc-400 dark:text-zinc-500",
+    textClass: "text-zinc-300 dark:text-zinc-600",
   },
   // Tile gets a fully custom white pill (see BlackjackParticipantCard) -
   // this entry is really only consumed by the leaderboard's dot marker.
@@ -23,7 +23,7 @@ export const STATUS_META: Record<
   "early-days": {
     label: "Early Days",
     dotClass: "bg-green-500",
-    textClass: "text-green-600 dark:text-green-400",
+    textClass: "text-green-500",
   },
   // True black, not near-black - low contrast on dark cards is an accepted
   // trade-off rather than a bug to fix.
@@ -67,12 +67,12 @@ export const STATUS_META: Record<
   "fell-short": {
     label: "Fell Short",
     dotClass: "bg-zinc-400 dark:bg-zinc-500",
-    textClass: "text-zinc-500 dark:text-zinc-400",
+    textClass: "text-zinc-400 dark:text-zinc-500",
   },
   "at-risk": {
     label: "At Risk",
     dotClass: "bg-red-500",
-    textClass: "text-red-600 dark:text-red-400",
+    textClass: "text-red-500",
   },
   // Label wording is "pace", but the key stays "-target" - it matches
   // the underlying spreadsheet formula's own naming (lib/blackjack.ts)
@@ -80,21 +80,21 @@ export const STATUS_META: Record<
   "over-target": {
     label: "Over Pace",
     dotClass: "bg-orange-500",
-    textClass: "text-orange-600 dark:text-orange-400",
+    textClass: "text-orange-500",
   },
   "on-target": {
     label: "On Pace",
     dotClass: "bg-green-500",
-    textClass: "text-green-600 dark:text-green-400",
+    textClass: "text-green-500",
   },
   "under-target": {
     label: "Under Pace",
     dotClass: "bg-blue-500",
-    textClass: "text-blue-600 dark:text-blue-400",
+    textClass: "text-blue-500",
   },
   "miles-off": {
     label: "Miles Off It",
     dotClass: "bg-purple-500",
-    textClass: "text-purple-600 dark:text-purple-400",
+    textClass: "text-purple-500",
   },
 };
