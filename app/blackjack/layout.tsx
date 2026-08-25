@@ -1,6 +1,6 @@
 import { getPlayersData } from "@/lib/players";
-import { getPlGameweekStatus } from "@/lib/plGameweekStatus";
 import { isPickingWindowOpen } from "@/lib/pickingWindow";
+import { getLiveGameweek, computeGameweekStatus } from "@/lib/liveGwScores";
 import { GameweekStatusLabel, type GameweekStatus } from "@/components/GameweekStatusLabel";
 import { BlackjackHeaderAction } from "@/components/BlackjackHeaderAction";
 
@@ -10,19 +10,16 @@ export default async function BlackjackLayout({ children }: LayoutProps<"/blackj
   // which is a separate, out-of-sync competition schedule. Falls back to
   // Gameweek 1 pre-season (currentGameweek is 0 before a ball's kicked),
   // same convention as the Draft layout's own pre-season fallback.
-  const [{ currentGameweek, seasonStartTime }, plStatus] = await Promise.all([
+  const [{ currentGameweek, seasonStartTime }, liveGameweek] = await Promise.all([
     getPlayersData(),
-    getPlGameweekStatus(),
+    getLiveGameweek(),
   ]);
   const pickingWindowOpen = isPickingWindowOpen(seasonStartTime);
   const gameweekNumber = currentGameweek > 0 ? currentGameweek : 1;
-  const status: GameweekStatus | null = !plStatus
-    ? null
-    : plStatus.finished
-      ? "Complete"
-      : plStatus.allMatchesPlayed
-        ? "Provisional"
-        : "Live";
+  // See computeGameweekStatus's own comment (lib/liveGwScores.ts) for why
+  // this - not lib/plGameweekStatus.ts's classic-FPL-API equivalent - is
+  // what every section's status pill is built from.
+  const status: GameweekStatus | null = computeGameweekStatus(liveGameweek, null);
 
   return (
     <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-4 sm:pb-6">

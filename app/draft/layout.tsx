@@ -2,7 +2,7 @@ import { DraftSubNav } from "@/components/DraftSubNav";
 import { DraftCountdown } from "@/components/DraftCountdown";
 import { GameweekStatusLabel, type GameweekStatus } from "@/components/GameweekStatusLabel";
 import { getCurrentGameweek } from "@/lib/gameweek";
-import { getLiveGameweek } from "@/lib/liveGwScores";
+import { getLiveGameweek, computeGameweekStatus } from "@/lib/liveGwScores";
 import { getDraftSchedule } from "@/lib/leagueInfo";
 
 export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
@@ -23,18 +23,10 @@ export default async function DraftLayout({ children }: LayoutProps<"/draft">) {
     liveGameweek !== null &&
     (gameweek === null || liveGameweek.eventNumber >= gameweek.number);
   const gameweekNumber = useLive ? liveGameweek!.eventNumber : (gameweek?.number ?? 1);
-  const showStatus = useLive || gameweek !== null;
-  // Sheet-only path only ever reaches this branch for an already-finished,
-  // synced gameweek (see syncCurrentGameweek's finished-only guard), so
-  // "Provisional" - the gap between full-time and FPL's official lockdown -
-  // only ever applies while reading the live feed.
-  const status: GameweekStatus | null = !showStatus
-    ? null
-    : !useLive || liveGameweek!.finished
-      ? "Complete"
-      : liveGameweek!.allMatchesPlayed
-        ? "Provisional"
-        : "Live";
+  // See computeGameweekStatus's own comment (lib/liveGwScores.ts) for why
+  // this - not a locally-derived value - is what every section's status
+  // pill is built from.
+  const status: GameweekStatus | null = computeGameweekStatus(liveGameweek, gameweek?.number ?? null);
 
   return (
     <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-4 sm:pb-6">

@@ -1,4 +1,5 @@
 import { getLeagueDetails } from "./leagueInfo";
+import type { GameweekStatus } from "@/components/GameweekStatusLabel";
 
 export type LiveGwEntry = {
   entryId: number;
@@ -65,4 +66,35 @@ export async function getLiveGameweek(): Promise<LiveGameweek | null> {
     allMatchesPlayed,
     entries,
   };
+}
+
+// Single source of truth for the Live/Provisional/Complete status pill
+// shown on Draft, Blackjack, and Money - all three describe the same
+// real-world gameweek, so they need to agree on what state it's in even
+// though each page tracks its own gameweek NUMBER from whichever source
+// suits its own content (Draft's synced/live number, Blackjack's real
+// Premier League calendar for pace calculations). Deliberately sourced
+// from this file's own getLiveGameweek() (the FPL Draft API) rather than
+// lib/plGameweekStatus.ts's classic-FPL-API equivalent - the two don't
+// always flip their own "finished" flag at the same time, and the Draft
+// API's has consistently proven the more reliable lockdown signal.
+//
+// syncedGameweekNumber is only relevant to callers (like Draft) that
+// have their own sheet-synced tracker which can lag behind the live feed
+// by up to a gameweek - it decides whether to trust the live feed at all
+// this call, mirroring Draft's own useLive check. Callers with no such
+// tracker (Blackjack, Money) pass null, which always prefers live
+// whenever it's available - there's nothing sheet-based for it to lag
+// behind in the first place.
+export function computeGameweekStatus(
+  liveGameweek: LiveGameweek | null,
+  syncedGameweekNumber: number | null,
+): GameweekStatus | null {
+  const useLive =
+    liveGameweek !== null &&
+    (syncedGameweekNumber === null || liveGameweek.eventNumber >= syncedGameweekNumber);
+  const showStatus = useLive || syncedGameweekNumber !== null;
+  if (!showStatus) return null;
+  if (!useLive || liveGameweek!.finished) return "Complete";
+  return liveGameweek!.allMatchesPlayed ? "Provisional" : "Live";
 }
