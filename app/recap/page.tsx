@@ -25,6 +25,18 @@ export default async function RecapPage() {
         ? `Closest game of the week wasn't close at all — it was a dead heat. ${data.closestMatch.winnerName} (${data.closestMatch.winnerTeam}) and ${data.closestMatch.loserName} (${data.closestMatch.loserTeam}) both posted ${data.closestMatch.winnerScore}, so no bragging rights for anyone.`
         : `Closest game of the week: ${data.closestMatch.winnerName} (${data.closestMatch.winnerTeam}) scraped past ${data.closestMatch.loserName} (${data.closestMatch.loserTeam}), ${data.closestMatch.winnerScore}–${data.closestMatch.loserScore}.`
       : null,
+    // Everything else in H2H that didn't already get its own sentence
+    // above - manager names only (no team names) to keep this a quick
+    // rundown rather than another round of full call-outs.
+    data.otherMatches.length > 0
+      ? `Elsewhere in H2H: ${data.otherMatches
+          .map((m) =>
+            m.isTie
+              ? `${m.winnerName} and ${m.loserName} tied at ${m.winnerScore}`
+              : `${m.winnerName} beat ${m.loserName} ${m.winnerScore}–${m.loserScore}`,
+          )
+          .join("; ")}.`
+      : null,
     data.hotStreak
       ? `${data.hotStreak.managerName} (${data.hotStreak.teamName}) is ${data.hotStreak.streak} games deep into an H2H win streak. Someone ought to check on the rest of the league.`
       : null,
@@ -36,9 +48,6 @@ export default async function RecapPage() {
       : null,
     data.overallTop && data.overallBottom
       ? `In the table that actually matters, ${data.overallTop.teamName} lead the way on ${data.overallTop.totalPoints} pts. ${data.overallBottom.teamName} are propping up the rest of the league on ${data.overallBottom.totalPoints} — building character, presumably.`
-      : null,
-    data.bottomOfWeek
-      ? `Spare a thought for ${data.bottomOfWeek.managerName} (${data.bottomOfWeek.teamName}), rock bottom this week on ${data.bottomOfWeek.score}.`
       : null,
     // Scheme included (not just the bare domain) so WhatsApp reliably
     // treats it as a tappable link even embedded in an image caption,

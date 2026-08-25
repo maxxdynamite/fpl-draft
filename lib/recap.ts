@@ -64,7 +64,6 @@ export type RecapToken = { text: string; strong?: boolean };
 // jokes) for flavour while keeping the manager identifiable, rather than
 // segregating "this line gets one, that line gets the other". Blackjack
 // stays managerName-only throughout, deliberately - see RecapBlackjackRow.
-export type RecapPersonScore = { managerName: string; teamName: string; score: number };
 export type RecapHotStreak = { managerName: string; teamName: string; streak: number };
 export type RecapSeasonScore = { teamName: string; score: number; gameweek: number };
 export type RecapOverallStanding = { teamName: string; totalPoints: number };
@@ -76,8 +75,8 @@ export type RecapData = {
   headline: RecapToken[];
   h2hResults: RecapMatchup[]; // draft-page order, not sorted by margin
   closestMatch: RecapWinnerLoser | null;
+  otherMatches: RecapWinnerLoser[]; // every h2hResults entry except closestMatch, draft-page order
   blackjackAll: RecapBlackjackRow[]; // every manager, ranked by goals
-  bottomOfWeek: RecapPersonScore | null;
   hotStreak: RecapHotStreak | null; // longest active H2H win streak, gated at STREAK_THRESHOLD
   seasonHigh: RecapSeasonScore | null; // gated at MIN_GAMEWEEKS_FOR_SEASON_RECORDS
   seasonLow: RecapSeasonScore | null;
@@ -225,7 +224,17 @@ export async function getRecapData(): Promise<RecapData | null> {
   // Sorted by margin only for picking out the closest match's words in
   // the caption - the list above stays in draft-page order regardless.
   const byMargin = [...h2hResults].sort((x, y) => x.margin - y.margin);
-  const closestMatch = byMargin.length > 0 ? winnerLoser(byMargin[0]) : null;
+  const closestMatchRow = byMargin[0] ?? null;
+  const closestMatch = closestMatchRow ? winnerLoser(closestMatchRow) : null;
+
+  // Every other matchup, for the caption's rundown of results that
+  // didn't already get their own sentence - draft-page order, same as
+  // h2hResults, not resorted by margin like closestMatch was. Compared
+  // by reference (same array as h2hResults, just filtered), not by
+  // score, since two different pairings could share the same margin.
+  const otherMatches: RecapWinnerLoser[] = h2hResults
+    .filter((m) => m !== closestMatchRow)
+    .map(winnerLoser);
 
   // Flattened across both sides of every matchup - covers every manager
   // exactly once, same pool getH2hMatchups() already builds from. Scores
@@ -236,10 +245,6 @@ export async function getRecapData(): Promise<RecapData | null> {
   const scored = allSides.filter((s) => s.syncedScore !== null);
   const topManager = scored.reduce(
     (best, s) => (s.syncedScore! > best.syncedScore! ? s : best),
-    scored[0],
-  );
-  const bottomManager = scored.reduce(
-    (worst, s) => (s.syncedScore! < worst.syncedScore! ? s : worst),
     scored[0],
   );
 
@@ -331,11 +336,8 @@ export async function getRecapData(): Promise<RecapData | null> {
     headline,
     h2hResults,
     closestMatch,
+    otherMatches,
     blackjackAll,
-    bottomOfWeek:
-      bottomManager && bottomManager.syncedScore !== null
-        ? { managerName: bottomManager.managerName, teamName: bottomManager.teamName, score: bottomManager.syncedScore }
-        : null,
     hotStreak,
     seasonHigh,
     seasonLow,
