@@ -14,7 +14,7 @@ export function BlackjackParticipantCard({
   const isBust = participant.status === "bust";
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden p-4 sm:p-5">
+    <div className="relative rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
@@ -116,17 +116,17 @@ export function BlackjackParticipantCard({
         </div>
       </div>
 
-      {/* Slotted into the same 19.5px gap the player grid below used to
-          own outright (mt-2 + h-[5px] + mt-[6.5px] = 19.5px, unchanged) -
-          adding a progress bar without growing the card at all, rather
-          than tacking on a new row that would break the 194px match with
-          the Draft H2H tile (see that margin's own comment below). Only
-          rendered once there are real picks to show progress for - a
-          placeholder-slot card has no totalGoals worth plotting. */}
+      {/* Lives on the card's own top edge instead of in the layout flow -
+          absolutely positioned, so it can't add height, and clipped by the
+          card's own rounded-2xl + overflow-hidden (its square corners
+          disappear into the card's rounded top automatically, no extra
+          rounding needed here). Only rendered once there are real picks to
+          show progress for - a placeholder-slot card has no totalGoals
+          worth plotting. */}
       {participant.players && (
-        <div className="relative mt-2 h-[5px] rounded-full bg-black/[0.06] dark:bg-white/[0.08]">
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-black/[0.06] dark:bg-white/[0.08]">
           <div
-            className={`h-full rounded-full ${meta.dotClass}`}
+            className={`h-full ${meta.dotClass}`}
             style={{ width: `${Math.min(100, (participant.totalGoals / BLACKJACK_TARGET) * 100)}%` }}
           />
           {/* Hidden, not zeroed, once expectedPace is null (see its own
@@ -135,21 +135,18 @@ export function BlackjackParticipantCard({
               here anymore". */}
           {participant.expectedPace !== null && (
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-0.5 h-3 rounded-full bg-white/90 shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
+              className="absolute top-1/2 -translate-y-1/2 w-0.5 h-2 rounded-full bg-white/90 shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
               style={{ left: `${Math.min(100, (participant.expectedPace / BLACKJACK_TARGET) * 100)}%` }}
             />
           )}
         </div>
       )}
 
-      {/* mt-[19.5px] (no bar above) or mt-[6.5px] (bar above already
-          accounts for 13px of the gap) - the extra 3.5px on the no-bar
-          path brings the card's total height to an even 194px, matching
-          the Draft H2H tile exactly (same p-4 sm:p-5 padding on both, but
-          H2H's separate fixed-height score block adds a few px this
-          card's header+score row doesn't have on its own). Both paths
-          land on the same total height. */}
-      <div className={`grid grid-cols-4 gap-2 ${participant.players ? "mt-[6.5px]" : "mt-[19.5px]"}`}>
+      {/* Unconditional again - the progress bar above no longer lives in
+          the flow, so it can't eat into this gap. Keeps the card's total
+          height matching the Draft H2H tile exactly, same as before the
+          bar existed. */}
+      <div className="grid grid-cols-4 gap-2 mt-[19.5px]">
         {participant.players
           ? participant.players.map((player) => {
               const hasntScored = player.goals === 0;
