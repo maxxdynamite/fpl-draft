@@ -1,21 +1,19 @@
-import { Inter } from "next/font/google";
-
-const inter = Inter({ weight: "800", subsets: ["latin"] });
-
 // Shown next to a manager's name once all 4 of their picks have scored -
 // used on both the participant card and the leaderboard, so it's a shared
 // component rather than two copies of the same styling. The leaderboard
 // is denser, so it gets the smaller size.
+//
+// Bare gradient-text Q, not a filled circle badge - same brand gradient
+// as the logo wordmark and the avatar glow ring, applied straight to the
+// glyph instead of a background shape behind it. No font import: the app
+// already sets Manrope as its default font-sans (see globals.css's
+// --font-sans), so this inherits it rather than pulling in Inter (the
+// previous circle badge's font, a mismatch with the rest of the app).
 export function QualifiedBadge({ size = "default" }: { size?: "default" | "sm" }) {
-  // Font-size is held at the same ~78% of the circle's diameter in both
-  // sizes, so the glyph reads as identically "zoomed" whether it's the
-  // tile's 18px badge or the leaderboard's 14px one - previously the
-  // leaderboard's 9px was a smaller ratio (64%) than the tile's, so the Q
-  // looked shrunken relative to its background there.
-  const sizeClass = size === "sm" ? "h-3.5 w-3.5 text-[11px]" : "h-[18px] w-[18px] text-[14px]";
+  const sizeClass = size === "sm" ? "text-[13px]" : "text-base";
   return (
     <span
-      className={`${inter.className} inline-flex items-center justify-center shrink-0 rounded-full bg-gradient-to-br from-[#00ff85] to-[#04f5ff] text-[#04211a] leading-none ${sizeClass}`}
+      className={`inline-flex shrink-0 items-center font-extrabold leading-none bg-gradient-to-br from-[#00ff85] to-[#04f5ff] bg-clip-text text-transparent ${sizeClass}`}
       title="Qualified — all 4 picks have scored"
     >
       Q
