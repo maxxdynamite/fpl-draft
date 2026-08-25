@@ -87,14 +87,12 @@ function SeasonCard({ record }: { record: SeasonRecord }) {
         {draftGroups.map((group, i) => (
           <div key={group.place} className="flex items-center gap-2 text-sm">
             <PlaceBadge place={group.place} />
+            {/* No separate "Joint" label - the " & " join already says
+                it, and 2020/21's tied 1st (Phil Thomas & Matthew Giles) is
+                the only case that's ever needed this. */}
             <span className="font-bold truncate text-zinc-900 dark:text-white flex-1 min-w-0">
               {group.managers.join(" & ")}
             </span>
-            {group.managers.length > 1 && (
-              <span className="text-[9px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 shrink-0">
-                Joint
-              </span>
-            )}
             {/* Golden Spanner sits on the same row as the lowest podium
                 place, pinned to the right edge - bare glyph (no badge
                 circle, unlike PlaceBadge/the medal treatment), sized up a

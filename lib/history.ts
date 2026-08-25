@@ -87,7 +87,11 @@ export const SEASON_HISTORY: SeasonRecord[] = [
   },
   {
     season: "2018/19",
-    draft: [{ place: 1, manager: "Phil Thomas" }],
+    draft: [
+      { place: 1, manager: "Phil Thomas" },
+      { place: 2, manager: "Alasdair Hall-Jones" },
+      { place: 3, manager: "Simon Kisitu" },
+    ],
     spanner: "Matthew Giles",
   },
   // No competition in 2017/18 - not a missing-data gap, there's nothing
