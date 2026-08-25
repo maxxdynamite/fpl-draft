@@ -81,6 +81,25 @@ function dryRun() {
   Logger.log('league_entries: ' + JSON.stringify(data.league_entries, null, 2));
 }
 
+// sheet.getLastRow() finds the last row with ANY content anywhere in the
+// sheet - but GW_Scores' E:J columns are ARRAYFORMULAs anchored at row 2
+// referencing an open-ended A2:A, so they spill an empty string down
+// every remaining row the sheet has (tens of thousands), not just the
+// rows with real data. That makes getLastRow() return the sheet's total
+// height instead of where the real data actually ends, so a naive
+// getLastRow()+1 insert lands new rows tens of thousands of rows below
+// the header instead of right after the last real one. Column A holds
+// only plain values written directly by this script (no formula, no
+// spill), so scanning it for the last non-blank cell finds the true
+// insertion point instead.
+function findLastDataRow_(sheet) {
+  const colA = sheet.getRange(1, 1, sheet.getMaxRows(), 1).getValues();
+  for (let i = colA.length - 1; i >= 0; i--) {
+    if (colA[i][0] !== '' && colA[i][0] !== null) return i + 1;
+  }
+  return 1;
+}
+
 // Pulls whichever gameweek the API says is currently live and upserts its
 // rows in GW_Scores (updates existing rows for that gameweek in place,
 // inserts new ones for entries not yet present). Safe to run repeatedly
@@ -151,7 +170,7 @@ function syncCurrentGameweek() {
   });
 
   if (newRows.length > 0) {
-    sheet.getRange(sheet.getLastRow() + 1, 1, newRows.length, 4).setValues(newRows);
+    sheet.getRange(findLastDataRow_(sheet) + 1, 1, newRows.length, 4).setValues(newRows);
   }
 
   return {
