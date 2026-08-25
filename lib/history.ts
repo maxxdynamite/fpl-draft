@@ -54,7 +54,6 @@ export const SEASON_HISTORY: SeasonRecord[] = [
       { place: 2, manager: "Phil Thomas" },
       { place: 3, manager: "Liam Zajdlic" },
     ],
-    cup: "Marc Edwards",
   },
   {
     season: "2021/22",
