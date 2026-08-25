@@ -144,7 +144,7 @@ export function BlackjackParticipantCard({
           show progress for - a placeholder-slot card has no totalGoals
           worth plotting. */}
       {participant.players && (
-        <div className="absolute inset-x-0 top-0 h-[3px] bg-black/[0.06] dark:bg-white/[0.08]">
+        <div className="absolute inset-x-0 top-0 h-1 bg-black/[0.06] dark:bg-white/[0.08]">
           {/* Brand gradient (same green-to-cyan as the Q badge/qualified
               glow/blackjack pill), not the per-status colour - one
               consistent fill regardless of pace band. Bust is the one
