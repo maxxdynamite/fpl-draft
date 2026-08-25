@@ -8,6 +8,10 @@ export type SeasonRecord = {
   draft: SeasonDraftResult[];
   blackjack?: string[]; // one entry per winner - length 2 means a tie
   cup?: string;
+  // A season-long award, distinct from the week-by-week "Spanner of the
+  // Week" shown on the H2H tile/Money page - this is a single manager
+  // recognised for the whole season, same one-name-per-season shape as cup.
+  spanner?: string;
 };
 
 // Manually tracked, not fetched - unlike every other section, there's no
@@ -26,6 +30,7 @@ export const SEASON_HISTORY: SeasonRecord[] = [
     ],
     blackjack: ["Jordan Gibbens", "Liam Zajdlic"],
     cup: "Brett Cooper",
+    spanner: "Cav Ferris",
   },
   {
     season: "2024/25",
@@ -36,6 +41,7 @@ export const SEASON_HISTORY: SeasonRecord[] = [
     ],
     blackjack: ["Michael McKenna", "Cav Ferris"],
     cup: "Cav Ferris",
+    spanner: "Simon Kisitu",
   },
   {
     season: "2023/24",
@@ -46,6 +52,7 @@ export const SEASON_HISTORY: SeasonRecord[] = [
     ],
     blackjack: ["Jordan Gibbens"],
     cup: "Alasdair Hall-Jones",
+    spanner: "Cav Ferris",
   },
   {
     season: "2022/23",
@@ -54,6 +61,7 @@ export const SEASON_HISTORY: SeasonRecord[] = [
       { place: 2, manager: "Phil Thomas" },
       { place: 3, manager: "Liam Zajdlic" },
     ],
+    spanner: "Greg Vesty",
   },
   {
     season: "2021/22",
@@ -62,6 +70,7 @@ export const SEASON_HISTORY: SeasonRecord[] = [
       { place: 2, manager: "Max Lambert" },
       { place: 3, manager: "Michael McKenna" },
     ],
+    spanner: "Liam Zajdlic",
   },
   {
     season: "2020/21",
@@ -70,6 +79,7 @@ export const SEASON_HISTORY: SeasonRecord[] = [
       { place: 1, manager: "Matthew Giles" },
       { place: 3, manager: "Marc Edwards" },
     ],
+    spanner: "Simon Kisitu",
   },
   {
     season: "2019/20",
@@ -78,6 +88,7 @@ export const SEASON_HISTORY: SeasonRecord[] = [
   {
     season: "2018/19",
     draft: [{ place: 1, manager: "Phil Thomas" }],
+    spanner: "Matthew Giles",
   },
   // No competition in 2017/18 - not a missing-data gap, there's nothing
   // to record.
