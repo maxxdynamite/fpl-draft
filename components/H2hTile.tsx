@@ -3,6 +3,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { H2hMatchup } from "@/lib/h2h";
 import { formatPl, plColor } from "@/lib/format";
+import { TrophyIcon } from "./TrophyIcon";
+import { WrenchIcon } from "./WrenchIcon";
 
 function initials(managerName: string): string {
   const parts = managerName.trim().split(/\s+/).filter(Boolean);
@@ -39,6 +41,22 @@ function StreakBadge({ streak, hide }: { streak: number; hide: boolean }) {
       {streak} Week Streak
     </span>
   );
+}
+
+// A manager can never be both in the same gameweek - isLatestMotw/
+// isLatestSotw come from getLatestMotwSotwEntryIds (lib/gwScores.ts),
+// which nulls both out on a tie rather than picking one arbitrarily, so
+// at most one of these two is ever true. Same green/red pairing
+// MotwSotwTile (Money page) already uses for MOTW/SOTW, just as an icon
+// here instead of coloured text.
+function MotwSotwBadge({ isMotw, isSotw }: { isMotw: boolean; isSotw: boolean }) {
+  if (isMotw) {
+    return <TrophyIcon size={12} className="shrink-0 text-[#00b368] dark:text-[#00ff85]" />;
+  }
+  if (isSotw) {
+    return <WrenchIcon size={12} className="shrink-0 text-[#e90052] dark:text-[#ff2d78]" />;
+  }
+  return null;
 }
 
 function StatRow({ label, value }: { label: string; value: string }) {
@@ -99,6 +117,8 @@ function SideHeader({
   totalPoints,
   motwCount,
   sotwCount,
+  isLatestMotw,
+  isLatestSotw,
 }: {
   managerName: string;
   teamName: string;
@@ -111,6 +131,8 @@ function SideHeader({
   totalPoints: number | null;
   motwCount: number | null;
   sotwCount: number | null;
+  isLatestMotw: boolean;
+  isLatestSotw: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -133,11 +155,13 @@ function SideHeader({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className={`block w-full appearance-none bg-transparent border-0 p-0 font-bold text-sm leading-tight truncate transition-colors duration-300 ${
-            align === "right" ? "text-right" : "text-left"
+          className={`flex items-center gap-1 w-full appearance-none bg-transparent border-0 p-0 font-bold text-sm leading-tight transition-colors duration-300 ${
+            align === "right" ? "justify-end" : "justify-start"
           } ${dark ? "text-[#04211a]" : "text-zinc-900 dark:text-white"}`}
         >
-          {managerName}
+          {align === "right" && !dark && <MotwSotwBadge isMotw={isLatestMotw} isSotw={isLatestSotw} />}
+          <span className="truncate min-w-0">{managerName}</span>
+          {align === "left" && !dark && <MotwSotwBadge isMotw={isLatestMotw} isSotw={isLatestSotw} />}
         </button>
         <PlayerStatsMenu
           align={align}
@@ -330,6 +354,8 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
             totalPoints={teamA.totalPoints}
             motwCount={teamA.motwCount}
             sotwCount={teamA.sotwCount}
+            isLatestMotw={teamA.isLatestMotw}
+            isLatestSotw={teamA.isLatestSotw}
           />
           <SideHeader
             managerName={teamB.managerName}
@@ -343,6 +369,8 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
             totalPoints={teamB.totalPoints}
             motwCount={teamB.motwCount}
             sotwCount={teamB.sotwCount}
+            isLatestMotw={teamB.isLatestMotw}
+            isLatestSotw={teamB.isLatestSotw}
           />
         </div>
 

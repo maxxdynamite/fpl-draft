@@ -5,7 +5,7 @@ import { getDraftOrder } from "./draftOrder";
 import { getPlayersData } from "./players";
 import { getLiveGameweek } from "./liveGwScores";
 import { getLiveAdjustedStandings } from "./liveStandings";
-import { computeMotwSotwTallies } from "./gwScores";
+import { computeMotwSotwTallies, getLatestMotwSotwEntryIds } from "./gwScores";
 
 const H2H_STAKE = 5;
 
@@ -22,6 +22,10 @@ export type H2hSide = {
   totalPoints: number | null;
   motwCount: number | null;
   sotwCount: number | null;
+  // This gameweek specifically, not the season tally above - drives the
+  // small badge next to a manager's name on the H2H tile itself.
+  isLatestMotw: boolean;
+  isLatestSotw: boolean;
   draftPosition: number | null;
   // Set once at draft time and never changes after - shown in the H2H
   // stats menu as a permanent record of round 1, not a live value.
@@ -86,6 +90,8 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
   // columns - see computeMotwSotwTallies' own comment for why those are
   // unreliable.
   const motwSotwTallies = computeMotwSotwTallies(gwScores);
+  const { motwEntryId: latestMotwEntryId, sotwEntryId: latestSotwEntryId } =
+    getLatestMotwSotwEntryIds(gwScores);
 
   // A wager settling is a different bar than a display number going live -
   // this stake must wait for liveGameweek.finished (FPL's own official
@@ -138,6 +144,8 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
       totalPoints: liveStanding?.value ?? standing?.totalPoints ?? null,
       motwCount: gwScores.length > 0 ? (motwSotwTallies.get(entryId)?.motwCount ?? 0) : null,
       sotwCount: gwScores.length > 0 ? (motwSotwTallies.get(entryId)?.sotwCount ?? 0) : null,
+      isLatestMotw: entryId === latestMotwEntryId,
+      isLatestSotw: entryId === latestSotwEntryId,
       draftPosition: draft?.position ?? null,
       firstPick: draft ? (playerNameById.get(draft.firstPickElementId) ?? null) : null,
     };

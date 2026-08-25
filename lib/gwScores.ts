@@ -73,3 +73,26 @@ export function computeMotwSotwTallies(
 
   return tallies;
 }
+
+// This gameweek's MOTW/SOTW specifically (the H2H tiles' own badge next
+// to a manager's name), not the season tally computeMotwSotwTallies
+// above returns - "did this manager just win it" vs "how many times has
+// this manager ever won it". Same per-gameweek top/bottom logic and tie
+// handling as computeMotwSotwTallies, scoped to only the latest
+// gameweek in gwScores.
+export function getLatestMotwSotwEntryIds(
+  gwScores: { gameweek: number; entryId: number; eventTotal: number }[],
+): { motwEntryId: number | null; sotwEntryId: number | null } {
+  if (gwScores.length === 0) return { motwEntryId: null, sotwEntryId: null };
+  const latestGameweek = Math.max(...gwScores.map((r) => r.gameweek));
+  const rows = gwScores.filter((r) => r.gameweek === latestGameweek);
+
+  let motw = rows[0];
+  let sotw = rows[0];
+  for (const row of rows) {
+    if (row.eventTotal > motw.eventTotal) motw = row;
+    if (row.eventTotal < sotw.eventTotal) sotw = row;
+  }
+  if (motw.entryId === sotw.entryId) return { motwEntryId: null, sotwEntryId: null };
+  return { motwEntryId: motw.entryId, sotwEntryId: sotw.entryId };
+}
