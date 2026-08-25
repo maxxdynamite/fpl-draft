@@ -15,6 +15,26 @@ export function BlackjackParticipantCard({
 
   return (
     <div className="relative rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden p-4 sm:p-5">
+      {/* Whole-tile inner glow for a qualified hand (same trigger as the Q
+          badge above) - two inset shadows, green from the top-left corner
+          and cyan from the bottom-right, echoing the brand gradient's own
+          to-br direction. Inset shadows fade with distance from the edge on
+          their own, which is what gives this an actual "hugs the border,
+          fades toward the centre" look - a flat blurred-gradient overlay
+          (the technique the old per-avatar glow below used) can't do that,
+          since blur alone doesn't fade a solid fill's centre. Suppressed on
+          bust even if every pick individually scored, matching every other
+          "hand is dead" exception on this card. */}
+      {participant.allScored && !isBust && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            boxShadow:
+              "inset 14px 14px 32px -16px rgba(0,255,133,0.55), inset -14px -14px 32px -16px rgba(4,245,255,0.55)",
+          }}
+        />
+      )}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
@@ -156,38 +176,19 @@ export function BlackjackParticipantCard({
                       tighter on the head/shoulders, but with a small pt so
                       the background shows as a deliberate gap above the
                       photo rather than the photo touching the top edge. */}
-                  <div className="relative z-0">
-                    {participant.allScored && !isBust && (
-                      // A heavier blur averages the gradient into one
-                      // blended hue, so this stays well short of the
-                      // original 8px/-inset-1.5 version - wider than the
-                      // tightest cut, but the green-to-cyan split still
-                      // needs to read clearly rather than mush together.
-                      // Suppressed on bust even if every pick individually
-                      // scored - a busted hand doesn't get to celebrate.
-                      <span
-                        aria-hidden="true"
-                        className="absolute -inset-1 rounded-full bg-gradient-to-br from-[#00ff85] to-[#04f5ff] opacity-90 blur-[5px] -z-10"
-                      />
-                    )}
-                    {/* Solid, not translucent - the glow sits directly
-                        behind this circle, and a translucent fill let its
-                        colour bleed through the pt-1 gap above the head,
-                        which read as the circle itself changing colour. */}
-                    <PlayerAvatar
-                      photoUrl={player.photoUrl}
-                      alt={player.name}
-                      containerClassName="h-10 w-10 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800"
-                      imageSize={52}
-                      imageClassName={`h-[52px] w-[52px] object-cover object-top transition-opacity ${
-                        playerGreyed ? "opacity-40 grayscale" : ""
-                      }`}
-                      fallbackClassName={`h-5 w-5 text-zinc-400 dark:text-zinc-500 transition-opacity ${
-                        playerGreyed ? "opacity-40" : ""
-                      }`}
-                      headroomOffset="pt-1"
-                    />
-                  </div>
+                  <PlayerAvatar
+                    photoUrl={player.photoUrl}
+                    alt={player.name}
+                    containerClassName="h-10 w-10 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800"
+                    imageSize={52}
+                    imageClassName={`h-[52px] w-[52px] object-cover object-top transition-opacity ${
+                      playerGreyed ? "opacity-40 grayscale" : ""
+                    }`}
+                    fallbackClassName={`h-5 w-5 text-zinc-400 dark:text-zinc-500 transition-opacity ${
+                      playerGreyed ? "opacity-40" : ""
+                    }`}
+                    headroomOffset="pt-1"
+                  />
                   {/* Name/club normally stay full-brightness even for an
                       individual player on 0 (only their photo/tally dim) -
                       but on bust every player's info greys uniformly,
