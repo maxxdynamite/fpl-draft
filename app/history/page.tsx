@@ -40,8 +40,9 @@ function PlaceBadge({ place }: { place: 1 | 2 | 3 }) {
 }
 
 // Deliberately more muted than the Draft rows above (smaller, semibold
-// not bold, dimmed name colour) - the user wants Draft's top 3 to read
-// as the headline of the card, with Blackjack/Cup as a lesser footnote.
+// not bold) - the user wants Draft's top 3 to read as the headline of
+// the card, with Blackjack/Cup as a lesser footnote. Winner names still
+// get full-bright text so they're legible at a glance.
 function TitleRow({ icon, label, names }: { icon: ReactNode; label: string; names: string[] }) {
   return (
     <div className="flex items-center gap-2 text-[11px]">
@@ -51,7 +52,7 @@ function TitleRow({ icon, label, names }: { icon: ReactNode; label: string; name
       <span className="shrink-0 font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
         {label}
       </span>
-      <span className="font-semibold truncate text-zinc-600 dark:text-zinc-400">
+      <span className="font-semibold truncate text-zinc-900 dark:text-white">
         {names.join(" & ")}
       </span>
     </div>
