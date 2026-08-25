@@ -125,8 +125,15 @@ export function BlackjackParticipantCard({
           worth plotting. */}
       {participant.players && (
         <div className="absolute inset-x-0 top-0 h-[3px] bg-black/[0.06] dark:bg-white/[0.08]">
+          {/* Brand gradient (same green-to-cyan as the Q badge/qualified
+              glow/blackjack pill), not the per-status colour - one
+              consistent fill regardless of pace band. Bust is the one
+              exception: it keeps solid black instead, matching the rest of
+              the card's own "hand is dead" monochrome treatment (black
+              pill, greyscale avatars) rather than closing out on a
+              celebratory gradient. */}
           <div
-            className={`h-full ${meta.dotClass}`}
+            className={`h-full ${isBust ? "bg-black" : "bg-gradient-to-r from-[#00ff85] to-[#04f5ff]"}`}
             style={{ width: `${Math.min(100, (participant.totalGoals / BLACKJACK_TARGET) * 100)}%` }}
           />
           {/* Hidden, not zeroed, once expectedPace is null (see its own
@@ -135,7 +142,7 @@ export function BlackjackParticipantCard({
               here anymore". */}
           {participant.expectedPace !== null && (
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-0.5 h-2 rounded-full bg-white/90 shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
+              className="absolute top-1/2 -translate-y-1/2 w-0.5 h-2 rounded-full bg-white/90"
               style={{ left: `${Math.min(100, (participant.expectedPace / BLACKJACK_TARGET) * 100)}%` }}
             />
           )}
