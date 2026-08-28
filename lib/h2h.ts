@@ -107,6 +107,18 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
     liveGameweek.finished &&
     (syncedLatestGw === null || liveGameweek.eventNumber > syncedLatestGw);
 
+  // A manager can't be crowned MOTW/SOTW for a gameweek that hasn't
+  // actually synced yet - the badge otherwise sits right next to that
+  // same gameweek's live, still-changing headline score with nothing to
+  // tell them apart, reading as if someone's already won an award for a
+  // gameweek that's still being played. Hidden (not just stale) rather
+  // than falling back to the previous gameweek's winner, since re-showing
+  // last week's crown during this week's live play is exactly the same
+  // "is this for now or before" confusion, just one week further back.
+  const motwSotwUnsynced =
+    liveGameweek !== null &&
+    (syncedLatestGw === null || liveGameweek.eventNumber > syncedLatestGw);
+
   function buildSide(entryId: number, streak: number, livePlDelta: number): H2hSide {
     const manager = managersByEntry.get(entryId);
     const standing = standingsByEntry.get(entryId);
@@ -144,8 +156,8 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
       totalPoints: liveStanding?.value ?? standing?.totalPoints ?? null,
       motwCount: gwScores.length > 0 ? (motwSotwTallies.get(entryId)?.motwCount ?? 0) : null,
       sotwCount: gwScores.length > 0 ? (motwSotwTallies.get(entryId)?.sotwCount ?? 0) : null,
-      isLatestMotw: entryId === latestMotwEntryId,
-      isLatestSotw: entryId === latestSotwEntryId,
+      isLatestMotw: entryId === latestMotwEntryId && !motwSotwUnsynced,
+      isLatestSotw: entryId === latestSotwEntryId && !motwSotwUnsynced,
       draftPosition: draft?.position ?? null,
       firstPick: draft ? (playerNameById.get(draft.firstPickElementId) ?? null) : null,
     };
