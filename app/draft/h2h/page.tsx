@@ -18,17 +18,15 @@ export default async function H2hPage() {
           />
         ))}
       </div>
-      {/* Unequal columns only from lg up - the leaderboard's extra rank
-          column (MiniLeaderboard/LeaderboardToggle) needs more room than
-          MotwSotwLeaderboard/GwScoreRecords' plain name+value rows, which
-          felt tight split evenly in the fixed 440px desktop sidebar. Below
-          lg the aside is already narrower in absolute terms (full mobile
-          viewport minus page padding, ~343-398px vs 440px) and every tile
-          already leans on truncate/min-w-0 for its team/manager names, so
-          skewing further there only tightens the column with the least
-          room to give - same reasoning as history/page.tsx's identical
-          grid-cols-2 lg:grid-cols-1 sidebar override. */}
-      <aside className="grid grid-cols-2 lg:grid-cols-[6fr_5fr] gap-4 lg:sticky lg:top-24">
+      {/* Unequal columns at every width, not just desktop - the
+          leaderboard's extra rank column (MiniLeaderboard/
+          LeaderboardToggle) needs more room than MotwSotwLeaderboard/
+          GwScoreRecords' plain name+value rows. That extra column matters
+          even more on mobile, where the aside is already narrower in
+          absolute terms than the 440px desktop sidebar - team names on
+          the leaderboard were actually clipping there under an even
+          split, not just feeling tight. */}
+      <aside className="grid grid-cols-[6fr_5fr] gap-4 lg:sticky lg:top-24">
         <div className="space-y-4">
           <WeeklyAwardTablets />
           <MiniLeaderboard />
