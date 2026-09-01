@@ -30,6 +30,16 @@ export type RecapMatchup = {
   bTeam: string;
   bScore: number;
   margin: number;
+  // Season-long H2H win tally between this specific pair (they play each
+  // other every gameweek all season, so this is a real head-to-head
+  // record, not a subset of a round-robin) - already includes this
+  // gameweek's result by the time a recap exists, since Standings syncs
+  // alongside GW_Scores. Distinct from aScore/bScore above, which are
+  // this gameweek's raw points and stay that way for closestMatch/
+  // otherMatches and the AI recap's facts - only the outline caption's
+  // H2H section reads aWins/bWins instead.
+  aWins: number;
+  bWins: number;
 };
 
 export type RecapWinnerLoser = {
@@ -183,6 +193,8 @@ export async function getRecapData(): Promise<RecapData | null> {
         bTeam: b.teamName,
         bScore,
         margin: Math.abs(aScore - bScore),
+        aWins: a.wins,
+        bWins: b.wins,
       };
     })
     .filter((r): r is RecapMatchup => r !== null);
@@ -340,8 +352,10 @@ export function buildTemplateCaption(data: RecapData): string {
     data.motw && data.sotw
       ? `🏆 MOTW: ${data.motw.teamName} (${data.motw.points} pts)\n🔧 SOTW: ${data.sotw.teamName} (${data.sotw.points} pts)`
       : null,
+    // Season-long H2H win tally, not this gameweek's points - those are
+    // already in the shared image (see aWins/bWins's own comment).
     data.h2hResults.length > 0
-      ? `H2H:\n${data.h2hResults.map((m) => `${m.aName} ${m.aScore} – ${m.bScore} ${m.bName}`).join("\n")}`
+      ? `H2H:\n${data.h2hResults.map((m) => `${m.aName} ${m.aWins} – ${m.bWins} ${m.bName}`).join("\n")}`
       : null,
     data.overallTop3.length > 0
       ? `BB Draft:\n${data.overallTop3.map((s, i) => `${i + 1}. ${s.teamName} — ${s.totalPoints} pts`).join("\n")}`
