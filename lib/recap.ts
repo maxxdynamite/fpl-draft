@@ -68,11 +68,18 @@ export type RecapHotStreak = { managerName: string; teamName: string; streak: nu
 export type RecapSeasonScore = { teamName: string; score: number; gameweek: number };
 export type RecapOverallStanding = { teamName: string; totalPoints: number };
 export type RecapAward = { teamName: string; points: number };
+export type RecapTopScorer = { managerName: string; teamName: string; points: number };
+export type RecapBlackjackLeader = { managerName: string; goals: number; status: BlackjackStatus };
 
 export type RecapData = {
   gameweek: number;
   leagueName: string;
   headline: RecapToken[];
+  // Same underlying facts headline (above) is written from, exposed
+  // separately for lib/recapSummary.ts - the AI recap writer works from
+  // raw facts rather than paraphrasing the template's own prose.
+  topScorer: RecapTopScorer | null;
+  blackjackLeader: RecapBlackjackLeader | null;
   h2hResults: RecapMatchup[]; // draft-page order, not sorted by margin
   closestMatch: RecapWinnerLoser | null;
   otherMatches: RecapWinnerLoser[]; // every h2hResults entry except closestMatch, draft-page order
@@ -334,6 +341,12 @@ export async function getRecapData(): Promise<RecapData | null> {
     gameweek,
     leagueName,
     headline,
+    topScorer: topManager
+      ? { managerName: topManager.managerName, teamName: topManager.teamName, points: topManager.syncedScore! }
+      : null,
+    blackjackLeader: blackjackLeader
+      ? { managerName: blackjackLeader.managerName, goals: blackjackLeader.goals, status: blackjackLeader.status }
+      : null,
     h2hResults,
     closestMatch,
     otherMatches,
@@ -352,4 +365,53 @@ export async function getRecapData(): Promise<RecapData | null> {
 // route renders the same tokens as styled JSX spans instead.
 export function tokensToText(tokens: RecapToken[]): string {
   return tokens.map((t) => t.text).join("");
+}
+
+// Scheme included (not just the bare domain) so WhatsApp reliably treats it
+// as a tappable link even embedded in an image caption, not just as a
+// plain-text message on its own - see ShareButton's own comment on what
+// that combination does and doesn't get you. Appended identically to both
+// the AI-written caption and this template fallback, rather than trusting
+// either path to reproduce it exactly.
+export const RECAP_LINK_LINE = "Everything else is in the app 👉 https://badblokesweekly.vercel.app";
+
+// The original fixed-template caption - every sentence a hardcoded shape
+// filled with stats. Used as the reliability fallback when the AI-written
+// recap (lib/recapSummary.ts) is unavailable (no API key, request failure,
+// refusal) - this always works, it just doesn't vary week to week.
+export function buildTemplateCaption(data: RecapData): string {
+  const lines = [
+    `GW${data.gameweek} done. ${tokensToText(data.headline)}`,
+    data.closestMatch
+      ? data.closestMatch.isTie
+        ? `Closest game of the week wasn't close at all — it was a dead heat. ${data.closestMatch.winnerName} (${data.closestMatch.winnerTeam}) and ${data.closestMatch.loserName} (${data.closestMatch.loserTeam}) both posted ${data.closestMatch.winnerScore}, so no bragging rights for anyone.`
+        : `Closest game of the week: ${data.closestMatch.winnerName} (${data.closestMatch.winnerTeam}) scraped past ${data.closestMatch.loserName} (${data.closestMatch.loserTeam}), ${data.closestMatch.winnerScore}–${data.closestMatch.loserScore}.`
+      : null,
+    // Everything else in H2H that didn't already get its own sentence
+    // above - manager names only (no team names) to keep this a quick
+    // rundown rather than another round of full call-outs.
+    data.otherMatches.length > 0
+      ? `Elsewhere in H2H: ${data.otherMatches
+          .map((m) =>
+            m.isTie
+              ? `${m.winnerName} and ${m.loserName} tied at ${m.winnerScore}`
+              : `${m.winnerName} beat ${m.loserName} ${m.winnerScore}–${m.loserScore}`,
+          )
+          .join("; ")}.`
+      : null,
+    data.hotStreak
+      ? `${data.hotStreak.managerName} (${data.hotStreak.teamName}) is ${data.hotStreak.streak} games deep into an H2H win streak. Someone ought to check on the rest of the league.`
+      : null,
+    data.motw && data.sotw
+      ? `🏆 MOTW: ${data.motw.teamName} (${data.motw.points} pts)\n🔧 SOTW: ${data.sotw.teamName} (${data.sotw.points} pts) — someone had to.`
+      : null,
+    data.seasonHigh && data.seasonLow
+      ? `Season high so far belongs to ${data.seasonHigh.teamName} — ${data.seasonHigh.score} back in GW${data.seasonHigh.gameweek}. The low bar is held by ${data.seasonLow.teamName}, ${data.seasonLow.score} in GW${data.seasonLow.gameweek}, and nobody's rushing to take it off them.`
+      : null,
+    data.overallTop && data.overallBottom
+      ? `In the table that actually matters, ${data.overallTop.teamName} lead the way on ${data.overallTop.totalPoints} pts. ${data.overallBottom.teamName} are propping up the rest of the league on ${data.overallBottom.totalPoints} — building character, presumably.`
+      : null,
+    RECAP_LINK_LINE,
+  ].filter((l): l is string => l !== null);
+  return lines.join("\n\n");
 }
