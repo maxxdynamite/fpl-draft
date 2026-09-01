@@ -60,7 +60,7 @@ export type BlackjackParticipant = {
 // snapshot of our own - it's a live, independently queryable stat for
 // whichever gameweek is currently live, same as everything else this
 // game reads from bootstrap-static.
-async function getGameweekGoalsByPlayerId(gameweek: number): Promise<Map<number, number>> {
+export async function getGameweekGoalsByPlayerId(gameweek: number): Promise<Map<number, number>> {
   const res = await fetch(
     `https://fantasy.premierleague.com/api/event/${gameweek}/live/`,
     { next: { revalidate: 300 } },

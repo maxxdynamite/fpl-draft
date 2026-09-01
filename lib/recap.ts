@@ -1,5 +1,5 @@
 import { getH2hMatchups, type H2hSide } from "./h2h";
-import { getBlackjackLeaderboard, type BlackjackStatus } from "./blackjack";
+import { getBlackjackLeaderboard, getGameweekGoalsByPlayerId, type BlackjackStatus } from "./blackjack";
 import { getLeagueName } from "./leagueInfo";
 import { getManagers } from "./managers";
 import { getGwScores } from "./gwScores";
@@ -53,12 +53,6 @@ export type RecapBlackjackRow = {
   status: BlackjackStatus;
 };
 
-// A small run of text where some spans are emphasised (bold/bright) -
-// shared by both the generated image (each token becomes a styled JSX
-// span) and the WhatsApp caption (tokens just concatenate), so the two
-// never drift out of sync with each other.
-export type RecapToken = { text: string; strong?: boolean };
-
 // Both managerName and teamName travel together almost everywhere now -
 // the dry-humour voice leans on team names (this league's are mostly
 // jokes) for flavour while keeping the manager identifiable, rather than
@@ -68,16 +62,20 @@ export type RecapHotStreak = { managerName: string; teamName: string; streak: nu
 export type RecapSeasonScore = { teamName: string; score: number; gameweek: number };
 export type RecapOverallStanding = { teamName: string; totalPoints: number };
 export type RecapAward = { teamName: string; points: number };
+// A manager's picks scored this specific gameweek - not the season total
+// (BlackjackParticipant.totalGoals) or the live current gameweek's delta
+// (BlackjackParticipant.goalsThisGw, which drifts once a later gameweek
+// goes live) - see getRecapData's own comment on why a recap always
+// targets one fixed, already-synced gameweek.
+export type RecapBlackjackMove = { managerName: string; goalsAdded: number };
 export type RecapTopScorer = { managerName: string; teamName: string; points: number };
 export type RecapBlackjackLeader = { managerName: string; goals: number; status: BlackjackStatus };
 
 export type RecapData = {
   gameweek: number;
   leagueName: string;
-  headline: RecapToken[];
-  // Same underlying facts headline (above) is written from, exposed
-  // separately for lib/recapSummary.ts - the AI recap writer works from
-  // raw facts rather than paraphrasing the template's own prose.
+  // Raw top-scorer/Blackjack-leader facts, for lib/recapSummary.ts's AI
+  // writer (see that file for how they're used).
   topScorer: RecapTopScorer | null;
   blackjackLeader: RecapBlackjackLeader | null;
   h2hResults: RecapMatchup[]; // draft-page order, not sorted by margin
@@ -89,8 +87,16 @@ export type RecapData = {
   seasonLow: RecapSeasonScore | null;
   overallTop: RecapOverallStanding | null;
   overallBottom: RecapOverallStanding | null;
+  // Top 3 only, for the outline caption's "BB Draft" section - separate
+  // from overallTop above (which is just 1st, used elsewhere) rather than
+  // slicing it out of a full standings list every caller would otherwise
+  // need to fetch again.
+  overallTop3: RecapOverallStanding[];
   motw: RecapAward | null;
   sotw: RecapAward | null;
+  // Every manager who added at least one Blackjack goal this gameweek
+  // specifically, highest first - empty (not null) when nobody did.
+  blackjackMoves: RecapBlackjackMove[];
 };
 
 function winnerLoser(m: RecapMatchup): RecapWinnerLoser {
@@ -114,59 +120,6 @@ function winnerLoser(m: RecapMatchup): RecapWinnerLoser {
         loserScore: m.aScore,
         isTie,
       };
-}
-
-// A raw goal tally alone doesn't say whether the Blackjack leader is in a
-// good spot - reaching 21 needs the right pace across the whole season,
-// so being well ahead this early is a genuine risk (busting before it
-// counts), not an unambiguous positive, while being right on target is
-// the actually good outcome. Reuses the same status the rest of the app
-// already computes (lib/blackjackStatus.ts) rather than re-deriving pace
-// judgement from scratch here.
-function blackjackLeaderClause(row: RecapBlackjackRow): RecapToken[] {
-  const goals: RecapToken = { text: `${row.goals} goal${row.goals === 1 ? "" : "s"}`, strong: true };
-  switch (row.status) {
-    case "blackjack":
-    case "winner":
-      return [{ text: " and has already hit an actual blackjack — " }, goals, { text: ", dead on 21." }];
-    case "over-target":
-      return [
-        { text: " and leads the Blackjack pot with " },
-        goals,
-        { text: " — well ahead of pace already, which isn't unambiguously good news this early." },
-      ];
-    case "at-risk":
-    case "edge":
-      return [
-        { text: " and leads the Blackjack pot on " },
-        goals,
-        { text: ", but is living dangerously close to busting." },
-      ];
-    case "on-target":
-      return [{ text: " and is right on pace atop the Blackjack pot with " }, goals, { text: "." }];
-    case "early-days":
-      // A generic "too early to call" undersold a genuinely blistering
-      // start (4 from 4 picks in Gameweek 1 alone) as a shrug - the
-      // grace period (see GRACE_PERIOD_GAMEWEEKS, lib/blackjack.ts) means
-      // the pace ladder itself can't judge it yet, but the caption can
-      // still clock that it's a hot start without pretending to know if
-      // it'll last.
-      return row.goals >= 3
-        ? [
-            { text: " and has already banked " },
-            goals,
-            {
-              text: " for the Blackjack pot — a blistering start that's either a golden touch or a bust with extra steps.",
-            },
-          ]
-        : [
-            { text: " and currently tops the Blackjack pot with " },
-            goals,
-            { text: " — nothing worth reading into yet." },
-          ];
-    default:
-      return [{ text: " and leads the Blackjack pot with " }, goals, { text: "." }];
-  }
 }
 
 // A recap is an "official" summary in the same sense as H2H tallies and
@@ -203,6 +156,12 @@ export async function getRecapData(): Promise<RecapData | null> {
   const syncedScoreByEntry = new Map(
     gwScores.filter((r) => r.gameweek === gameweek).map((r) => [r.entryId, r.eventTotal]),
   );
+
+  // Goals scored in this specific (already-locked) gameweek, not whatever
+  // gameweek happens to be live right now - same targeted-gameweek
+  // reasoning as syncedScoreByEntry above, just for Blackjack instead of
+  // H2H scores.
+  const gwGoalsByPlayerId = await getGameweekGoalsByPlayerId(gameweek);
 
   // Draft-page order, not re-sorted - same pairing/left-right as
   // getH2hMatchups() already gives every other H2H view in the app.
@@ -261,26 +220,21 @@ export async function getRecapData(): Promise<RecapData | null> {
     .map((p) => ({ managerName: p.managerName, goals: p.totalGoals, status: p.status }));
   const blackjackLeader = blackjackAll[0] ?? null;
 
-  // Same top-scorer as the Blackjack leader is a genuinely different,
-  // better story than either fact alone - worth its own sentence rather
-  // than two generic ones. The Blackjack half is pace-aware (see
-  // blackjackLeaderClause) rather than just repeating the goal count.
-  const headline: RecapToken[] =
-    topManager && blackjackLeader && topManager.managerName === blackjackLeader.managerName
-      ? [
-          { text: topManager.managerName, strong: true },
-          { text: ` (${topManager.teamName}) is quietly making everyone else look bad — top scorer on ` },
-          { text: `${topManager.syncedScore} pts`, strong: true },
-          ...blackjackLeaderClause(blackjackLeader),
-        ]
-      : topManager
-        ? [
-            { text: topManager.managerName, strong: true },
-            { text: ` (${topManager.teamName}) tops the gameweek on ` },
-            { text: `${topManager.syncedScore} pts`, strong: true },
-            { text: ". Try again next week, everyone else." },
-          ]
-        : [];
+  // This gameweek's Blackjack additions specifically - each participant's
+  // own picks (already resolved on BlackjackParticipant.players) summed
+  // against gwGoalsByPlayerId above, not the season-total goals those
+  // Player records also carry. Highest first; entryId tie-break for a
+  // stable order, same convention as findBlackjackWinner.
+  const blackjackMoves: RecapBlackjackMove[] = blackjackParticipants
+    .filter((p) => p.players !== null)
+    .map((p) => ({
+      entryId: p.entryId,
+      managerName: p.managerName,
+      goalsAdded: p.players!.reduce((sum, pl) => sum + (gwGoalsByPlayerId.get(pl.id) ?? 0), 0),
+    }))
+    .filter((m) => m.goalsAdded > 0)
+    .sort((a, b) => b.goalsAdded - a.goalsAdded || a.entryId - b.entryId)
+    .map(({ managerName, goalsAdded }) => ({ managerName, goalsAdded }));
 
   // Longest active H2H win streak across the whole league, not just this
   // matchup's two sides - same field (H2hSide.streak) the H2H tiles
@@ -336,11 +290,15 @@ export async function getRecapData(): Promise<RecapData | null> {
           totalPoints: standings[standings.length - 1].totalPoints,
         }
       : null;
+  const overallTop3: RecapOverallStanding[] = standingsHaveSpread
+    ? standings
+        .slice(0, 3)
+        .map((s) => ({ teamName: teamNameByEntry.get(s.entryId) ?? "Unknown", totalPoints: s.totalPoints }))
+    : [];
 
   return {
     gameweek,
     leagueName,
-    headline,
     topScorer: topManager
       ? { managerName: topManager.managerName, teamName: topManager.teamName, points: topManager.syncedScore! }
       : null,
@@ -356,15 +314,11 @@ export async function getRecapData(): Promise<RecapData | null> {
     seasonLow,
     overallTop,
     overallBottom,
+    overallTop3,
     motw: weeklyAwards ? { teamName: weeklyAwards.motwTeam, points: weeklyAwards.motwPoints } : null,
     sotw: weeklyAwards ? { teamName: weeklyAwards.sotwTeam, points: weeklyAwards.sotwPoints } : null,
+    blackjackMoves,
   };
-}
-
-// Plain-text version of a token run, for the WhatsApp caption - the image
-// route renders the same tokens as styled JSX spans instead.
-export function tokensToText(tokens: RecapToken[]): string {
-  return tokens.map((t) => t.text).join("");
 }
 
 // Scheme included (not just the bare domain) so WhatsApp reliably treats it
@@ -375,43 +329,27 @@ export function tokensToText(tokens: RecapToken[]): string {
 // either path to reproduce it exactly.
 export const RECAP_LINK_LINE = "Everything else is in the app 👉 https://badblokesweekly.vercel.app";
 
-// The original fixed-template caption - every sentence a hardcoded shape
-// filled with stats. Used as the reliability fallback when the AI-written
-// recap (lib/recapSummary.ts) is unavailable (no API key, request failure,
-// refusal) - this always works, it just doesn't vary week to week.
+// A scannable outline, not prose - just the facts, laid out under fixed
+// headers rather than woven into sentences. Used as the reliability
+// fallback when the AI-written recap (lib/recapSummary.ts) is unavailable
+// (no API key, request failure, refusal), but also the default shape as
+// long as the AI path stays off - see app/recap/page.tsx.
 export function buildTemplateCaption(data: RecapData): string {
-  const lines = [
-    `GW${data.gameweek} done. ${tokensToText(data.headline)}`,
-    data.closestMatch
-      ? data.closestMatch.isTie
-        ? `Closest game of the week wasn't close at all — it was a dead heat. ${data.closestMatch.winnerName} (${data.closestMatch.winnerTeam}) and ${data.closestMatch.loserName} (${data.closestMatch.loserTeam}) both posted ${data.closestMatch.winnerScore}, so no bragging rights for anyone.`
-        : `Closest game of the week: ${data.closestMatch.winnerName} (${data.closestMatch.winnerTeam}) scraped past ${data.closestMatch.loserName} (${data.closestMatch.loserTeam}), ${data.closestMatch.winnerScore}–${data.closestMatch.loserScore}.`
-      : null,
-    // Everything else in H2H that didn't already get its own sentence
-    // above - manager names only (no team names) to keep this a quick
-    // rundown rather than another round of full call-outs.
-    data.otherMatches.length > 0
-      ? `Elsewhere in H2H: ${data.otherMatches
-          .map((m) =>
-            m.isTie
-              ? `${m.winnerName} and ${m.loserName} tied at ${m.winnerScore}`
-              : `${m.winnerName} beat ${m.loserName} ${m.winnerScore}–${m.loserScore}`,
-          )
-          .join("; ")}.`
-      : null,
-    data.hotStreak
-      ? `${data.hotStreak.managerName} (${data.hotStreak.teamName}) is ${data.hotStreak.streak} games deep into an H2H win streak. Someone ought to check on the rest of the league.`
-      : null,
+  const sections = [
+    `GW${data.gameweek}:`,
     data.motw && data.sotw
-      ? `🏆 MOTW: ${data.motw.teamName} (${data.motw.points} pts)\n🔧 SOTW: ${data.sotw.teamName} (${data.sotw.points} pts) — someone had to.`
+      ? `🏆 MOTW: ${data.motw.teamName} (${data.motw.points} pts)\n🔧 SOTW: ${data.sotw.teamName} (${data.sotw.points} pts)`
       : null,
-    data.seasonHigh && data.seasonLow
-      ? `Season high so far belongs to ${data.seasonHigh.teamName} — ${data.seasonHigh.score} back in GW${data.seasonHigh.gameweek}. The low bar is held by ${data.seasonLow.teamName}, ${data.seasonLow.score} in GW${data.seasonLow.gameweek}, and nobody's rushing to take it off them.`
+    data.h2hResults.length > 0
+      ? `H2H:\n${data.h2hResults.map((m) => `${m.aName} ${m.aScore} – ${m.bScore} ${m.bName}`).join("\n")}`
       : null,
-    data.overallTop && data.overallBottom
-      ? `In the table that actually matters, ${data.overallTop.teamName} lead the way on ${data.overallTop.totalPoints} pts. ${data.overallBottom.teamName} are propping up the rest of the league on ${data.overallBottom.totalPoints} — building character, presumably.`
+    data.overallTop3.length > 0
+      ? `BB Draft:\n${data.overallTop3.map((s, i) => `${i + 1}. ${s.teamName} — ${s.totalPoints} pts`).join("\n")}`
+      : null,
+    data.blackjackMoves.length > 0
+      ? `Blackjack Moves:\n${data.blackjackMoves.map((m) => `${m.managerName} ⬆️${m.goalsAdded}`).join("\n")}`
       : null,
     RECAP_LINK_LINE,
-  ].filter((l): l is string => l !== null);
-  return lines.join("\n\n");
+  ].filter((s): s is string => s !== null);
+  return sections.join("\n\n");
 }
