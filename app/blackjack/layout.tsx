@@ -1,6 +1,7 @@
 import { getPlayersData } from "@/lib/players";
 import { isPickingWindowOpen } from "@/lib/pickingWindow";
 import { getLiveGameweek, computeGameweekStatus } from "@/lib/liveGwScores";
+import { effectiveGameweek } from "@/lib/blackjack";
 import { GameweekStatusLabel, type GameweekStatus } from "@/components/GameweekStatusLabel";
 import { BlackjackHeaderAction } from "@/components/BlackjackHeaderAction";
 
@@ -15,7 +16,12 @@ export default async function BlackjackLayout({ children }: LayoutProps<"/blackj
     getLiveGameweek(),
   ]);
   const pickingWindowOpen = isPickingWindowOpen(seasonStartTime);
-  const gameweekNumber = currentGameweek > 0 ? currentGameweek : 1;
+  // Same effective-gameweek reasoning as lib/blackjack.ts's own leaderboard
+  // computation (see effectiveGameweek's comment there) - otherwise this
+  // header could read "Gameweek 3" while the pace ladder below it has
+  // already moved on to treating GW4 as current.
+  const gameweek = effectiveGameweek(currentGameweek, liveGameweek);
+  const gameweekNumber = gameweek > 0 ? gameweek : 1;
   // See computeGameweekStatus's own comment (lib/liveGwScores.ts) for why
   // this - not lib/plGameweekStatus.ts's classic-FPL-API equivalent - is
   // what every section's status pill is built from.

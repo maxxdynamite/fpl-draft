@@ -1,6 +1,7 @@
 import { getManagers } from "./managers";
 import { getBlackjackPicks } from "./blackjackPicks";
 import { getPlayersData, type Player } from "./players";
+import { getLiveGameweek, type LiveGameweek } from "./liveGwScores";
 
 export const BLACKJACK_TARGET = 21;
 export const TOTAL_GAMEWEEKS = 38;
@@ -60,6 +61,22 @@ export type BlackjackParticipant = {
 // snapshot of our own - it's a live, independently queryable stat for
 // whichever gameweek is currently live, same as everything else this
 // game reads from bootstrap-static.
+// The real Premier League calendar (lib/players.ts's currentGameweek) only
+// advances once a gameweek's first fixture actually kicks off - the
+// classic FPL API keeps a just-finished gameweek marked as current right
+// up until then. The Draft API's own gameweek tracker (getLiveGameweek,
+// same source the Draft H2H section's "Gameweek N" and status pill are
+// built from) advances at that gameweek's transfer deadline instead,
+// which is hours-to-days earlier. Blackjack's pace ladder and grace
+// period want to start counting from the deadline too, the same as every
+// other section of the app already does - so this takes whichever source
+// has counted further, never the other way around (Draft's own tracker
+// briefly lagging around a season boundary shouldn't pull Blackjack
+// backwards).
+export function effectiveGameweek(currentGameweek: number, liveGameweek: LiveGameweek | null): number {
+  return Math.max(currentGameweek, liveGameweek?.eventNumber ?? 0);
+}
+
 export async function getGameweekGoalsByPlayerId(gameweek: number): Promise<Map<number, number>> {
   const res = await fetch(
     `https://fantasy.premierleague.com/api/event/${gameweek}/live/`,
@@ -182,15 +199,20 @@ export function applyWinnerStatus(
 // Combines manager identity, submitted picks, and live player goal counts
 // into a per-participant result, ranked by total goals (leaderboard order).
 export async function getBlackjackLeaderboard(): Promise<BlackjackParticipant[]> {
-  const [managers, picks, { players, currentGameweek }] = await Promise.all([
+  const [managers, picks, { players, currentGameweek }, liveGameweek] = await Promise.all([
     getManagers(),
     getBlackjackPicks(),
     getPlayersData(),
+    getLiveGameweek(),
   ]);
+  // See effectiveGameweek's own comment - this is what actually decides
+  // "has the gameweek started" for pace/grace-period purposes, not the raw
+  // classic-API currentGameweek above.
+  const gameweek = effectiveGameweek(currentGameweek, liveGameweek);
   // Pre-season there's no live gameweek to ask about yet - same guard
   // computeStatus itself already uses for currentGameweek === 0.
   const gwGoalsByPlayerId =
-    currentGameweek > 0 ? await getGameweekGoalsByPlayerId(currentGameweek) : new Map<number, number>();
+    gameweek > 0 ? await getGameweekGoalsByPlayerId(gameweek) : new Map<number, number>();
 
   const playersById = new Map(players.map((p) => [p.id, p]));
   const picksByEntry = new Map(picks.map((p) => [p.entryId, p]));
@@ -217,7 +239,7 @@ export async function getBlackjackLeaderboard(): Promise<BlackjackParticipant[]>
       : 0;
     const allScored = validPicks ? validPicks.every((p) => p.goals > 0) : false;
     const status: BlackjackStatus = validPicks
-      ? computeStatus(totalGoals, allScored, currentGameweek)
+      ? computeStatus(totalGoals, allScored, gameweek)
       : "no-picks";
 
     return {
@@ -232,7 +254,7 @@ export async function getBlackjackLeaderboard(): Promise<BlackjackParticipant[]>
     };
   });
 
-  applyWinnerStatus(participants, currentGameweek);
+  applyWinnerStatus(participants, gameweek);
 
   return participants.sort((a, b) => b.totalGoals - a.totalGoals);
 }
