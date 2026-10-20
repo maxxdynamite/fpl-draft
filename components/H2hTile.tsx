@@ -435,7 +435,13 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
               showAllGameweeks ? "opacity-0 pointer-events-none" : "opacity-100"
             }`}
           >
-            <span className="text-4xl font-extrabold tabular-nums tracking-tight">
+            <span
+              className={`text-4xl font-extrabold tabular-nums tracking-tight ${
+                (teamA.latestScore ?? 0) > (teamB.latestScore ?? 0)
+                  ? "text-zinc-900 dark:text-white"
+                  : "text-zinc-500 dark:text-zinc-400"
+              }`}
+            >
               {teamA.latestScore ?? 0}
             </span>
             <p className="text-lg font-bold tabular-nums text-center">
@@ -459,7 +465,13 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
                 {teamB.wins}
               </span>
             </p>
-            <span className="text-4xl font-extrabold tabular-nums tracking-tight text-right">
+            <span
+              className={`text-4xl font-extrabold tabular-nums tracking-tight text-right ${
+                (teamB.latestScore ?? 0) > (teamA.latestScore ?? 0)
+                  ? "text-zinc-900 dark:text-white"
+                  : "text-zinc-500 dark:text-zinc-400"
+              }`}
+            >
               {teamB.latestScore ?? 0}
             </span>
           </div>
