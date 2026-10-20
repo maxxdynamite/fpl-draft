@@ -1,4 +1,5 @@
 import { getWeeklyAwards } from "@/lib/weeklyAwards";
+import { joinWithAnd } from "@/lib/format";
 import { CrownIcon } from "./CrownIcon";
 import { WrenchIcon } from "./WrenchIcon";
 
@@ -14,7 +15,7 @@ export async function WeeklyAwardTablets() {
       <div className="flex items-center gap-2.5 px-3.5 py-2.5">
         <CrownIcon size={22} className={motwColor} />
         <span className="flex-1 min-w-0 truncate text-zinc-900 dark:text-white text-[12.5px] font-bold">
-          {awards.motwTeam}
+          {joinWithAnd(awards.motwTeams)}
         </span>
         <span className={`text-[15px] font-extrabold tabular-nums ${motwColor}`}>
           {awards.motwPoints}
@@ -23,7 +24,7 @@ export async function WeeklyAwardTablets() {
       <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-t border-black/[0.04] dark:border-white/[0.06]">
         <WrenchIcon size={22} className={sotwColor} />
         <span className="flex-1 min-w-0 truncate text-zinc-900 dark:text-white text-[12.5px] font-bold">
-          {awards.sotwTeam}
+          {joinWithAnd(awards.sotwTeams)}
         </span>
         <span className={`text-[15px] font-extrabold tabular-nums ${sotwColor}`}>
           {awards.sotwPoints}

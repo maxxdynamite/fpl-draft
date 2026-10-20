@@ -5,6 +5,7 @@ import { getManagers } from "./managers";
 import { getGwScores } from "./gwScores";
 import { getStandings } from "./standings";
 import { getWeeklyAwards } from "./weeklyAwards";
+import { joinWithAnd } from "./format";
 
 // Same threshold H2hTile's own StreakBadge uses to decide a streak is
 // worth calling out at all - a 1 or 2-game run isn't a story yet.
@@ -71,7 +72,9 @@ export type RecapBlackjackRow = {
 export type RecapHotStreak = { managerName: string; teamName: string; streak: number };
 export type RecapSeasonScore = { teamName: string; score: number; gameweek: number };
 export type RecapOverallStanding = { teamName: string; totalPoints: number };
-export type RecapAward = { teamName: string; points: number };
+// teamNames can hold more than one entry when managers tied for the award
+// that week - see groupTiedMotwSotw (lib/gwScores.ts).
+export type RecapAward = { teamNames: string[]; points: number };
 // A manager's picks scored this specific gameweek - not the season total
 // (BlackjackParticipant.totalGoals) or the live current gameweek's delta
 // (BlackjackParticipant.goalsThisGw, which drifts once a later gameweek
@@ -327,8 +330,8 @@ export async function getRecapData(): Promise<RecapData | null> {
     overallTop,
     overallBottom,
     overallTop3,
-    motw: weeklyAwards ? { teamName: weeklyAwards.motwTeam, points: weeklyAwards.motwPoints } : null,
-    sotw: weeklyAwards ? { teamName: weeklyAwards.sotwTeam, points: weeklyAwards.sotwPoints } : null,
+    motw: weeklyAwards ? { teamNames: weeklyAwards.motwTeams, points: weeklyAwards.motwPoints } : null,
+    sotw: weeklyAwards ? { teamNames: weeklyAwards.sotwTeams, points: weeklyAwards.sotwPoints } : null,
     blackjackMoves,
   };
 }
@@ -350,7 +353,7 @@ export function buildTemplateCaption(data: RecapData): string {
   const sections = [
     `GW${data.gameweek}:`,
     data.motw && data.sotw
-      ? `🏆 MOTW: ${data.motw.teamName} (${data.motw.points} pts)\n🔧 SOTW: ${data.sotw.teamName} (${data.sotw.points} pts)`
+      ? `🏆 MOTW: ${joinWithAnd(data.motw.teamNames)} (${data.motw.points} pts)\n🔧 SOTW: ${joinWithAnd(data.sotw.teamNames)} (${data.sotw.points} pts)`
       : null,
     // Season-long H2H win tally, not this gameweek's points - those are
     // already in the shared image (see aWins/bWins's own comment).

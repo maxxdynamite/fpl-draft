@@ -90,7 +90,7 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
   // columns - see computeMotwSotwTallies' own comment for why those are
   // unreliable.
   const motwSotwTallies = computeMotwSotwTallies(gwScores);
-  const { motwEntryId: latestMotwEntryId, sotwEntryId: latestSotwEntryId } =
+  const { motwEntryIds: latestMotwEntryIds, sotwEntryIds: latestSotwEntryIds } =
     getLatestMotwSotwEntryIds(gwScores);
 
   // A wager settling is a different bar than a display number going live -
@@ -156,8 +156,8 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
       totalPoints: liveStanding?.value ?? standing?.totalPoints ?? null,
       motwCount: gwScores.length > 0 ? (motwSotwTallies.get(entryId)?.motwCount ?? 0) : null,
       sotwCount: gwScores.length > 0 ? (motwSotwTallies.get(entryId)?.sotwCount ?? 0) : null,
-      isLatestMotw: entryId === latestMotwEntryId && !motwSotwUnsynced,
-      isLatestSotw: entryId === latestSotwEntryId && !motwSotwUnsynced,
+      isLatestMotw: latestMotwEntryIds.includes(entryId) && !motwSotwUnsynced,
+      isLatestSotw: latestSotwEntryIds.includes(entryId) && !motwSotwUnsynced,
       draftPosition: draft?.position ?? null,
       firstPick: draft ? (playerNameById.get(draft.firstPickElementId) ?? null) : null,
     };

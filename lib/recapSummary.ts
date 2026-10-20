@@ -24,7 +24,7 @@ Facts you may be given (skip a field only if it's null/absent from the JSON):
 - hotStreak: a manager on a 3+ game H2H win streak
 - seasonHigh / seasonLow: the season's best and worst single-gameweek scores so far, and which gameweek each happened
 - overallTop / overallBottom: current overall league standings leader and bottom
-- motw / sotw: this gameweek's Manager of the Week and Spanner (Manager) of the Week
+- motw / sotw: this gameweek's Manager of the Week and Spanner (Manager) of the Week - teamNames is a list since managers can tie for either award, phrase a tie naturally (e.g. "shared Manager of the Week") rather than reading the list out
 
 Blackjack status glossary (blackjackLeader.status): "blackjack"/"winner" = hit exactly 21, the rare perfect outcome; "over-target" = ahead of pace, which risks busting before the season's out; "at-risk"/"edge" = close to busting, living dangerously; "on-target" = right on pace, the good kind of boring; "early-days" = too early in the season to read into yet.
 

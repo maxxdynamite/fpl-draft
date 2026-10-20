@@ -7,7 +7,7 @@ import { getPlGameweekStatus } from "@/lib/plGameweekStatus";
 import { getLiveGameweek } from "@/lib/liveGwScores";
 import { resolveCupBracket } from "@/lib/cupBracket";
 import { getH2hMatchups } from "@/lib/h2h";
-import { computeMotwSotwTallies } from "@/lib/gwScores";
+import { computeMotwSotwTallies, computeMotwSotwMoney, groupTiedMotwSotw } from "@/lib/gwScores";
 import { PotTile, type PotRow } from "@/components/PotTile";
 import { DraftH2hTile } from "@/components/DraftH2hTile";
 import { MotwSotwTile } from "@/components/MotwSotwTile";
@@ -113,13 +113,18 @@ export default async function MoneyPage() {
 
   // Computed from GW_Scores directly, not Standings' motw_count/sotw_count
   // columns - see computeMotwSotwTallies' own comment for why those are
-  // unreliable.
+  // unreliable. Every manager tied for top (or bottom) a given week counts
+  // in full toward motwCount/sotwCount; the £ net (computeMotwSotwMoney)
+  // instead splits a fixed £5-a-week pot evenly across however many are
+  // tied, so the total that moves stays £5 regardless of tie count.
   const motwSotwTallies = computeMotwSotwTallies(gwScores);
+  const motwSotwMoney = computeMotwSotwMoney(gwScores);
   const motwSotwRows = standings.map((s) => ({
     entryId: s.entryId,
     managerName: managersByEntry.get(s.entryId)?.managerName ?? "Unknown",
     motwCount: motwSotwTallies.get(s.entryId)?.motwCount ?? 0,
     sotwCount: motwSotwTallies.get(s.entryId)?.sotwCount ?? 0,
+    net: motwSotwMoney.get(s.entryId) ?? 0,
   }));
 
   // Same "wager, not just display" bar as lib/h2h.ts's H2H stake
@@ -135,19 +140,29 @@ export default async function MoneyPage() {
     liveGameweek.finished &&
     (syncedLatestGw === null || liveGameweek.eventNumber > syncedLatestGw) &&
     liveGameweek.entries.length > 0;
-  // Same first-occurrence tie-break as lib/weeklyAwards.ts's official
-  // MOTW/SOTW determination, applied here to the live entries instead.
-  const liveMotwEntryId = canProjectLiveMotwSotw
-    ? liveGameweek!.entries.reduce((best, e) => (e.eventTotal > best.eventTotal ? e : best)).entryId
-    : null;
-  const liveSotwEntryId = canProjectLiveMotwSotw
-    ? liveGameweek!.entries.reduce((worst, e) => (e.eventTotal < worst.eventTotal ? e : worst)).entryId
-    : null;
-  const liveMotwSotwRows = motwSotwRows.map((r) => ({
-    ...r,
-    motwCount: r.motwCount + (r.entryId === liveMotwEntryId ? 1 : 0),
-    sotwCount: r.sotwCount + (r.entryId === liveSotwEntryId ? 1 : 0),
-  }));
+  // Same tie-grouping as the official MOTW/SOTW determination
+  // (groupTiedMotwSotw, lib/gwScores.ts), applied here to the live entries
+  // instead.
+  const liveGroups = canProjectLiveMotwSotw
+    ? groupTiedMotwSotw(
+        liveGameweek!.entries.map((e) => ({ entryId: e.entryId, eventTotal: e.eventTotal })),
+      )
+    : { motwEntryIds: [] as number[], sotwEntryIds: [] as number[] };
+  const liveMotwSotwRows = motwSotwRows.map((r) => {
+    const isLiveMotw = liveGroups.motwEntryIds.includes(r.entryId);
+    const isLiveSotw = liveGroups.sotwEntryIds.includes(r.entryId);
+    const liveNet = isLiveMotw
+      ? 5 / liveGroups.motwEntryIds.length
+      : isLiveSotw
+        ? -5 / liveGroups.sotwEntryIds.length
+        : 0;
+    return {
+      ...r,
+      motwCount: r.motwCount + (isLiveMotw ? 1 : 0),
+      sotwCount: r.sotwCount + (isLiveSotw ? 1 : 0),
+      net: r.net + liveNet,
+    };
+  });
 
   // Draft Overall and Blackjack only pay out once the season's actually
   // over (seasonComplete); the Cup pays out whenever its own champion is
@@ -169,7 +184,7 @@ export default async function MoneyPage() {
       }));
   const displayMotwSotwRows = seasonStarted
     ? liveMotwSotwRows
-    : motwSotwRows.map((r) => ({ ...r, motwCount: 0, sotwCount: 0 }));
+    : motwSotwRows.map((r) => ({ ...r, motwCount: 0, sotwCount: 0, net: 0 }));
 
   // Grand total across every money source, per manager - summed from
   // exactly the rows each tile above actually renders, so this always
@@ -185,7 +200,7 @@ export default async function MoneyPage() {
     addTotal(m.teamA.entryId, m.teamA.pl);
     addTotal(m.teamB.entryId, m.teamB.pl);
   });
-  displayMotwSotwRows.forEach((r) => addTotal(r.entryId, (r.motwCount - r.sotwCount) * 5));
+  displayMotwSotwRows.forEach((r) => addTotal(r.entryId, r.net));
 
   const totalRows: TotalRow[] = managers.map((m) => ({
     entryId: m.entryId,

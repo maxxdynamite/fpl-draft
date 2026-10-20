@@ -7,18 +7,19 @@ export type MotwSotwRow = {
   managerName: string;
   motwCount: number;
   sotwCount: number;
+  // Season-cumulative £ net from the stake - computed by the caller
+  // (lib/gwScores.ts's computeMotwSotwMoney), not derived from the counts
+  // here, since a tied week splits the fixed £5 pot rather than paying
+  // the full stake per tied manager.
+  net: number;
 };
 
-// SOTW always pays MOTW £5 - rather than a per-gameweek history, this
-// reads the season-total motw/sotw counts the app already tracks
-// (Standings sheet) and turns them straight into a net £ figure: every
-// MOTW win is +£5, every SOTW "win" is -£5. Simplest accurate read of
-// data that's already there, and it degrades gracefully to an all-zero
+// A fixed £5 pot moves every gameweek - normally one SOTW pays one MOTW
+// in full, but a tie on either side splits it evenly instead of paying
+// the full stake per tied manager. Degrades gracefully to an all-zero
 // list before any gameweeks have been played.
 export function MotwSotwTile({ rows }: { rows: MotwSotwRow[] }) {
-  const ranked = rows
-    .map((r) => ({ ...r, net: (r.motwCount - r.sotwCount) * MOTW_SOTW_STAKE }))
-    .sort((a, b) => b.net - a.net);
+  const ranked = [...rows].sort((a, b) => b.net - a.net);
 
   return (
     <div className="rounded-xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden">

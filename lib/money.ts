@@ -1,6 +1,6 @@
 import { getManagers } from "./managers";
 import { getStandings } from "./standings";
-import { getGwScores } from "./gwScores";
+import { getGwScores, groupTiedMotwSotw } from "./gwScores";
 import { findBlackjackWinner, getBlackjackLeaderboard, TOTAL_GAMEWEEKS } from "./blackjack";
 import { getPlayersData } from "./players";
 import { getLiveGameweek } from "./liveGwScores";
@@ -79,11 +79,17 @@ export function h2hWagerRule(
   return events;
 }
 
-// 2. MOTW/SOTW - every gameweek, whoever tops the eventTotal table (Manager
-// of the Week) gets £5 from whoever's bottom (Spanner of the Week). No
-// per-gameweek history is stored anywhere for this (only season totals in
-// Standings, and this-week-only in lib/weeklyAwards.ts), so it's
-// recomputed fresh from GW_Scores for every gameweek that's been played.
+// 2. MOTW/SOTW - every gameweek, a fixed £5 pot moves from whoever's
+// bottom of the eventTotal table (Spanner of the Week) to whoever's top
+// (Manager of the Week). A tie on either side splits that same £5 evenly
+// across every pairing (groupTiedMotwSotw, lib/gwScores.ts) rather than
+// paying the full stake per tied manager, so the total that moves stays
+// £5 regardless of how many ways it's tied. No per-gameweek history is
+// stored anywhere for this (only season totals in Standings, and
+// this-week-only in lib/weeklyAwards.ts), so it's recomputed fresh from
+// GW_Scores for every gameweek that's been played.
+const MOTW_SOTW_STAKE = 5;
+
 export function motwSotwRule(
   gwScores: { gameweek: number; entryId: number; eventTotal: number }[],
   managersByEntry: Map<number, NamedManager>,
@@ -97,26 +103,26 @@ export function motwSotwRule(
   }
 
   for (const [gameweek, rows] of byGameweek) {
-    if (rows.length === 0) continue;
-    let motw = rows[0];
-    let sotw = rows[0];
-    for (const row of rows) {
-      if (row.eventTotal > motw.eventTotal) motw = row;
-      if (row.eventTotal < sotw.eventTotal) sotw = row;
+    const { motwEntryIds, sotwEntryIds } = groupTiedMotwSotw(rows);
+    if (motwEntryIds.length === 0) continue; // only one entrant, or everyone tied
+    const amount = MOTW_SOTW_STAKE / (motwEntryIds.length * sotwEntryIds.length);
+    for (const sotwId of sotwEntryIds) {
+      const from = managersByEntry.get(sotwId);
+      if (!from) continue;
+      for (const motwId of motwEntryIds) {
+        const to = managersByEntry.get(motwId);
+        if (!to) continue;
+        events.push({
+          label: "MOTW/SOTW",
+          gameweek,
+          fromEntryId: sotwId,
+          fromName: from.managerName,
+          toEntryId: motwId,
+          toName: to.managerName,
+          amount,
+        });
+      }
     }
-    if (motw.entryId === sotw.entryId) continue; // only one entrant that week
-    const from = managersByEntry.get(sotw.entryId);
-    const to = managersByEntry.get(motw.entryId);
-    if (!from || !to) continue;
-    events.push({
-      label: "MOTW/SOTW",
-      gameweek,
-      fromEntryId: sotw.entryId,
-      fromName: from.managerName,
-      toEntryId: motw.entryId,
-      toName: to.managerName,
-      amount: 5,
-    });
   }
   return events;
 }
