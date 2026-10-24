@@ -55,6 +55,12 @@ export type H2hMatchup = {
   teamA: H2hSide;
   teamB: H2hSide;
   history: GwHistoryRow[];
+  // Whether the headline GW score shown above (teamA/teamB.latestScore)
+  // is for a gameweek that's actually finished - see its own comment
+  // below. Drives the H2H tile's loser-greying: a still-live score
+  // shouldn't grey anyone out, since bonus/defensive contribution points
+  // can still change who's actually ahead.
+  latestScoresFinished: boolean;
 };
 
 // Pairs each manager with their season-long rival, using each rival
@@ -118,6 +124,15 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
   const motwSotwUnsynced =
     liveGameweek !== null &&
     (syncedLatestGw === null || liveGameweek.eventNumber > syncedLatestGw);
+
+  // The headline GW score (buildSide's useLiveScore) is either this
+  // gameweek's already-synced row - guaranteed finished, since
+  // apps-script/Code.js's syncCurrentGameweek refuses to write until
+  // FPL's own current_event_finished - or, while a newer gameweek is
+  // live and not yet synced (motwSotwUnsynced), that gameweek's live
+  // score instead. Finished only once whichever's actually on screen has
+  // locked for real.
+  const latestScoresFinished = !motwSotwUnsynced || liveGameweek!.finished;
 
   function buildSide(entryId: number, streak: number, livePlDelta: number): H2hSide {
     const manager = managersByEntry.get(entryId);
@@ -219,6 +234,7 @@ export async function getH2hMatchups(): Promise<H2hMatchup[]> {
       teamA: buildSide(manager.entryId, computeStreak(history, "a"), livePlDeltaA),
       teamB: buildSide(rival.entryId, computeStreak(history, "b"), -livePlDeltaA),
       history: displayHistory,
+      latestScoresFinished,
     });
   }
 

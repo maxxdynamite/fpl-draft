@@ -287,7 +287,7 @@ const RIGHT_BUFFER = RIGHT_STEP_WIDTH + RIGHT_PEEK_WIDTH + RIGHT_FADE_TAIL;
 
 export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
   const [showAllGameweeks, setShowAllGameweeks] = useState(false);
-  const { teamA, teamB, history } = matchup;
+  const { teamA, teamB, history, latestScoresFinished } = matchup;
   const scrollRef = useRef<HTMLDivElement>(null);
   // Sane defaults before the first measurement lands, so nothing renders
   // at 0 width for a frame.
@@ -437,7 +437,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
           >
             <span
               className={`text-4xl font-extrabold tabular-nums tracking-tight ${
-                (teamA.latestScore ?? 0) > (teamB.latestScore ?? 0)
+                !latestScoresFinished || (teamA.latestScore ?? 0) > (teamB.latestScore ?? 0)
                   ? "text-zinc-900 dark:text-white"
                   : "text-zinc-500 dark:text-zinc-400"
               }`}
@@ -467,7 +467,7 @@ export function H2hTile({ matchup }: { matchup: H2hMatchup }) {
             </p>
             <span
               className={`text-4xl font-extrabold tabular-nums tracking-tight text-right ${
-                (teamB.latestScore ?? 0) > (teamA.latestScore ?? 0)
+                !latestScoresFinished || (teamB.latestScore ?? 0) > (teamA.latestScore ?? 0)
                   ? "text-zinc-900 dark:text-white"
                   : "text-zinc-500 dark:text-zinc-400"
               }`}
