@@ -18,16 +18,21 @@ const STREAK_THRESHOLD = 3;
 // Tier 1 (3+ weeks): solid cyan.
 // Tier 2 (5+ weeks): amber gradient, pulsing glow.
 // Tier 3 (7+ weeks): black "legendary" badge, rainbow halo + shimmer sweep.
+// Tier 4 (9+ weeks): tier 3's black fill dropped entirely - just the
+// rainbow halo (now two counter-rotating rings) behind black text, plus
+// a double shimmer sweep and four drifting sparks.
 function StreakBadge({ streak, hide }: { streak: number; hide: boolean }) {
   const show = streak >= STREAK_THRESHOLD;
-  const tier = streak >= 7 ? 3 : streak >= 5 ? 2 : 1;
+  const tier = streak >= 9 ? 4 : streak >= 7 ? 3 : streak >= 5 ? 2 : 1;
 
   const tierClasses =
-    tier === 3
-      ? "bg-[#050505] text-white streak-t3"
-      : tier === 2
-        ? "bg-gradient-to-br from-[#ffc23d] to-[#ff5b04] text-[#1a0900] shadow-[0_0_10px_2px_rgba(255,91,4,0.5)] streak-t2"
-        : "bg-[#04f5ff] text-black shadow-[0_0_10px_2px_rgba(4,245,255,0.55)]";
+    tier === 4
+      ? "text-black streak-t4 [text-shadow:0_1px_1px_rgba(255,255,255,0.25)]"
+      : tier === 3
+        ? "bg-[#050505] text-white streak-t3"
+        : tier === 2
+          ? "bg-gradient-to-br from-[#ffc23d] to-[#ff5b04] text-[#1a0900] shadow-[0_0_10px_2px_rgba(255,91,4,0.5)] streak-t2"
+          : "bg-[#04f5ff] text-black shadow-[0_0_10px_2px_rgba(4,245,255,0.55)]";
 
   return (
     <span
@@ -37,6 +42,16 @@ function StreakBadge({ streak, hide }: { streak: number; hide: boolean }) {
     >
       {tier === 3 && (
         <span className="absolute inset-0 rounded-full overflow-hidden pointer-events-none streak-t3-shimmer" />
+      )}
+      {tier === 4 && (
+        <>
+          <span className="absolute inset-0 rounded-full overflow-hidden pointer-events-none streak-t4-shimmer" />
+          <span className="absolute inset-0 rounded-full overflow-hidden pointer-events-none streak-t4-shimmer streak-t4-shimmer-b" />
+          <span className="streak-t4-spark streak-t4-spark-1" />
+          <span className="streak-t4-spark streak-t4-spark-2" />
+          <span className="streak-t4-spark streak-t4-spark-3" />
+          <span className="streak-t4-spark streak-t4-spark-4" />
+        </>
       )}
       {streak} Week Streak
     </span>

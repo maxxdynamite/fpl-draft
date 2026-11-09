@@ -31,7 +31,9 @@ body {
 }
 
 /* H2H streak badge tiers — 5+ pulses amber, 7+ gets a hue-cycling
-   rainbow halo + shimmer sweep. See components/H2hTile.tsx. */
+   rainbow halo + shimmer sweep, 9+ drops the tier 3 black fill entirely
+   so the halo itself is the only fill, behind black text. See
+   components/H2hTile.tsx. */
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 8px 1px rgba(255, 91, 4, 0.45); }
   50% { box-shadow: 0 0 18px 5px rgba(255, 91, 4, 0.9); }
@@ -93,6 +95,105 @@ body {
   animation: shimmer-sweep 5s ease-in-out infinite;
 }
 
+/* Tier 4 (9+ weeks) - no flat fill of its own (tier 3's black box is
+   gone), so the halo is the only thing behind the text. Two
+   counter-rotating rings instead of tier 3's one, for depth now that
+   there's no solid backing to separate them from. */
+@keyframes hue-cycle-rev {
+  to { filter: blur(10px) hue-rotate(-360deg); }
+}
+.streak-t4::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  z-index: -1;
+  background: conic-gradient(from 0deg, #ff2d78, #ffc23d, #00ff85, #04f5ff, #ff2d78);
+  filter: blur(5px);
+  opacity: 0.95;
+  animation: hue-cycle 2.1s linear infinite;
+}
+.streak-t4::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: inherit;
+  z-index: -2;
+  background: conic-gradient(from 90deg, #04f5ff, #00ff85, #ffc23d, #ff2d78, #04f5ff);
+  filter: blur(10px);
+  opacity: 0.4;
+  animation: hue-cycle-rev 4.6s linear infinite;
+}
+
+/* Same shimmer-sweep shape as tier 3's, but run twice (the second copy
+   delayed half a cycle) so a new sweep starts just as the first fades -
+   tier 3 only ever runs one at a time. */
+.streak-t4-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.55) 50%, transparent 58%);
+  background-size: 250% 100%;
+  background-position: -150% 0;
+  animation: shimmer-sweep 4.4s ease-in-out infinite;
+}
+.streak-t4-shimmer-b::after {
+  animation-delay: 2.2s;
+}
+
+/* Four small sparks drifting off the badge's corners - tier 3 has
+   nothing comparable. Each pair (1/3, 2/4) shares a flight path so only
+   the colour and start delay differ within a pair. */
+.streak-t4-spark {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+.streak-t4-spark-1 {
+  top: -2px;
+  left: 16%;
+  background: #00ff85;
+  box-shadow: 0 0 6px 1px #00ff85;
+  animation: streak-t4-spark-fly-a 2.4s ease-out infinite;
+}
+.streak-t4-spark-2 {
+  bottom: -2px;
+  left: 38%;
+  background: #04f5ff;
+  box-shadow: 0 0 6px 1px #04f5ff;
+  animation: streak-t4-spark-fly-b 2.4s ease-out infinite;
+  animation-delay: 0.6s;
+}
+.streak-t4-spark-3 {
+  top: -2px;
+  right: 20%;
+  background: #ff2d78;
+  box-shadow: 0 0 6px 1px #ff2d78;
+  animation: streak-t4-spark-fly-a 2.4s ease-out infinite;
+  animation-delay: 1.2s;
+}
+.streak-t4-spark-4 {
+  bottom: -2px;
+  right: 10%;
+  background: #ffc23d;
+  box-shadow: 0 0 6px 1px #ffc23d;
+  animation: streak-t4-spark-fly-b 2.4s ease-out infinite;
+  animation-delay: 1.8s;
+}
+@keyframes streak-t4-spark-fly-a {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.6); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-6px, -14px) scale(1.1); }
+}
+@keyframes streak-t4-spark-fly-b {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.6); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(6px, 14px) scale(1.1); }
+}
+
 /* Blackjack status pill - same shimmer-sweep keyframe as the H2H streak
    badge above, just reused on a different base (the solid brand gradient
    pill instead of the dark rainbow-halo badge). See BlackjackParticipantCard. */
@@ -139,6 +240,13 @@ body {
   .streak-t2,
   .streak-t3::before,
   .streak-t3-shimmer::after,
+  .streak-t4::before,
+  .streak-t4::after,
+  .streak-t4-shimmer::after,
+  .streak-t4-spark-1,
+  .streak-t4-spark-2,
+  .streak-t4-spark-3,
+  .streak-t4-spark-4,
   .blackjack-shimmer::after,
   .cup-live,
   .cup-champion-shimmer::after,
