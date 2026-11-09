@@ -727,9 +727,15 @@ export function CupBracket({ data }: { data: CupBracketData }) {
           alongside), so mobile trims to pt-2/pb-3 instead. */}
       {/* One tree at every breakpoint - overflow-x-auto is what turns it
           into either mobile's hand-panned strip or desktop's free scroll,
-          nothing else differs structurally. */}
+          nothing else differs structurally. mx-auto centers the tree
+          when the card (which stretches to the grid's full 1fr track on
+          wide screens) is wider than the tree's own intrinsic width,
+          instead of leaving the Final column flush left with a block of
+          dead card background to its right - and collapses to 0 the
+          moment the tree is wider than the card, so narrow viewports
+          still get normal left-anchored scrolling, Round of 12 first. */}
       <div className="overflow-x-auto">
-        <div ref={containerRef} className="relative min-w-max pb-2">
+        <div ref={containerRef} className="relative min-w-max pb-2 mx-auto">
           {/* Shown at every breakpoint - was desktop-only while mobile
               still used its own cramped gap and uneven justify-around
               spacing (connectors read as clutter there). Both breakpoints
