@@ -714,7 +714,7 @@ export function CupBracket({ data }: { data: CupBracketData }) {
   }, [vm, allRounds]);
 
   return (
-    <div className="min-w-0 rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] px-4 sm:px-6 pt-2 md:pt-3 pb-3 sm:pb-6">
+    <div className="min-w-0 lg:w-fit rounded-2xl bg-white dark:bg-zinc-900 shadow-[var(--shadow-soft)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] px-4 sm:px-6 pt-2 md:pt-3 pb-3 sm:pb-6">
       {/* min-w-0 is required, not decorative - as a CSS grid item this
           card defaults to min-width:auto, which would let it grow to fit
           the bracket's full intrinsic width instead of respecting the
@@ -724,18 +724,29 @@ export function CupBracket({ data }: { data: CupBracketData }) {
           specifically to match the sidebar leaderboard's own pt-3 above its
           title, so the two title rows land on the same line - that pairing
           is desktop-only (the sidebar stacks below on mobile, not
-          alongside), so mobile trims to pt-2/pb-3 instead. */}
+          alongside), so mobile trims to pt-2/pb-3 instead.
+          lg:w-fit is the actual fix for the dead space right of the Final
+          column: the page's shared max-w-6xl main wrapper caps the Draft
+          section's 1fr track at a fixed width regardless of viewport
+          (confirmed: identical at 1440/1920/2600px), and that track is
+          genuinely wider than the bracket tree's own content (4 fixed-
+          width columns) - the card was filling that whole track (grid's
+          default stretch) and leaving the leftover width empty inside its
+          own border. fit-content(1fr-track) correctly shrinks the card to
+          its content there - but plain `width: fit-content` does NOT
+          reliably clamp to a grid item's own track size (confirmed: at
+          mobile's single narrow grid-cols-1 track, an unscoped w-fit let
+          the card render at its full ~768px content width, overflowing
+          its own ~358px cell instead of triggering overflow-x-auto's
+          scroll). lg: scopes this to exactly the breakpoint where the
+          two-column [1fr_220px] split (and therefore the spare width)
+          actually exists; mobile keeps its original fill-the-cell width,
+          same as before this fix. */}
       {/* One tree at every breakpoint - overflow-x-auto is what turns it
           into either mobile's hand-panned strip or desktop's free scroll,
-          nothing else differs structurally. mx-auto centers the tree
-          when the card (which stretches to the grid's full 1fr track on
-          wide screens) is wider than the tree's own intrinsic width,
-          instead of leaving the Final column flush left with a block of
-          dead card background to its right - and collapses to 0 the
-          moment the tree is wider than the card, so narrow viewports
-          still get normal left-anchored scrolling, Round of 12 first. */}
+          nothing else differs structurally. */}
       <div className="overflow-x-auto">
-        <div ref={containerRef} className="relative min-w-max pb-2 mx-auto">
+        <div ref={containerRef} className="relative min-w-max pb-2">
           {/* Shown at every breakpoint - was desktop-only while mobile
               still used its own cramped gap and uneven justify-around
               spacing (connectors read as clutter there). Both breakpoints
